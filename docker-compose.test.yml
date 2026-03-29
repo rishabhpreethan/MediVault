@@ -1,0 +1,59 @@
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: medivault_test
+      POSTGRES_USER: medivault_test
+      POSTGRES_PASSWORD: medivault_test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medivault_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis-test:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio-test:
+    image: minio/minio:latest
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: test
+      MINIO_ROOT_PASSWORD: test_secret
+    ports:
+      - "9002:9000"
+
+  api-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      DATABASE_URL: postgresql+asyncpg://medivault_test:medivault_test@postgres-test:5432/medivault_test
+      REDIS_URL: redis://redis-test:6379/0
+      MINIO_ENDPOINT: minio-test:9000
+      MINIO_ACCESS_KEY: test
+      MINIO_SECRET_KEY: test_secret
+      MINIO_BUCKET: medivault-test
+      MINIO_SECURE: "false"
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      ENCRYPTION_KEY: dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcw==
+      ENVIRONMENT: test
+      CORS_ORIGINS: http://localhost:5173
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
