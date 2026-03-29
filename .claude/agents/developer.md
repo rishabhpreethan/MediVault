@@ -35,7 +35,40 @@ Read these before starting any task:
 1. Run lint and unit tests locally before handing off
 2. Update `STATUS.md`: status → `In Review`
 3. Log: `{datetime} | Developer Agent | Completed implementation MV-XXX, moved to In Review`
-4. The Reviewer Agent takes over — do not open a PR yet
+4. The Reviewer Agent reviews; if approved, status → `In QA`
+5. The QA Agent tests; if passed, status → `Done (Pending Merge)`
+6. **Open the PR** using `gh pr create` with the template below — do this as soon as QA signs off:
+
+```bash
+gh pr create \
+  --title "[MV-XXX] Short description" \
+  --body "$(cat <<'EOF'
+## Summary
+- Bullet points of what was built
+
+## Tasks
+- MV-XXX: Task name
+- MV-XXX: Task name (if grouped)
+
+## Reviewer Agent Sign-Off
+[paste reviewer sign-off block here]
+
+## QA Agent Sign-Off
+[paste QA sign-off block here]
+
+## Checklist
+- [ ] STATUS.md updated
+- [ ] alignment-spec.md requirements met
+- [ ] No PHI logged or exposed
+- [ ] Tests passing
+- [ ] .env.example updated if new env vars added
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)"
+```
+
+7. Log: `{datetime} | Developer Agent | PR opened for MV-XXX`
 
 ---
 
@@ -115,7 +148,7 @@ When in doubt about a decision's classification: treat it as one level higher (m
 
 ## What NOT to Do
 
-- Do not open a PR — that happens only after Reviewer + QA sign-off
+- Do not open a PR before QA has signed off — PR creation is the final step after QA passes
 - Do not write code for tasks not assigned to you in STATUS.md
 - Do not commit secrets, `.env` files, or any real PHI (even test data)
 - Do not add speculative features, abstractions, or error handling for scenarios that can't happen

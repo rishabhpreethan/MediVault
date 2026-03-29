@@ -186,3 +186,4 @@
 | 2026-03-30 | Developer Agent | Completed MV-001 + MV-002 implementation, moved to In Review | MV-001, MV-002 | MV-001 and MV-002 built on same branch (tightly coupled) |
 | 2026-03-30 | Reviewer Agent | Reviewed MV-001 + MV-002 — APPROVED, moved to In QA | MV-001, MV-002 | Stack conformance ✅, no secrets ✅, healthchecks ✅ |
 | 2026-03-30 | QA Agent | QA passed MV-001 + MV-002 — all 26 files present, no hardcoded secrets, .mcp.json gitignored | MV-001, MV-002 | Ready for merge |
+| 2026-03-30 | Developer Agent | PR opened — rishabhpreethan/MediVault#1 | MV-001, MV-002 | Awaiting merge by Rishabh |
