@@ -13,7 +13,7 @@
 
 | Person | Agent Role | Currently Working On | Task ID | Branch | Last Updated |
 |---|---|---|---|---|---|
-| Rishabh | Developer Agent | Repo structure, Docker Compose scaffold, .env.example | MV-001 | feature/MV-001-repo-init | 2026-03-30 |
+| Rishabh | Developer Agent | FastAPI scaffolding + React PWA scaffolding | MV-003, MV-004 | feature/MV-003-fastapi-scaffold, feature/MV-004-react-scaffold | 2026-03-30 |
 
 ---
 
@@ -44,12 +44,12 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-001 | Repo structure, Docker Compose scaffold, .env.example | P0 | Done (Pending Merge) | Rishabh / Developer Agent | — | feature/MV-001-repo-init |
-| MV-002 | PostgreSQL + Redis + MinIO Docker Compose services | P0 | Done (Pending Merge) | Rishabh / Developer Agent | MV-001 | feature/MV-001-repo-init |
-| MV-003 | FastAPI project scaffolding (app factory, config, router) | P0 | Not Started | — | MV-001 | — |
-| MV-004 | React PWA scaffolding (Vite, TypeScript, Tailwind, Auth0 SDK) | P0 | Not Started | — | MV-001 | — |
+| MV-001 | Repo structure, Docker Compose scaffold, .env.example | P0 | Done | Rishabh / Developer Agent | — | feature/MV-001-repo-init |
+| MV-002 | PostgreSQL + Redis + MinIO Docker Compose services | P0 | Done | Rishabh / Developer Agent | MV-001 | feature/MV-001-repo-init |
+| MV-003 | FastAPI project scaffolding (app factory, config, router) | P0 | In Progress | Rishabh / Developer Agent | MV-001 | feature/MV-003-fastapi-scaffold |
+| MV-004 | React PWA scaffolding (Vite, TypeScript, Tailwind, Auth0 SDK) | P0 | In Progress | Rishabh / Developer Agent | MV-001 | feature/MV-004-react-scaffold |
 | MV-005 | Alembic setup + initial DB migration (all core tables) | P0 | Not Started | — | MV-002, MV-003 | — |
-| MV-006 | GitHub Actions CI pipeline (lint, typecheck, unit tests) | P1 | Not Started | — | MV-003, MV-004 | — |
+| MV-006 | GitHub Actions CI pipeline (lint, typecheck, unit tests) | P1 | Done | Rishabh / Developer Agent | MV-003, MV-004 | feature/MV-001-repo-init |
 
 ### EPIC: Authentication
 
@@ -187,3 +187,5 @@
 | 2026-03-30 | Reviewer Agent | Reviewed MV-001 + MV-002 — APPROVED, moved to In QA | MV-001, MV-002 | Stack conformance ✅, no secrets ✅, healthchecks ✅ |
 | 2026-03-30 | QA Agent | QA passed MV-001 + MV-002 — all 26 files present, no hardcoded secrets, .mcp.json gitignored | MV-001, MV-002 | Ready for merge |
 | 2026-03-30 | Developer Agent | PR opened — rishabhpreethan/MediVault#1 | MV-001, MV-002 | Awaiting merge by Rishabh |
+| 2026-03-30 | Rishabh | Merged PR #1 | MV-001, MV-002 | MV-001, MV-002, MV-006 marked Done |
+| 2026-03-30 | Developer Agent | Started MV-003 + MV-004 — FastAPI scaffolding and React PWA scaffolding | MV-003, MV-004 | — |
