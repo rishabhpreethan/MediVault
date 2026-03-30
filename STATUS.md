@@ -13,7 +13,8 @@
 
 | Person | Agent Role | Currently Working On | Task ID | Branch | Last Updated |
 |---|---|---|---|---|---|
-| Rishabh | Developer Agent | FastAPI scaffolding + React PWA scaffolding | MV-003, MV-004 | feature/MV-003-fastapi-scaffold, feature/MV-004-react-scaffold | 2026-03-30 |
+| Developer Agent (A) | Developer Agent | pdfminer.six extraction worker | MV-031 | feature/MV-031-pdfminer-worker | 2026-03-30 |
+| Developer Agent (B) | Developer Agent | pytest + Vitest setup + test fixtures | MV-120 | feature/MV-120-test-setup | 2026-03-30 |
 
 ---
 
@@ -46,9 +47,9 @@
 |---|---|---|---|---|---|---|
 | MV-001 | Repo structure, Docker Compose scaffold, .env.example | P0 | Done | Rishabh / Developer Agent | — | feature/MV-001-repo-init |
 | MV-002 | PostgreSQL + Redis + MinIO Docker Compose services | P0 | Done | Rishabh / Developer Agent | MV-001 | feature/MV-001-repo-init |
-| MV-003 | FastAPI project scaffolding (app factory, config, router) | P0 | In Progress | Rishabh / Developer Agent | MV-001 | feature/MV-003-fastapi-scaffold |
-| MV-004 | React PWA scaffolding (Vite, TypeScript, Tailwind, Auth0 SDK) | P0 | In Progress | Rishabh / Developer Agent | MV-001 | feature/MV-004-react-scaffold |
-| MV-005 | Alembic setup + initial DB migration (all core tables) | P0 | Not Started | — | MV-002, MV-003 | — |
+| MV-003 | FastAPI project scaffolding (app factory, config, router) | P0 | Done | Rishabh / Developer Agent | MV-001 | feature/MV-003-fastapi-scaffold |
+| MV-004 | React PWA scaffolding (Vite, TypeScript, Tailwind, Auth0 SDK) | P0 | Done | Rishabh / Developer Agent | MV-001 | feature/MV-004-react-scaffold |
+| MV-005 | Alembic setup + initial DB migration (all core tables) | P0 | Done | Rishabh / Developer Agent | MV-002, MV-003 | feature/MV-005-db-migrations |
 | MV-006 | GitHub Actions CI pipeline (lint, typecheck, unit tests) | P1 | Done | Rishabh / Developer Agent | MV-003, MV-004 | feature/MV-001-repo-init |
 
 ### EPIC: Authentication
@@ -57,7 +58,7 @@
 |---|---|---|---|---|---|---|
 | MV-010 | Auth0 tenant + application configuration, JWKS setup | P0 | Not Started | — | — | — |
 | MV-011 | Backend JWT middleware (Auth0 RS256 validation, get_current_user dep) | P0 | Not Started | — | MV-003, MV-010 | — |
-| MV-012 | User model, family_members model, DB migration | P0 | Not Started | — | MV-005 | — |
+| MV-012 | User model, family_members model, DB migration (covered by MV-005) | P0 | Done | Rishabh / Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-013 | /auth/provision endpoint — user provisioning on first login | P0 | Not Started | — | MV-011, MV-012 | — |
 | MV-014 | Frontend Auth0 SDK integration, protected route wrapper | P0 | Not Started | — | MV-004, MV-010 | — |
 | MV-015 | Login / Signup UI screens (email, Google OAuth, phone OTP) | P0 | Not Started | — | MV-014 | — |
@@ -68,7 +69,7 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-020 | Document DB model + Alembic migration | P0 | Not Started | — | MV-005 | — |
+| MV-020 | Document DB model + Alembic migration | P0 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-021 | File upload API (validation, virus scan, MinIO storage, queue job) | P0 | Not Started | — | MV-011, MV-020 | — |
 | MV-022 | Scanned PDF detection (embedded text layer check) | P0 | Not Started | — | MV-021 | — |
 | MV-023 | Document library API (list, get, delete, retry) | P0 | Not Started | — | MV-021 | — |
@@ -81,8 +82,8 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-030 | Celery app setup + Redis broker + worker Dockerfile | P0 | Not Started | — | MV-002, MV-003 | — |
-| MV-031 | pdfminer.six extraction worker (primary extractor) | P0 | Not Started | — | MV-030 | — |
+| MV-030 | Celery app setup + Redis broker + worker Dockerfile | P0 | Done | Rishabh / Developer Agent | MV-002, MV-003 | feature/MV-030-celery-worker |
+| MV-031 | pdfminer.six extraction worker (primary extractor) | P0 | In Progress | Developer Agent | MV-030 | feature/MV-031-pdfminer-worker |
 | MV-032 | pypdf fallback extractor + extraction orchestration logic | P0 | Not Started | — | MV-031 | — |
 | MV-033 | Extraction job retry logic (3 attempts, exponential backoff) | P0 | Not Started | — | MV-032 | — |
 | MV-034 | Raw text storage to Document record + status state machine | P0 | Not Started | — | MV-031, MV-020 | — |
@@ -143,7 +144,7 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-090 | Family member DB model + migration (included in MV-012 if done together) | P1 | Not Started | — | MV-005 | — |
+| MV-090 | Family member DB model + migration (included in MV-012 if done together) | P1 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-091 | Family member CRUD API (add, list, update, delete with data purge) | P1 | Not Started | — | MV-090, MV-011 | — |
 | MV-092 | Family management UI (add member, member selector across all tabs) | P1 | Not Started | — | MV-091, MV-016 | — |
 | MV-093 | Per-member data isolation verification (all queries scoped to member_id) | P0 | Not Started | — | MV-091 | — |
@@ -167,7 +168,7 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-120 | pytest setup + Vitest setup + test fixtures (sample PDFs) | P1 | Not Started | — | MV-003, MV-004 | — |
+| MV-120 | pytest setup + Vitest setup + test fixtures (sample PDFs) | P1 | In Progress | Developer Agent | MV-003, MV-004 | feature/MV-120-test-setup |
 | MV-121 | Backend unit tests (NLP extractors, confidence scorer, deduplication) | P1 | Not Started | — | MV-047 | — |
 | MV-122 | Backend integration tests (upload → extract → NLP → profile pipeline) | P1 | Not Started | — | MV-050 | — |
 | MV-123 | Playwright E2E tests (critical user journeys UF-001 through UF-009) | P1 | Not Started | — | MV-052, MV-061, MV-084 | — |
@@ -189,3 +190,9 @@
 | 2026-03-30 | Developer Agent | PR opened — rishabhpreethan/MediVault#1 | MV-001, MV-002 | Awaiting merge by Rishabh |
 | 2026-03-30 | Rishabh | Merged PR #1 | MV-001, MV-002 | MV-001, MV-002, MV-006 marked Done |
 | 2026-03-30 | Developer Agent | Started MV-003 + MV-004 — FastAPI scaffolding and React PWA scaffolding | MV-003, MV-004 | — |
+| 2026-03-30 | Rishabh | Merged PR #2 (MV-003) and PR #3 (MV-004) | MV-003, MV-004 | — |
+| 2026-03-30 | Developer Agent | Started MV-005 — all core SQLAlchemy models + Alembic initial migration | MV-005 | — |
+| 2026-03-30 | Developer Agent | Started MV-030 — Celery worker setup | MV-030 | — |
+| 2026-03-30 | Rishabh | Merged PR #4 (MV-005) and PR #5 (MV-030) | MV-005, MV-030 | MV-020, MV-090 marked Done (covered by MV-005) |
+| 2026-03-30 | Developer Agent (A) | Started MV-031 — pdfminer.six extraction worker | MV-031 | — |
+| 2026-03-30 | Developer Agent (B) | Started MV-120 — pytest + Vitest setup + test fixtures | MV-120 | — |
