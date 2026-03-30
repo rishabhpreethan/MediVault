@@ -1,6 +1,6 @@
 # MediVault — Project Status
 
-**Last Updated:** 2026-03-30
+**Last Updated:** 2026-03-30 (synced after PR #15 merge)
 **SRS Version:** 1.2
 **Active Phase:** V1 MVP
 
@@ -69,7 +69,7 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-020 | Document DB model + Alembic migration | P0 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
-| MV-021 | File upload API (validation, MinIO storage, queue job) | P0 | Done (Pending Merge) | Developer Agent | MV-011, MV-020 | feature/MV-021-file-upload-api |
+| MV-021 | File upload API (validation, MinIO storage, queue job) | P0 | Done | Developer Agent | MV-011, MV-020 | feature/MV-021-file-upload-api |
 | MV-022 | Scanned PDF detection (embedded text layer check) | P0 | Not Started | — | MV-021 | — |
 | MV-023 | Document library API (list, get, delete, retry) | P0 | Not Started | — | MV-021 | — |
 | MV-024 | Document library UI (grid/list, status badges, upload CTA) | P0 | Not Started | — | MV-016, MV-023 | — |
@@ -92,9 +92,9 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-040 | spaCy + Med7 pipeline setup, model loading, base extractor | P0 | Done | Developer Agent | MV-034 | feature/MV-040-nlp-pipeline |
-| MV-041 | Medication extraction (drug name, dosage, frequency, duration, route) | P0 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
-| MV-042 | Lab result extraction (test name, value, unit, reference range, H/L flag) | P0 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
-| MV-043 | Diagnosis extraction (condition name, date, status) | P0 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
+| MV-041 | Medication extraction (drug name, dosage, frequency, duration, route) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
+| MV-042 | Lab result extraction (test name, value, unit, reference range, H/L flag) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
+| MV-043 | Diagnosis extraction (condition name, date, status) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
 | MV-044 | Allergy extraction | P1 | Not Started | — | MV-040 | — |
 | MV-045 | Vitals extraction (BP, weight, height, BMI, SpO2) | P1 | Not Started | — | MV-040 | — |
 | MV-046 | Doctor/facility/visit date extraction | P1 | Not Started | — | MV-040 | — |
