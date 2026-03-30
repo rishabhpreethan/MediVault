@@ -39,6 +39,7 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     environment:
       DATABASE_URL: postgresql+asyncpg://medivault_test:medivault_test@postgres-test:5432/medivault_test
+      TEST_DATABASE_URL: postgresql+asyncpg://medivault_test:medivault_test@postgres-test:5432/medivault_test
       REDIS_URL: redis://redis-test:6379/0
       MINIO_ENDPOINT: minio-test:9000
       MINIO_ACCESS_KEY: test
