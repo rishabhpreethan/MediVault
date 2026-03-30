@@ -1,8 +1,10 @@
 import { useAuth0 } from '@auth0/auth0-react'
 import { Navigate, Outlet } from 'react-router-dom'
+import { useAuthToken } from '../../hooks/useAuthToken'
 
 export function AuthGuard() {
   const { isAuthenticated, isLoading } = useAuth0()
+  useAuthToken()
 
   if (isLoading) {
     return (
