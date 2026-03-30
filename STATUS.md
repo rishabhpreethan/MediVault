@@ -205,6 +205,6 @@
 | 2026-03-30 | Developer Agent | Implemented MV-016 — app shell, bottom nav (5 tabs, SVG icons), MemberSelector hook | MV-016 | PR #12 |
 | 2026-03-30 | Developer Agent | Implemented MV-040 — spaCy/Med7 lazy pipeline, BaseNlpExtractor ABC, nlp_tasks stub | MV-040 | PR #13 |
 | 2026-03-30 | Rishabh | Merged PR #11 (MV-013), PR #12 (MV-016), PR #13 (MV-040) | MV-013, MV-016, MV-040 | — |
-| 2026-03-30 | Developer Agent | Implemented MV-021 — file upload API, MinIO storage service, Alembic migration 0002 | MV-021 | PR #14 open |
-| 2026-03-30 | Developer Agent | Implemented MV-041/042/043 — medication, lab, diagnosis NLP extractors; updated nlp_tasks | MV-041, MV-042, MV-043 | PR #15 open |
+| 2026-03-30 | Developer Agent | Implemented MV-021 — file upload API, MinIO storage service, Alembic migration 0002 | MV-021 | PR #14 merged |
+| 2026-03-30 | Developer Agent | Implemented MV-041/042/043 — medication, lab, diagnosis NLP extractors; updated nlp_tasks | MV-041, MV-042, MV-043 | PR #15 merged |
 | 2026-03-30 | Rishabh | Merged PR #14 (MV-021) and PR #15 (MV-041/042/043) | MV-021, MV-041, MV-042, MV-043 | — |
