@@ -13,8 +13,7 @@
 
 | Person | Agent Role | Currently Working On | Task ID | Branch | Last Updated |
 |---|---|---|---|---|---|
-| Developer Agent (A) | Developer Agent | pdfminer.six extraction worker | MV-031 | feature/MV-031-pdfminer-worker | 2026-03-30 |
-| Developer Agent (B) | Developer Agent | pytest + Vitest setup + test fixtures | MV-120 | feature/MV-120-test-setup | 2026-03-30 |
+| Developer Agent | Developer Agent | pypdf fallback + orchestration + status state machine | MV-032, MV-034 | feature/MV-032-pypdf-fallback | 2026-03-30 |
 
 ---
 
@@ -83,10 +82,10 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-030 | Celery app setup + Redis broker + worker Dockerfile | P0 | Done | Rishabh / Developer Agent | MV-002, MV-003 | feature/MV-030-celery-worker |
-| MV-031 | pdfminer.six extraction worker (primary extractor) | P0 | In Progress | Developer Agent | MV-030 | feature/MV-031-pdfminer-worker |
-| MV-032 | pypdf fallback extractor + extraction orchestration logic | P0 | Not Started | — | MV-031 | — |
-| MV-033 | Extraction job retry logic (3 attempts, exponential backoff) | P0 | Not Started | — | MV-032 | — |
-| MV-034 | Raw text storage to Document record + status state machine | P0 | Not Started | — | MV-031, MV-020 | — |
+| MV-031 | pdfminer.six extraction worker (primary extractor) | P0 | Done | Developer Agent | MV-030 | feature/MV-031-pdfminer-worker |
+| MV-032 | pypdf fallback extractor + extraction orchestration logic | P0 | In Progress | Developer Agent | MV-031 | feature/MV-032-pypdf-fallback |
+| MV-033 | Extraction job retry logic (3 attempts, exponential backoff) | P0 | Done | Developer Agent | MV-032 | feature/MV-031-pdfminer-worker |
+| MV-034 | Raw text storage to Document record + status state machine | P0 | In Progress | Developer Agent | MV-031, MV-020 | feature/MV-032-pypdf-fallback |
 
 ### EPIC: NLP Medical Data Extraction
 
@@ -168,7 +167,7 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-120 | pytest setup + Vitest setup + test fixtures (sample PDFs) | P1 | In Progress | Developer Agent | MV-003, MV-004 | feature/MV-120-test-setup |
+| MV-120 | pytest setup + Vitest setup + test fixtures (sample PDFs) | P1 | Done | Developer Agent | MV-003, MV-004 | feature/MV-120-test-setup |
 | MV-121 | Backend unit tests (NLP extractors, confidence scorer, deduplication) | P1 | Not Started | — | MV-047 | — |
 | MV-122 | Backend integration tests (upload → extract → NLP → profile pipeline) | P1 | Not Started | — | MV-050 | — |
 | MV-123 | Playwright E2E tests (critical user journeys UF-001 through UF-009) | P1 | Not Started | — | MV-052, MV-061, MV-084 | — |
@@ -196,3 +195,5 @@
 | 2026-03-30 | Rishabh | Merged PR #4 (MV-005) and PR #5 (MV-030) | MV-005, MV-030 | MV-020, MV-090 marked Done (covered by MV-005) |
 | 2026-03-30 | Developer Agent (A) | Started MV-031 — pdfminer.six extraction worker | MV-031 | — |
 | 2026-03-30 | Developer Agent (B) | Started MV-120 — pytest + Vitest setup + test fixtures | MV-120 | — |
+| 2026-03-30 | Rishabh | Merged PR #6 (MV-031) and PR #7 (MV-120) | MV-031, MV-120 | MV-033 marked Done (already in MV-031) |
+| 2026-03-30 | Developer Agent | Started MV-032 + MV-034 — pypdf fallback, orchestrator, status state machine | MV-032, MV-034 | — |
