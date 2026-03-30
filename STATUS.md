@@ -55,11 +55,11 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-010 | Auth0 tenant + application configuration, JWKS setup | P0 | Not Started | — | — | — |
-| MV-011 | Backend JWT middleware (Auth0 RS256 validation, get_current_user dep) | P0 | Not Started | — | MV-003, MV-010 | — |
+| MV-010 | Auth0 tenant + application configuration, JWKS setup | P0 | Done | Rishabh | — | — |
+| MV-011 | Backend JWT middleware | In Progress | Developer Agent | MV-010 | — |
 | MV-012 | User model, family_members model, DB migration (covered by MV-005) | P0 | Done | Rishabh / Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-013 | /auth/provision endpoint — user provisioning on first login | P0 | Not Started | — | MV-011, MV-012 | — |
-| MV-014 | Frontend Auth0 SDK integration, protected route wrapper | P0 | Not Started | — | MV-004, MV-010 | — |
+| MV-014 | Frontend Auth0 SDK integration, protected route wrapper | P0 | In Progress | Developer Agent | MV-004, MV-010 | feature/MV-014-auth0-frontend |
 | MV-015 | Login / Signup UI screens (email, Google OAuth, phone OTP) | P0 | Not Started | — | MV-014 | — |
 | MV-016 | Frontend app shell, bottom nav, member selector | P0 | Not Started | — | MV-014 | — |
 | MV-017 | Session inactivity (30-day), token refresh, logout | P1 | Not Started | — | MV-013 | — |
