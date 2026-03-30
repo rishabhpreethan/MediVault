@@ -1,6 +1,6 @@
 # MediVault — Project Status
 
-**Last Updated:** 2026-03-29
+**Last Updated:** 2026-03-30
 **SRS Version:** 1.2
 **Active Phase:** V1 MVP
 
@@ -13,7 +13,7 @@
 
 | Person | Agent Role | Currently Working On | Task ID | Branch | Last Updated |
 |---|---|---|---|---|---|
-| Developer Agent | Developer Agent | pypdf fallback + orchestration + status state machine | MV-032, MV-034 | feature/MV-032-pypdf-fallback | 2026-03-30 |
+| — | — | — | — | — | — |
 
 ---
 
@@ -56,12 +56,12 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-010 | Auth0 tenant + application configuration, JWKS setup | P0 | Done | Rishabh | — | — |
-| MV-011 | Backend JWT middleware | In Progress | Developer Agent | MV-010 | — |
+| MV-011 | Backend JWT middleware | P0 | Done | Developer Agent | MV-010 | feature/MV-011-jwt-middleware |
 | MV-012 | User model, family_members model, DB migration (covered by MV-005) | P0 | Done | Rishabh / Developer Agent | MV-005 | feature/MV-005-db-migrations |
-| MV-013 | /auth/provision endpoint — user provisioning on first login | P0 | Not Started | — | MV-011, MV-012 | — |
-| MV-014 | Frontend Auth0 SDK integration, protected route wrapper | P0 | In Progress | Developer Agent | MV-004, MV-010 | feature/MV-014-auth0-frontend |
+| MV-013 | /auth/provision endpoint — user provisioning on first login | P0 | Done | Developer Agent | MV-011, MV-012 | feature/MV-013-auth-provision |
+| MV-014 | Frontend Auth0 SDK integration, protected route wrapper | P0 | Done | Developer Agent | MV-004, MV-010 | feature/MV-014-auth0-frontend |
 | MV-015 | Login / Signup UI screens (email, Google OAuth, phone OTP) | P0 | Not Started | — | MV-014 | — |
-| MV-016 | Frontend app shell, bottom nav, member selector | P0 | Not Started | — | MV-014 | — |
+| MV-016 | Frontend app shell, bottom nav, member selector | P0 | Done | Developer Agent | MV-014 | feature/MV-016-app-shell |
 | MV-017 | Session inactivity (30-day), token refresh, logout | P1 | Not Started | — | MV-013 | — |
 
 ### EPIC: Document Management
@@ -69,7 +69,7 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-020 | Document DB model + Alembic migration | P0 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
-| MV-021 | File upload API (validation, virus scan, MinIO storage, queue job) | P0 | Not Started | — | MV-011, MV-020 | — |
+| MV-021 | File upload API (validation, MinIO storage, queue job) | P0 | Done (Pending Merge) | Developer Agent | MV-011, MV-020 | feature/MV-021-file-upload-api |
 | MV-022 | Scanned PDF detection (embedded text layer check) | P0 | Not Started | — | MV-021 | — |
 | MV-023 | Document library API (list, get, delete, retry) | P0 | Not Started | — | MV-021 | — |
 | MV-024 | Document library UI (grid/list, status badges, upload CTA) | P0 | Not Started | — | MV-016, MV-023 | — |
@@ -83,18 +83,18 @@
 |---|---|---|---|---|---|---|
 | MV-030 | Celery app setup + Redis broker + worker Dockerfile | P0 | Done | Rishabh / Developer Agent | MV-002, MV-003 | feature/MV-030-celery-worker |
 | MV-031 | pdfminer.six extraction worker (primary extractor) | P0 | Done | Developer Agent | MV-030 | feature/MV-031-pdfminer-worker |
-| MV-032 | pypdf fallback extractor + extraction orchestration logic | P0 | In Progress | Developer Agent | MV-031 | feature/MV-032-pypdf-fallback |
+| MV-032 | pypdf fallback extractor + extraction orchestration logic | P0 | Done | Developer Agent | MV-031 | feature/MV-032-pypdf-fallback |
 | MV-033 | Extraction job retry logic (3 attempts, exponential backoff) | P0 | Done | Developer Agent | MV-032 | feature/MV-031-pdfminer-worker |
-| MV-034 | Raw text storage to Document record + status state machine | P0 | In Progress | Developer Agent | MV-031, MV-020 | feature/MV-032-pypdf-fallback |
+| MV-034 | Raw text storage to Document record + status state machine | P0 | Done | Developer Agent | MV-031, MV-020 | feature/MV-032-pypdf-fallback |
 
 ### EPIC: NLP Medical Data Extraction
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-040 | spaCy + Med7 pipeline setup, model loading, base extractor | P0 | Not Started | — | MV-034 | — |
-| MV-041 | Medication extraction (drug name, dosage, frequency, duration, route) | P0 | Not Started | — | MV-040 | — |
-| MV-042 | Lab result extraction (test name, value, unit, reference range, H/L flag) | P0 | Not Started | — | MV-040 | — |
-| MV-043 | Diagnosis extraction (condition name, date, status) | P0 | Not Started | — | MV-040 | — |
+| MV-040 | spaCy + Med7 pipeline setup, model loading, base extractor | P0 | Done | Developer Agent | MV-034 | feature/MV-040-nlp-pipeline |
+| MV-041 | Medication extraction (drug name, dosage, frequency, duration, route) | P0 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
+| MV-042 | Lab result extraction (test name, value, unit, reference range, H/L flag) | P0 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
+| MV-043 | Diagnosis extraction (condition name, date, status) | P0 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
 | MV-044 | Allergy extraction | P1 | Not Started | — | MV-040 | — |
 | MV-045 | Vitals extraction (BP, weight, height, BMI, SpO2) | P1 | Not Started | — | MV-040 | — |
 | MV-046 | Doctor/facility/visit date extraction | P1 | Not Started | — | MV-040 | — |
@@ -197,3 +197,14 @@
 | 2026-03-30 | Developer Agent (B) | Started MV-120 — pytest + Vitest setup + test fixtures | MV-120 | — |
 | 2026-03-30 | Rishabh | Merged PR #6 (MV-031) and PR #7 (MV-120) | MV-031, MV-120 | MV-033 marked Done (already in MV-031) |
 | 2026-03-30 | Developer Agent | Started MV-032 + MV-034 — pypdf fallback, orchestrator, status state machine | MV-032, MV-034 | — |
+| 2026-03-30 | Rishabh | Merged PR #8 (MV-032 + MV-034) | MV-032, MV-034 | — |
+| 2026-03-30 | Developer Agent | Implemented MV-011 — Auth0 RS256 JWT middleware, get_current_user dependency | MV-011 | PR #9 |
+| 2026-03-30 | Developer Agent | Implemented MV-014 — frontend Auth0 SDK, useAuthToken hook, .env.example | MV-014 | PR #10 |
+| 2026-03-30 | Rishabh | Merged PR #9 (MV-011) and PR #10 (MV-014) | MV-011, MV-014 | — |
+| 2026-03-30 | Developer Agent | Implemented MV-013 — POST /auth/provision upsert endpoint | MV-013 | PR #11 |
+| 2026-03-30 | Developer Agent | Implemented MV-016 — app shell, bottom nav (5 tabs, SVG icons), MemberSelector hook | MV-016 | PR #12 |
+| 2026-03-30 | Developer Agent | Implemented MV-040 — spaCy/Med7 lazy pipeline, BaseNlpExtractor ABC, nlp_tasks stub | MV-040 | PR #13 |
+| 2026-03-30 | Rishabh | Merged PR #11 (MV-013), PR #12 (MV-016), PR #13 (MV-040) | MV-013, MV-016, MV-040 | — |
+| 2026-03-30 | Developer Agent | Implemented MV-021 — file upload API, MinIO storage service, Alembic migration 0002 | MV-021 | PR #14 open |
+| 2026-03-30 | Developer Agent | Implemented MV-041/042/043 — medication, lab, diagnosis NLP extractors; updated nlp_tasks | MV-041, MV-042, MV-043 | PR #15 open |
+| 2026-03-30 | Rishabh | Merged PR #14 (MV-021) and PR #15 (MV-041/042/043) | MV-021, MV-041, MV-042, MV-043 | — |
