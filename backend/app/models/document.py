@@ -25,6 +25,7 @@ class Document(Base):
     document_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     facility_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     doctor_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    original_filename: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     storage_path: Mapped[str] = mapped_column(String(512), nullable=False)
     file_size_bytes: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     has_text_layer: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
