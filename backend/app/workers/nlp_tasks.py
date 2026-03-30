@@ -12,19 +12,24 @@ logger = get_task_logger(__name__)
 
 
 async def _run_nlp(document_id: str) -> dict:
-    """Core async NLP logic: fetch raw text from DB and extract entities.
+    """Core async NLP logic: fetch raw text from DB, extract entities, persist results.
 
-    PHI rule: entity text is **never** logged — only label counts and IDs.
+    PHI rule: entity text, test names, drug names, and condition names are
+    **never** logged — only counts, confidence distributions, and document_id.
 
     Args:
         document_id: UUID string of the Document record.
 
     Returns:
-        dict with keys: document_id, status, label_counts, total_entities
+        dict with keys: document_id, status, medications_found, labs_found,
+        diagnoses_found
     """
     from app.database import AsyncSessionLocal  # noqa: PLC0415
     from app.models.document import Document  # noqa: PLC0415
     from app.nlp.pipeline import extract_entities  # noqa: PLC0415
+    from app.nlp.medication_extractor import MedicationExtractor  # noqa: PLC0415
+    from app.nlp.lab_extractor import LabExtractor  # noqa: PLC0415
+    from app.nlp.diagnosis_extractor import DiagnosisExtractor  # noqa: PLC0415
     from sqlalchemy import select  # noqa: PLC0415
 
     doc_uuid = uuid.UUID(document_id)
@@ -47,29 +52,45 @@ async def _run_nlp(document_id: str) -> dict:
         )
         return {"document_id": document_id, "status": "NO_TEXT"}
 
-    # Run NLP — extract_entities logs label counts internally (no PHI)
+    member_id: uuid.UUID = doc.member_id
+
+    # Step 1: Run Med7 NLP pipeline — extract_entities logs label counts (no PHI)
     entities = extract_entities(raw_text)
 
-    # Aggregate label counts for the return summary (no entity text logged here)
-    label_counts: dict[str, int] = {}
-    for ent in entities:
-        label_counts[ent["label"]] = label_counts.get(ent["label"], 0) + 1
+    # Step 2: Instantiate extractors
+    medication_extractor = MedicationExtractor(member_id=member_id)
+    lab_extractor = LabExtractor(member_id=member_id, raw_text=raw_text)
+    diagnosis_extractor = DiagnosisExtractor(member_id=member_id, raw_text=raw_text)
 
+    # Step 3: Run each extractor
+    medications = medication_extractor.extract(entities, doc_uuid)
+    labs = lab_extractor.extract(entities, doc_uuid)
+    diagnoses = diagnosis_extractor.extract(entities, doc_uuid)
+
+    # Step 4: Persist all results in a single async session
+    async with AsyncSessionLocal() as session:
+        session.add_all(medications)
+        session.add_all(labs)
+        session.add_all(diagnoses)
+        await session.commit()
+
+    # Step 5: Log only counts — never log entity values (PHI)
     logger.info(
-        "NLP extraction complete",
+        "NLP extraction and persistence complete",
         extra={
             "document_id": document_id,
-            "total_entities": len(entities),
-            "label_counts": label_counts,
+            "medications_found": len(medications),
+            "labs_found": len(labs),
+            "diagnoses_found": len(diagnoses),
         },
     )
 
-    # Entity persistence is handled in MV-041+
     return {
         "document_id": document_id,
         "status": "COMPLETE",
-        "total_entities": len(entities),
-        "label_counts": label_counts,
+        "medications_found": len(medications),
+        "labs_found": len(labs),
+        "diagnoses_found": len(diagnoses),
     }
 
 
@@ -88,16 +109,17 @@ def process_document(self, document_id: str) -> dict:
     """Run NLP entity extraction on a document's extracted raw text.
 
     Fetches the document's ``extracted_raw_text`` from the database, runs the
-    spaCy/Med7 pipeline via :func:`app.nlp.pipeline.extract_entities`, and
-    returns a summary.  Actual entity persistence is implemented in MV-041+.
+    spaCy/Med7 pipeline, extracts medications, lab results, and diagnoses, and
+    persists them all in a single database session.
 
-    PHI rule: entity text is **never** logged — only counts, labels, and IDs.
+    PHI rule: entity text is **never** logged — only counts and document_id.
 
     Args:
         document_id: UUID string of the Document record.
 
     Returns:
-        dict with keys: document_id, status, total_entities, label_counts
+        dict with keys: document_id, status, medications_found, labs_found,
+        diagnoses_found
     """
     logger.info("process_document started", extra={"document_id": document_id})
     return asyncio.run(_run_nlp(document_id))
