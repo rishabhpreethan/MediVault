@@ -64,9 +64,9 @@
 | MV-012 | User model, family_members model, DB migration (covered by MV-005) | P0 | Done | Rishabh / Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-013 | /auth/provision endpoint — user provisioning on first login | P0 | Done | Developer Agent | MV-011, MV-012 | feature/MV-013-auth-provision |
 | MV-014 | Frontend Auth0 SDK integration, protected route wrapper | P0 | Done | Developer Agent | MV-004, MV-010 | feature/MV-014-auth0-frontend |
-| MV-015 | Login / Signup UI screens — ref: `stitch_health_passport/user_login/` | P0 | Done (Pending Merge) | Developer Agent | MV-014 | feature/MV-015-login-signup-ui |
+| MV-015 | Login / Signup UI screens — ref: `stitch_health_passport/user_login/` | P0 | Done | Developer Agent | MV-014 | feature/MV-015-login-signup-ui |
 | MV-016 | Frontend app shell, bottom nav, member selector | P0 | Done | Developer Agent | MV-014 | feature/MV-016-app-shell |
-| MV-016b | Redesign app shell to Stitch layout (responsive top nav + left sidebar desktop; 4-tab bottom nav mobile; Manrope + teal design system) | P0 | Not Started | — | MV-016 | — |
+| MV-016b | Redesign app shell to Stitch layout (responsive top nav + left sidebar desktop; 4-tab bottom nav mobile; Manrope + teal design system) | P0 | In Progress | Developer Agent | MV-016 | feature/MV-016b-app-shell-redesign |
 | MV-017 | Session inactivity (30-day), token refresh, logout | P1 | Not Started | — | MV-013 | — |
 
 ### EPIC: Document Management
@@ -76,7 +76,7 @@
 | MV-020 | Document DB model + Alembic migration | P0 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-021 | File upload API (validation, MinIO storage, queue job) | P0 | Done | Developer Agent | MV-011, MV-020 | feature/MV-021-file-upload-api |
 | MV-022 | Scanned PDF detection (embedded text layer check) | P0 | Not Started | — | MV-021 | — |
-| MV-023 | Document library API (list, get, delete, retry) | P0 | Done (Pending Merge) | Developer Agent | MV-021 | feature/MV-023-document-retry-status |
+| MV-023 | Document library API (list, get, delete, retry) | P0 | Done | Developer Agent | MV-021 | feature/MV-023-document-retry-status |
 | MV-024 | Document library UI ("Clinical Archive") — ref: `stitch_health_passport/document_vault/` | P0 | Not Started | — | MV-016b, MV-023 | — |
 | MV-025 | Upload flow UI (file picker, type selection, date confirmation, progress, rejection messages) | P0 | Not Started | — | MV-021, MV-024 | — |
 | MV-026 | Document detail page (PDF viewer + extracted data panel, inline edit) | P1 | Not Started | — | MV-024 | — |
@@ -100,10 +100,10 @@
 | MV-041 | Medication extraction (drug name, dosage, frequency, duration, route) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
 | MV-042 | Lab result extraction (test name, value, unit, reference range, H/L flag) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
 | MV-043 | Diagnosis extraction (condition name, date, status) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
-| MV-044 | Allergy extraction | P1 | Not Started | — | MV-040 | — |
-| MV-045 | Vitals extraction (BP, weight, height, BMI, SpO2) | P1 | Not Started | — | MV-040 | — |
-| MV-046 | Doctor/facility/visit date extraction | P1 | Not Started | — | MV-040 | — |
-| MV-047 | Confidence scoring system (HIGH/MEDIUM/LOW) + low-confidence flagging | P0 | Done (Pending Merge) | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
+| MV-044 | Allergy extraction | P1 | In Progress | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
+| MV-045 | Vitals extraction (BP, weight, height, BMI, SpO2) | P1 | In Progress | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
+| MV-046 | Doctor/facility/visit date extraction | P1 | In Progress | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
+| MV-047 | Confidence scoring system (HIGH/MEDIUM/LOW) + low-confidence flagging | P0 | Done | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
 | MV-048 | Entity deduplication across documents (chronic conditions, medications) | P1 | Not Started | — | MV-043 | — |
 | MV-049 | Drug synonym normalization dictionary | P2 | Not Started | — | MV-041 | — |
 
@@ -111,8 +111,8 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-050 | Profile aggregation service (builds HealthProfileRM from all entities) | P0 | Done (Pending Merge) | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
-| MV-051 | Profile API endpoints (GET full profile, GET summary) | P0 | Not Started | — | MV-050 | — |
+| MV-050 | Profile aggregation service (builds HealthProfileRM from all entities) | P0 | Done | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
+| MV-051 | Profile API endpoints (GET full profile, GET summary) | P0 | In Progress | Developer Agent | MV-050 | feature/MV-051-profile-api |
 | MV-052 | Health profile dashboard UI — ref: `stitch_health_passport/health_profile_dashboard/` | P0 | Not Started | — | MV-051, MV-016b | — |
 | MV-053 | Manual add/edit/delete API for all entity types | P1 | Not Started | — | MV-051 | — |
 | MV-054 | Discontinue medication toggle (API + UI) | P2 | Not Started | — | MV-052 | — |
@@ -149,7 +149,7 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-090 | Family member DB model + migration (included in MV-012 if done together) | P1 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
-| MV-091 | Family member CRUD API (add, list, update, delete with data purge) | P1 | Done (Pending Merge) | Developer Agent | MV-090, MV-011 | feature/MV-091-family-crud |
+| MV-091 | Family member CRUD API (add, list, update, delete with data purge) | P1 | Done | Developer Agent | MV-090, MV-011 | feature/MV-091-family-crud |
 | MV-092 | Family management UI ("Family Circle") — ref: `stitch_health_passport/family_health_ecosystem/` + `add_family_member/` | P1 | Not Started | — | MV-091, MV-016b | — |
 | MV-093 | Per-member data isolation verification (all queries scoped to member_id) | P0 | Not Started | — | MV-091 | — |
 
@@ -219,3 +219,5 @@
 | 2026-03-30 | Developer Agent | Implemented MV-015 — polished LoginPage + CallbackPage + /callback route | MV-015 | PR #19 open |
 | 2026-04-07 | Rishabh | Provided Google Stitch export as UI source of truth; teal design system adopted | — | Stitch dir: ~/Downloads/stitch_health_passport/ |
 | 2026-04-07 | Developer Agent | Updated frontend-design skill + STATUS.md: Stitch→task mapping, teal design system, MV-016b added for app shell redesign | — | All future UI tasks reference Stitch screens |
+| 2026-04-07 | Rishabh | Merged PRs #16 (MV-023), #17 (MV-047/050), #18 (MV-091), #19 (MV-015) | MV-015, MV-023, MV-047, MV-050, MV-091 | — |
+| 2026-04-07 | Developer Agent | Started MV-016b (app shell redesign), MV-051 (profile API), MV-044/045/046 (allergy/vitals/doctor extractors) | MV-016b, MV-051, MV-044, MV-045, MV-046 | Running in parallel |
