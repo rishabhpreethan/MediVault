@@ -66,7 +66,7 @@
 | MV-014 | Frontend Auth0 SDK integration, protected route wrapper | P0 | Done | Developer Agent | MV-004, MV-010 | feature/MV-014-auth0-frontend |
 | MV-015 | Login / Signup UI screens — ref: `stitch_health_passport/user_login/` | P0 | Done | Developer Agent | MV-014 | feature/MV-015-login-signup-ui |
 | MV-016 | Frontend app shell, bottom nav, member selector | P0 | Done | Developer Agent | MV-014 | feature/MV-016-app-shell |
-| MV-016b | Redesign app shell to Stitch layout (responsive top nav + left sidebar desktop; 4-tab bottom nav mobile; Manrope + teal design system) | P0 | In Progress | Developer Agent | MV-016 | feature/MV-016b-app-shell-redesign |
+| MV-016b | Redesign app shell to Stitch layout (responsive top nav + left sidebar desktop; 4-tab bottom nav mobile; Manrope + teal design system) | P0 | Done (Pending Merge) | Developer Agent | MV-016 | feature/MV-016b-app-shell-redesign |
 | MV-017 | Session inactivity (30-day), token refresh, logout | P1 | Not Started | — | MV-013 | — |
 
 ### EPIC: Document Management
@@ -112,7 +112,7 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-050 | Profile aggregation service (builds HealthProfileRM from all entities) | P0 | Done | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
-| MV-051 | Profile API endpoints (GET full profile, GET summary) | P0 | In Progress | Developer Agent | MV-050 | feature/MV-051-profile-api |
+| MV-051 | Profile API endpoints (GET full profile, GET summary) | P0 | Done | Developer Agent | MV-050 | feature/MV-051-profile-api |
 | MV-052 | Health profile dashboard UI — ref: `stitch_health_passport/health_profile_dashboard/` | P0 | Not Started | — | MV-051, MV-016b | — |
 | MV-053 | Manual add/edit/delete API for all entity types | P1 | Not Started | — | MV-051 | — |
 | MV-054 | Discontinue medication toggle (API + UI) | P2 | Not Started | — | MV-052 | — |
@@ -221,3 +221,6 @@
 | 2026-04-07 | Developer Agent | Updated frontend-design skill + STATUS.md: Stitch→task mapping, teal design system, MV-016b added for app shell redesign | — | All future UI tasks reference Stitch screens |
 | 2026-04-07 | Rishabh | Merged PRs #16 (MV-023), #17 (MV-047/050), #18 (MV-091), #19 (MV-015) | MV-015, MV-023, MV-047, MV-050, MV-091 | — |
 | 2026-04-07 | Developer Agent | Started MV-016b (app shell redesign), MV-051 (profile API), MV-044/045/046 (allergy/vitals/doctor extractors) | MV-016b, MV-051, MV-044, MV-045, MV-046 | Running in parallel |
+| 2026-04-07 | Rishabh | Merged PR #20 (MV-051) | MV-051 | — |
+| 2026-04-07 | Developer Agent | Completed MV-016b — responsive app shell (teal design system, 4-tab nav) | MV-016b | PR #21 open |
+| 2026-04-07 | Developer Agent | Completed MV-044/045/046 — allergy, vitals, doctor extractors | MV-044, MV-045, MV-046 | Pending tests/PR |
