@@ -1,6 +1,6 @@
 # MediVault — Project Status
 
-**Last Updated:** 2026-03-30 (synced after PR #15 merge)
+**Last Updated:** 2026-03-30 (PRs #16–#19 open)
 **SRS Version:** 1.2
 **Active Phase:** V1 MVP
 
@@ -60,7 +60,7 @@
 | MV-012 | User model, family_members model, DB migration (covered by MV-005) | P0 | Done | Rishabh / Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-013 | /auth/provision endpoint — user provisioning on first login | P0 | Done | Developer Agent | MV-011, MV-012 | feature/MV-013-auth-provision |
 | MV-014 | Frontend Auth0 SDK integration, protected route wrapper | P0 | Done | Developer Agent | MV-004, MV-010 | feature/MV-014-auth0-frontend |
-| MV-015 | Login / Signup UI screens (email, Google OAuth, phone OTP) | P0 | Not Started | — | MV-014 | — |
+| MV-015 | Login / Signup UI screens (email, Google OAuth, phone OTP) | P0 | Done (Pending Merge) | Developer Agent | MV-014 | feature/MV-015-login-signup-ui |
 | MV-016 | Frontend app shell, bottom nav, member selector | P0 | Done | Developer Agent | MV-014 | feature/MV-016-app-shell |
 | MV-017 | Session inactivity (30-day), token refresh, logout | P1 | Not Started | — | MV-013 | — |
 
@@ -71,7 +71,7 @@
 | MV-020 | Document DB model + Alembic migration | P0 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-021 | File upload API (validation, MinIO storage, queue job) | P0 | Done | Developer Agent | MV-011, MV-020 | feature/MV-021-file-upload-api |
 | MV-022 | Scanned PDF detection (embedded text layer check) | P0 | Not Started | — | MV-021 | — |
-| MV-023 | Document library API (list, get, delete, retry) | P0 | Not Started | — | MV-021 | — |
+| MV-023 | Document library API (list, get, delete, retry) | P0 | Done (Pending Merge) | Developer Agent | MV-021 | feature/MV-023-document-retry-status |
 | MV-024 | Document library UI (grid/list, status badges, upload CTA) | P0 | Not Started | — | MV-016, MV-023 | — |
 | MV-025 | Upload flow UI (file picker, type selection, date confirmation, progress, rejection messages) | P0 | Not Started | — | MV-021, MV-024 | — |
 | MV-026 | Document detail page (PDF viewer + extracted data panel, inline edit) | P1 | Not Started | — | MV-024 | — |
@@ -98,7 +98,7 @@
 | MV-044 | Allergy extraction | P1 | Not Started | — | MV-040 | — |
 | MV-045 | Vitals extraction (BP, weight, height, BMI, SpO2) | P1 | Not Started | — | MV-040 | — |
 | MV-046 | Doctor/facility/visit date extraction | P1 | Not Started | — | MV-040 | — |
-| MV-047 | Confidence scoring system (HIGH/MEDIUM/LOW) + low-confidence flagging | P0 | Not Started | — | MV-041, MV-042, MV-043 | — |
+| MV-047 | Confidence scoring system (HIGH/MEDIUM/LOW) + low-confidence flagging | P0 | Done (Pending Merge) | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
 | MV-048 | Entity deduplication across documents (chronic conditions, medications) | P1 | Not Started | — | MV-043 | — |
 | MV-049 | Drug synonym normalization dictionary | P2 | Not Started | — | MV-041 | — |
 
@@ -106,7 +106,7 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-050 | Profile aggregation service (builds HealthProfileRM from all entities) | P0 | Not Started | — | MV-041, MV-042, MV-043 | — |
+| MV-050 | Profile aggregation service (builds HealthProfileRM from all entities) | P0 | Done (Pending Merge) | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
 | MV-051 | Profile API endpoints (GET full profile, GET summary) | P0 | Not Started | — | MV-050 | — |
 | MV-052 | Health profile dashboard UI (summary card, medications, conditions, allergies, labs) | P0 | Not Started | — | MV-051, MV-016 | — |
 | MV-053 | Manual add/edit/delete API for all entity types | P1 | Not Started | — | MV-051 | — |
@@ -144,7 +144,7 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-090 | Family member DB model + migration (included in MV-012 if done together) | P1 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
-| MV-091 | Family member CRUD API (add, list, update, delete with data purge) | P1 | Not Started | — | MV-090, MV-011 | — |
+| MV-091 | Family member CRUD API (add, list, update, delete with data purge) | P1 | Done (Pending Merge) | Developer Agent | MV-090, MV-011 | feature/MV-091-family-crud |
 | MV-092 | Family management UI (add member, member selector across all tabs) | P1 | Not Started | — | MV-091, MV-016 | — |
 | MV-093 | Per-member data isolation verification (all queries scoped to member_id) | P0 | Not Started | — | MV-091 | — |
 
@@ -208,3 +208,7 @@
 | 2026-03-30 | Developer Agent | Implemented MV-021 — file upload API, MinIO storage service, Alembic migration 0002 | MV-021 | PR #14 merged |
 | 2026-03-30 | Developer Agent | Implemented MV-041/042/043 — medication, lab, diagnosis NLP extractors; updated nlp_tasks | MV-041, MV-042, MV-043 | PR #15 merged |
 | 2026-03-30 | Rishabh | Merged PR #14 (MV-021) and PR #15 (MV-041/042/043) | MV-021, MV-041, MV-042, MV-043 | — |
+| 2026-03-30 | Developer Agent | Implemented MV-023 — retry + status endpoints added to documents API | MV-023 | PR #16 open |
+| 2026-03-30 | Developer Agent | Implemented MV-047 + MV-050 — confidence scoring and health profile aggregation service | MV-047, MV-050 | PR #17 open |
+| 2026-03-30 | Developer Agent | Implemented MV-091 — family member CRUD API (POST/GET/PATCH/DELETE /family/members) | MV-091 | PR #18 open |
+| 2026-03-30 | Developer Agent | Implemented MV-015 — polished LoginPage + CallbackPage + /callback route | MV-015 | PR #19 open |
