@@ -15,6 +15,7 @@ import { DocumentsPage } from './pages/documents/DocumentsPage'
 import { PassportPage } from './pages/passport/PassportPage'
 import { PublicPassportPage } from './pages/passport/PublicPassportPage'
 import { LoginPage } from './pages/auth/LoginPage'
+import { CallbackPage } from './pages/auth/CallbackPage'
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/callback" element={<CallbackPage />} />
             <Route path="/passport/:uuid" element={<PublicPassportPage />} />
 
             {/* Protected routes */}
