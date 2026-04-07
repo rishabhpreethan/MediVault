@@ -18,7 +18,7 @@ let _activeMemberId: string | null = null
 const _listeners: Array<() => void> = []
 
 export function useActiveMember(): string | null {
-  const [, forceUpdate] = useState(0)
+  const [, _forceUpdate] = useState(0)
   return _activeMemberId
 }
 

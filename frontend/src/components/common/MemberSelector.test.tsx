@@ -63,7 +63,7 @@ beforeEach(() => {
     data: [],
     isLoading: false,
     isError: false,
-  } as ReturnType<typeof useFamilyMembers>)
+  } as unknown as ReturnType<typeof useFamilyMembers>)
 })
 
 // ── useSelectedMember hook tests ──────────────────────────────────────────────
@@ -84,7 +84,7 @@ describe('useSelectedMember', () => {
       data: [selfMember, spouseMember],
       isLoading: false,
       isError: false,
-    } as ReturnType<typeof useFamilyMembers>)
+    } as unknown as ReturnType<typeof useFamilyMembers>)
 
     render(
       <Wrapper>
@@ -113,7 +113,7 @@ describe('useSelectedMember', () => {
       data: [selfMember, spouseMember],
       isLoading: false,
       isError: false,
-    } as ReturnType<typeof useFamilyMembers>)
+    } as unknown as ReturnType<typeof useFamilyMembers>)
 
     render(
       <Wrapper>
@@ -159,7 +159,7 @@ describe('MemberSelector', () => {
       data: [selfMember, spouseMember],
       isLoading: false,
       isError: false,
-    } as ReturnType<typeof useFamilyMembers>)
+    } as unknown as ReturnType<typeof useFamilyMembers>)
 
     render(
       <Wrapper>
@@ -180,7 +180,7 @@ describe('MemberSelector', () => {
       data: [spouseMember, selfMember],
       isLoading: false,
       isError: false,
-    } as ReturnType<typeof useFamilyMembers>)
+    } as unknown as ReturnType<typeof useFamilyMembers>)
 
     render(
       <Wrapper>
