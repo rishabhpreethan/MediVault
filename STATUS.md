@@ -66,7 +66,7 @@
 | MV-014 | Frontend Auth0 SDK integration, protected route wrapper | P0 | Done | Developer Agent | MV-004, MV-010 | feature/MV-014-auth0-frontend |
 | MV-015 | Login / Signup UI screens — ref: `stitch_health_passport/user_login/` | P0 | Done | Developer Agent | MV-014 | feature/MV-015-login-signup-ui |
 | MV-016 | Frontend app shell, bottom nav, member selector | P0 | Done | Developer Agent | MV-014 | feature/MV-016-app-shell |
-| MV-016b | Redesign app shell to Stitch layout (responsive top nav + left sidebar desktop; 4-tab bottom nav mobile; Manrope + teal design system) | P0 | Done (Pending Merge) | Developer Agent | MV-016 | feature/MV-016b-app-shell-redesign |
+| MV-016b | Redesign app shell to Stitch layout (responsive top nav + left sidebar desktop; 4-tab bottom nav mobile; Manrope + teal design system) | P0 | Done | Developer Agent | MV-016 | feature/MV-016b-app-shell-redesign |
 | MV-017 | Session inactivity (30-day), token refresh, logout | P1 | Not Started | — | MV-013 | — |
 
 ### EPIC: Document Management
@@ -77,7 +77,7 @@
 | MV-021 | File upload API (validation, MinIO storage, queue job) | P0 | Done | Developer Agent | MV-011, MV-020 | feature/MV-021-file-upload-api |
 | MV-022 | Scanned PDF detection (embedded text layer check) | P0 | Not Started | — | MV-021 | — |
 | MV-023 | Document library API (list, get, delete, retry) | P0 | Done | Developer Agent | MV-021 | feature/MV-023-document-retry-status |
-| MV-024 | Document library UI ("Clinical Archive") — ref: `stitch_health_passport/document_vault/` | P0 | Not Started | — | MV-016b, MV-023 | — |
+| MV-024 | Document library UI ("Clinical Archive") — ref: `stitch_health_passport/document_vault/` | P0 | In Progress | Developer Agent | MV-016b, MV-023 | feature/MV-024-document-library-ui |
 | MV-025 | Upload flow UI (file picker, type selection, date confirmation, progress, rejection messages) | P0 | Not Started | — | MV-021, MV-024 | — |
 | MV-026 | Document detail page (PDF viewer + extracted data panel, inline edit) | P1 | Not Started | — | MV-024 | — |
 | MV-027 | Manual field correction API + audit trail | P1 | Not Started | — | MV-023 | — |
@@ -100,9 +100,9 @@
 | MV-041 | Medication extraction (drug name, dosage, frequency, duration, route) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
 | MV-042 | Lab result extraction (test name, value, unit, reference range, H/L flag) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
 | MV-043 | Diagnosis extraction (condition name, date, status) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
-| MV-044 | Allergy extraction | P1 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
-| MV-045 | Vitals extraction (BP, weight, height, BMI, SpO2) | P1 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
-| MV-046 | Doctor/facility/visit date extraction | P1 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
+| MV-044 | Allergy extraction | P1 | Done | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
+| MV-045 | Vitals extraction (BP, weight, height, BMI, SpO2) | P1 | Done | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
+| MV-046 | Doctor/facility/visit date extraction | P1 | Done | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
 | MV-047 | Confidence scoring system (HIGH/MEDIUM/LOW) + low-confidence flagging | P0 | Done | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
 | MV-048 | Entity deduplication across documents (chronic conditions, medications) | P1 | Not Started | — | MV-043 | — |
 | MV-049 | Drug synonym normalization dictionary | P2 | Not Started | — | MV-041 | — |
@@ -113,7 +113,7 @@
 |---|---|---|---|---|---|---|
 | MV-050 | Profile aggregation service (builds HealthProfileRM from all entities) | P0 | Done | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
 | MV-051 | Profile API endpoints (GET full profile, GET summary) | P0 | Done | Developer Agent | MV-050 | feature/MV-051-profile-api |
-| MV-052 | Health profile dashboard UI — ref: `stitch_health_passport/health_profile_dashboard/` | P0 | Not Started | — | MV-051, MV-016b | — |
+| MV-052 | Health profile dashboard UI — ref: `stitch_health_passport/health_profile_dashboard/` | P0 | In Progress | Developer Agent | MV-051, MV-016b | feature/MV-052-health-profile-ui |
 | MV-053 | Manual add/edit/delete API for all entity types | P1 | Not Started | — | MV-051 | — |
 | MV-054 | Discontinue medication toggle (API + UI) | P2 | Not Started | — | MV-052 | — |
 
@@ -121,7 +121,7 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-060 | Timeline data API (paginated, filterable by type/date) | P0 | Not Started | — | MV-050 | — |
+| MV-060 | Timeline data API (paginated, filterable by type/date) | P0 | In Progress | Developer Agent | MV-050 | feature/MV-060-timeline-api |
 | MV-061 | Timeline UI (under Records tab) — ref: `stitch_health_passport/health_timeline/` | P0 | Not Started | — | MV-060, MV-016b | — |
 
 ### EPIC: Trend Visualizations
@@ -150,7 +150,7 @@
 |---|---|---|---|---|---|---|
 | MV-090 | Family member DB model + migration (included in MV-012 if done together) | P1 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-091 | Family member CRUD API (add, list, update, delete with data purge) | P1 | Done | Developer Agent | MV-090, MV-011 | feature/MV-091-family-crud |
-| MV-092 | Family management UI ("Family Circle") — ref: `stitch_health_passport/family_health_ecosystem/` + `add_family_member/` | P1 | Not Started | — | MV-091, MV-016b | — |
+| MV-092 | Family management UI ("Family Circle") — ref: `stitch_health_passport/family_health_ecosystem/` + `add_family_member/` | P1 | In Progress | Developer Agent | MV-091, MV-016b | feature/MV-092-family-ui |
 | MV-093 | Per-member data isolation verification (all queries scoped to member_id) | P0 | Not Started | — | MV-091 | — |
 
 ### EPIC: Notifications
@@ -226,3 +226,5 @@
 | 2026-04-07 | Developer Agent | Completed MV-044/045/046 — allergy, vitals, doctor extractors | MV-044, MV-045, MV-046 | Pending tests/PR |
 | 2026-04-07 | Developer Agent | Implemented MV-044/045/046 — allergy, vitals, doctor extractors; 50 tests pass | MV-044, MV-045, MV-046 | PR #22 open |
 | 2026-04-07 | Developer Agent | Implemented MV-016b — responsive app shell, teal design system, 4-tab nav | MV-016b | PR #21 open |
+| 2026-04-07 | Rishabh | Merged PR #21 (MV-016b) and PR #22 (MV-044/045/046) | MV-016b, MV-044, MV-045, MV-046 | — |
+| 2026-04-07 | Developer Agent | Started MV-024, MV-052, MV-060, MV-092 in parallel | MV-024, MV-052, MV-060, MV-092 | Running in parallel |
