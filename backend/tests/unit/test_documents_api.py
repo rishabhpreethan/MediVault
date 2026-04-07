@@ -33,6 +33,7 @@ from app.api.documents import (
     _document_to_response,
     _load_document_or_404,
     _load_member_or_404,
+    retry_document,
     upload_document,
 )
 
@@ -430,3 +431,92 @@ class TestDocumentToResponse:
         assert response.extraction_library is None
         assert response.processed_at is None
         assert response.document_date is None
+
+
+# ---------------------------------------------------------------------------
+# Tests: retry_document endpoint
+# ---------------------------------------------------------------------------
+
+
+class TestRetryEndpoint:
+    @pytest.mark.asyncio
+    async def test_retry_raises_409_when_not_failed(self):
+        """A document with status COMPLETE must yield 409 on retry."""
+        user = _make_user()
+        doc = _make_document(user_id=user.user_id)
+        doc.processing_status = "COMPLETE"
+        db = _mock_db()
+        db.execute = AsyncMock(return_value=_db_result(doc))
+
+        with pytest.raises(HTTPException) as exc_info:
+            await retry_document(
+                document_id=doc.document_id,
+                current_user=user,
+                db=db,
+            )
+
+        assert exc_info.value.status_code == 409
+
+    @pytest.mark.asyncio
+    async def test_retry_succeeds_when_failed(self):
+        """A FAILED document can be retried — mark_queued_for_retry and task dispatch called."""
+        user = _make_user()
+        doc = _make_document(user_id=user.user_id)
+        doc.processing_status = "FAILED"
+        doc.extraction_attempts = 1
+        db = _mock_db()
+        db.execute = AsyncMock(return_value=_db_result(doc))
+
+        with (
+            patch(
+                "app.services.document_service.mark_queued_for_retry",
+                new_callable=AsyncMock,
+            ) as mock_retry,
+            patch("app.workers.extraction_tasks.extract_document") as mock_task,
+        ):
+            mock_task.apply_async = MagicMock()
+
+            response = await retry_document(
+                document_id=doc.document_id,
+                current_user=user,
+                db=db,
+            )
+
+        mock_retry.assert_awaited_once()
+        mock_task.apply_async.assert_called_once()
+        task_call_kwargs = mock_task.apply_async.call_args
+        assert task_call_kwargs.kwargs.get("queue") == "extraction" or (
+            task_call_kwargs[1].get("queue") == "extraction"
+            if task_call_kwargs[1]
+            else task_call_kwargs.kwargs.get("queue") == "extraction"
+        )
+        assert response.processing_status == "FAILED"  # mock doc status unchanged in test
+
+    @pytest.mark.asyncio
+    async def test_retry_succeeds_when_manual_review(self):
+        """A MANUAL_REVIEW document can also be retried."""
+        user = _make_user()
+        doc = _make_document(user_id=user.user_id)
+        doc.processing_status = "MANUAL_REVIEW"
+        doc.extraction_attempts = 3
+        db = _mock_db()
+        db.execute = AsyncMock(return_value=_db_result(doc))
+
+        with (
+            patch(
+                "app.services.document_service.mark_queued_for_retry",
+                new_callable=AsyncMock,
+            ) as mock_retry,
+            patch("app.workers.extraction_tasks.extract_document") as mock_task,
+        ):
+            mock_task.apply_async = MagicMock()
+
+            response = await retry_document(
+                document_id=doc.document_id,
+                current_user=user,
+                db=db,
+            )
+
+        mock_retry.assert_awaited_once()
+        mock_task.apply_async.assert_called_once()
+        assert response.processing_status == "MANUAL_REVIEW"  # mock doc status unchanged in test
