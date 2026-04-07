@@ -28,3 +28,14 @@ class DocumentListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class DocumentStatusResponse(BaseModel):
+    document_id: str
+    processing_status: str
+    extraction_attempts: int
+    has_text_layer: Optional[bool]
+    extraction_library: Optional[str]
+    processed_at: Optional[datetime]
+
+    model_config = {"from_attributes": True}

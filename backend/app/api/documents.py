@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from app.dependencies import CurrentUser, DbSession, require_member_access
 from app.models.document import Document
 from app.models.family_member import FamilyMember
-from app.schemas.documents import DocumentListResponse, DocumentResponse
+from app.schemas.documents import DocumentListResponse, DocumentResponse, DocumentStatusResponse
 from app.services import document_service
 from app.services.storage_service import delete_file, upload_pdf
 
@@ -290,4 +290,70 @@ async def delete_document(
     logger.info(
         "Document deleted",
         extra={"document_id": str(document_id), "member_id": str(doc.member_id)},
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /documents/{document_id}/retry
+# ---------------------------------------------------------------------------
+
+
+@router.post("/{document_id}/retry", response_model=DocumentResponse)
+async def retry_document(
+    document_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> DocumentResponse:
+    """Retry extraction for a FAILED or MANUAL_REVIEW document (ownership verified).
+
+    Returns 409 if the document is not in a retryable status.
+    """
+    doc = await _load_document_or_404(db, document_id, current_user)
+
+    _retryable_statuses = {document_service.FAILED, document_service.MANUAL_REVIEW}
+    if doc.processing_status not in _retryable_statuses:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Document cannot be retried from status {doc.processing_status!r}. "
+                f"Allowed statuses: {sorted(_retryable_statuses)}"
+            ),
+        )
+
+    await document_service.mark_queued_for_retry(db, doc.document_id)
+    await db.refresh(doc)
+
+    from app.workers.extraction_tasks import extract_document  # noqa: PLC0415
+
+    extract_document.apply_async(args=[str(document_id)], queue="extraction")
+
+    logger.info(
+        "Document queued for retry",
+        extra={"document_id": str(document_id)},
+    )
+
+    return _document_to_response(doc)
+
+
+# ---------------------------------------------------------------------------
+# GET /documents/{document_id}/status
+# ---------------------------------------------------------------------------
+
+
+@router.get("/{document_id}/status", response_model=DocumentStatusResponse)
+async def get_document_status(
+    document_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> DocumentStatusResponse:
+    """Return the processing status fields for a document (ownership verified)."""
+    doc = await _load_document_or_404(db, document_id, current_user)
+
+    return DocumentStatusResponse(
+        document_id=str(doc.document_id),
+        processing_status=doc.processing_status,
+        extraction_attempts=doc.extraction_attempts or 0,
+        has_text_layer=doc.has_text_layer,
+        extraction_library=doc.extraction_library,
+        processed_at=doc.processed_at,
     )
