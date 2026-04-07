@@ -100,9 +100,9 @@
 | MV-041 | Medication extraction (drug name, dosage, frequency, duration, route) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
 | MV-042 | Lab result extraction (test name, value, unit, reference range, H/L flag) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
 | MV-043 | Diagnosis extraction (condition name, date, status) | P0 | Done | Developer Agent | MV-040 | feature/MV-041-042-043-nlp-extractors |
-| MV-044 | Allergy extraction | P1 | In Progress | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
-| MV-045 | Vitals extraction (BP, weight, height, BMI, SpO2) | P1 | In Progress | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
-| MV-046 | Doctor/facility/visit date extraction | P1 | In Progress | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
+| MV-044 | Allergy extraction | P1 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
+| MV-045 | Vitals extraction (BP, weight, height, BMI, SpO2) | P1 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
+| MV-046 | Doctor/facility/visit date extraction | P1 | Done (Pending Merge) | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
 | MV-047 | Confidence scoring system (HIGH/MEDIUM/LOW) + low-confidence flagging | P0 | Done | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
 | MV-048 | Entity deduplication across documents (chronic conditions, medications) | P1 | Not Started | — | MV-043 | — |
 | MV-049 | Drug synonym normalization dictionary | P2 | Not Started | — | MV-041 | — |
@@ -224,3 +224,5 @@
 | 2026-04-07 | Rishabh | Merged PR #20 (MV-051) | MV-051 | — |
 | 2026-04-07 | Developer Agent | Completed MV-016b — responsive app shell (teal design system, 4-tab nav) | MV-016b | PR #21 open |
 | 2026-04-07 | Developer Agent | Completed MV-044/045/046 — allergy, vitals, doctor extractors | MV-044, MV-045, MV-046 | Pending tests/PR |
+| 2026-04-07 | Developer Agent | Implemented MV-044/045/046 — allergy, vitals, doctor extractors; 50 tests pass | MV-044, MV-045, MV-046 | PR #22 open |
+| 2026-04-07 | Developer Agent | Implemented MV-016b — responsive app shell, teal design system, 4-tab nav | MV-016b | PR #21 open |
