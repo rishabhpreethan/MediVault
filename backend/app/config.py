@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=(".env", "../.env"), extra="ignore")
 
     # Database
     database_url: str
@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # App
     environment: str = "development"
     cors_origins: list[str] = ["http://localhost:5173"]
+
+    # Dev-only superuser bypass (only honoured when environment=development)
+    dev_superuser_token: str = ""
 
     # Rate limiting
     rate_limit_auth: int = 10       # requests per minute per IP

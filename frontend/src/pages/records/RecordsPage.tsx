@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { useActiveMember } from '../../hooks/useFamily'
+import { useResolvedMemberId } from '../../hooks/useFamily'
 import type { Document, ProcessingStatus } from '../../types'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -15,7 +15,6 @@ interface DocumentsResponse {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-const PLACEHOLDER_MEMBER_ID = '00000000-0000-0000-0000-000000000000'
 
 function getStatusBadge(status: ProcessingStatus): {
   label: string
@@ -220,7 +219,8 @@ function SkeletonCard() {
 // ── Main page ──────────────────────────────────────────────────────────────
 
 export function RecordsPage() {
-  const memberId = useActiveMember() ?? PLACEHOLDER_MEMBER_ID
+  const memberId = useResolvedMemberId()
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [search, setSearch] = useState('')
 
@@ -232,6 +232,7 @@ export function RecordsPage() {
       })
       return data
     },
+    enabled: !!memberId,
   })
 
   const documents = data?.items ?? []

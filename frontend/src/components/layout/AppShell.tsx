@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useActiveMemberDetails, useSetActiveMember } from '../../hooks/useFamily'
 
 // ── Inline SVG icons ───────────────────────────────────────────────────────
 
@@ -210,14 +211,48 @@ export function BottomNav() {
  *   │  BottomNav (fixed)  │
  *   └─────────────────────┘
  */
+// ── Vault context banner ───────────────────────────────────────────────────
+
+function VaultBanner() {
+  const { member, isSelf } = useActiveMemberDetails()
+  const setActiveMember = useSetActiveMember()
+
+  if (isSelf || !member) return null
+
+  return (
+    <div className="fixed top-0 md:top-16 left-0 w-full z-40 bg-teal-600 text-white text-sm py-2 px-4 flex items-center justify-between gap-3">
+      <span className="font-medium truncate">
+        Viewing <strong>{member.full_name}</strong>'s vault
+      </span>
+      <button
+        type="button"
+        onClick={() => setActiveMember(null)}
+        className="shrink-0 inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 transition-colors rounded-full px-3 py-1 text-xs font-semibold"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5" aria-hidden="true">
+          <path d="M19 12H5M12 5l-7 7 7 7" />
+        </svg>
+        Switch back to my vault
+      </button>
+    </div>
+  )
+}
+
 export function AppShell() {
+  const { isSelf } = useActiveMemberDetails()
+  // When viewing a family member, add extra top padding to clear the banner
+  const bannerOffset = !isSelf ? 'pt-16 md:pt-28' : 'pt-6 md:pt-20'
+
   return (
     <div className="min-h-screen bg-surface font-['Manrope',sans-serif]">
       {/* Desktop top nav */}
       <TopNav />
 
-      {/* Scrollable content — pt-16 offsets top nav on desktop; pb-20 clears bottom nav on mobile */}
-      <main className="pt-6 md:pt-20 pb-24 md:pb-8 px-4 md:px-8 max-w-7xl mx-auto w-full">
+      {/* Family vault banner (shown when viewing another member's vault) */}
+      <VaultBanner />
+
+      {/* Scrollable content */}
+      <main className={`${bannerOffset} pb-24 md:pb-8 px-4 md:px-8 max-w-7xl mx-auto w-full`}>
         <Outlet />
       </main>
 

@@ -1,6 +1,7 @@
 import { useAuth0 } from '@auth0/auth0-react'
 import { Navigate } from 'react-router-dom'
 
+
 function ShieldHeartIcon() {
   return (
     <svg
@@ -46,6 +47,11 @@ function LockIcon() {
 }
 
 export function LoginPage() {
+  // In dev mode bypass Auth0 entirely and go straight to the app
+  if (import.meta.env.VITE_DEV_MODE === 'true') {
+    return <Navigate to="/" replace />
+  }
+
   const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0()
 
   if (isLoading) {

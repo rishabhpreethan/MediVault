@@ -46,13 +46,11 @@ def _member_to_response(member: FamilyMember) -> FamilyMemberResponse:
     return FamilyMemberResponse(
         member_id=str(member.member_id),
         user_id=str(member.user_id),
-        name=member.full_name,
-        date_of_birth=member.date_of_birth,
+        full_name=member.full_name,
         relationship=member.relationship,
+        date_of_birth=member.date_of_birth,
         blood_group=member.blood_group,
-        # gender is not stored on the model; always None
-        gender=None,
-        created_at=member.created_at,
+        is_self=member.is_self,
     )
 
 

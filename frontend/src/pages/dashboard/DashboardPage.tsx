@@ -1,11 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { api } from '../../lib/api'
-import { useActiveMember } from '../../hooks/useFamily'
+import { useResolvedMemberId } from '../../hooks/useFamily'
 import type { HealthProfile, LabResult, Medication, Vital, LabFlag } from '../../types/index'
-
-// ── Fallback UUID used until MV-092 wires up member selector ──────────────
-const PLACEHOLDER_MEMBER_ID = '00000000-0000-0000-0000-000000000001'
 
 // ── Inline SVG icons ───────────────────────────────────────────────────────
 
@@ -465,8 +462,7 @@ function UpcomingConsult({ profile }: { profile: HealthProfile }) {
 // ── Main Dashboard Page ───────────────────────────────────────────────────
 
 export function DashboardPage() {
-  const activeMemberId = useActiveMember()
-  const memberId = activeMemberId ?? PLACEHOLDER_MEMBER_ID
+  const memberId = useResolvedMemberId()
 
   const { data: profile, isLoading, isError, error } = useQuery<HealthProfile>({
     queryKey: ['profile', memberId],
@@ -474,6 +470,7 @@ export function DashboardPage() {
       const { data } = await api.get<HealthProfile>(`/profile/?member_id=${memberId}`)
       return data
     },
+    enabled: !!memberId,
   })
 
   if (isLoading) {

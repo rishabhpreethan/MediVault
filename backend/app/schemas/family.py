@@ -26,11 +26,10 @@ class FamilyMemberUpdate(BaseModel):
 class FamilyMemberResponse(BaseModel):
     member_id: str
     user_id: str
-    name: str
-    date_of_birth: Optional[date] = None
+    full_name: str
     relationship: str
+    date_of_birth: Optional[date] = None
     blood_group: Optional[str] = None
-    gender: Optional[str] = None
-    created_at: datetime
+    is_self: bool = False
 
     model_config = {"from_attributes": True}
