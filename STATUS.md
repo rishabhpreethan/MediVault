@@ -78,7 +78,7 @@
 | MV-022 | Scanned PDF detection (embedded text layer check) | P0 | Not Started | — | MV-021 | — |
 | MV-023 | Document library API (list, get, delete, retry) | P0 | Done | Developer Agent | MV-021 | feature/MV-023-document-retry-status |
 | MV-024 | Document library UI ("Clinical Archive") — ref: `stitch_health_passport/document_vault/` | P0 | In Review | Developer Agent | MV-016b, MV-023 | feature/MV-024-document-library-ui |
-| MV-025 | Upload flow UI (file picker, type selection, date confirmation, progress, rejection messages) | P0 | Not Started | — | MV-021, MV-024 | — |
+| MV-025 | Upload flow UI (file picker, type selection, date, progress, rejection) | P0 | In Progress | Developer Agent | MV-021, MV-024 | feature/MV-025-upload-flow-ui |
 | MV-026 | Document detail page (PDF viewer + extracted data panel, inline edit) | P1 | Not Started | — | MV-024 | — |
 | MV-027 | Manual field correction API + audit trail | P1 | Not Started | — | MV-023 | — |
 
@@ -122,13 +122,13 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-060 | Timeline data API (paginated, filterable by type/date) | P0 | In Review | Developer Agent | MV-050 | feature/MV-060-timeline-api |
-| MV-061 | Timeline UI (under Records tab) — ref: `stitch_health_passport/health_timeline/` | P0 | Not Started | — | MV-060, MV-016b | — |
+| MV-061 | Timeline UI (under Records tab) — ref: `stitch_health_passport/health_timeline/` | P0 | In Progress | Developer Agent | MV-060, MV-016b | feature/MV-061-timeline-ui |
 
 ### EPIC: Trend Visualizations
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-070 | Lab trend chart data API (time-series per parameter, ≥2 data points check) | P0 | Not Started | — | MV-050 | — |
+| MV-070 | Lab trend chart data API (time-series per parameter, ≥2 data points check) | P0 | In Progress | Developer Agent | MV-050 | feature/MV-070-lab-trend-api |
 | MV-071 | Lab trend chart UI (Recharts, reference range band, out-of-range markers) | P0 | Not Started | — | MV-070, MV-016 | — |
 | MV-072 | Medication Gantt chart (API + UI) | P1 | Not Started | — | MV-050 | — |
 | MV-073 | Vitals trend chart (BP, weight over time) | P1 | Not Started | — | MV-050 | — |
@@ -137,7 +137,7 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-080 | Passport generation API (UUID, expiry, section visibility settings) | P0 | Not Started | — | MV-050 | — |
+| MV-080 | Passport generation API (UUID, expiry, section visibility settings) | P0 | In Progress | Developer Agent | MV-050 | feature/MV-080-passport-api |
 | MV-081 | Passport revoke/expiry API + access log | P0 | Not Started | — | MV-080 | — |
 | MV-082 | Public passport view endpoint (no auth, rate limited) | P0 | Not Started | — | MV-080 | — |
 | MV-083 | QR code generation (frontend, links to passport URL) | P0 | Not Started | — | MV-080 | — |
@@ -234,3 +234,6 @@
 | 2026-04-07 | Developer Agent | Completed MV-092 — Family Circle UI (PassportPage): primary member card, family member grid, add-member dashed card, recent activity section, skeleton/empty/error states; AddFamilyMemberPage: info panel, identity + clinical profile form, blood group pill selector, mutation with query invalidation; /passport/add-member route added to App.tsx | MV-092 | Moved to In Review |
 | 2026-04-07 | Developer Agent | Completed MV-024 (document library UI), MV-052 (health profile dashboard), MV-060 (timeline API) | MV-024, MV-052, MV-060 | PRs #23 #24 #25 open |
 | 2026-04-07 | Developer Agent | Completed MV-092 — Family Circle + Add Member form | MV-092 | PR #26 open |
+| 2026-04-09 | Rishabh | Merged PRs #23 (MV-024), #24 (MV-052), #25 (MV-060), #26 (MV-092) | MV-024, MV-052, MV-060, MV-092 | — |
+| 2026-04-09 | neerajmenon4 | Fix: startup errors, auth race conditions, blank pages, member vault switching | — | Runnable baseline commit |
+| 2026-04-09 | Developer Agent | Started MV-061, MV-025, MV-070, MV-080 in parallel | MV-061, MV-025, MV-070, MV-080 | Running in parallel |
