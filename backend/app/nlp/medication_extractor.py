@@ -6,6 +6,7 @@ import uuid
 from typing import List, Optional
 
 from app.nlp.base_extractor import BaseNlpExtractor
+from app.nlp.drug_synonyms import normalize_drug_name
 from app.models.medication import Medication
 
 logger = logging.getLogger(__name__)
@@ -79,10 +80,13 @@ class MedicationExtractor(BaseNlpExtractor):
             has_dosage = "DOSAGE" in nearby
             confidence = "HIGH" if has_dosage else "MEDIUM"
 
+            drug_name_normalized = normalize_drug_name(drug["text"].lower())
+
             med = Medication(
                 member_id=self._member_id,
                 document_id=document_id,
                 drug_name=drug["text"],
+                drug_name_normalized=drug_name_normalized,
                 dosage=nearby.get("DOSAGE"),
                 frequency=nearby.get("FREQUENCY"),
                 route=nearby.get("ROUTE"),
