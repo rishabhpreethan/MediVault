@@ -17,7 +17,9 @@
 
 | Person | Agent Role | Currently Working On | Task ID | Branch | Last Updated |
 |---|---|---|---|---|---|
-| — | — | — | — | — | — |
+| Developer Agent | Developer | Public Passport Page UI | MV-085 | feature/MV-085-public-passport-ui | 2026-04-10 |
+| Developer Agent | Developer | Document Detail Page — In Review | MV-026 | feature/MV-026-document-detail | 2026-04-10 |
+| Developer Agent | Developer | QR code component + Passport management UI | MV-083, MV-084 | feature/MV-083-084-passport-ui | 2026-04-10 |
 
 ---
 
@@ -79,7 +81,7 @@
 | MV-023 | Document library API (list, get, delete, retry) | P0 | Done | Developer Agent | MV-021 | feature/MV-023-document-retry-status |
 | MV-024 | Document library UI ("Clinical Archive") — ref: `stitch_health_passport/document_vault/` | P0 | In Review | Developer Agent | MV-016b, MV-023 | feature/MV-024-document-library-ui |
 | MV-025 | Upload flow UI (file picker, type selection, date, progress, rejection) | P0 | In Review | Developer Agent | MV-021, MV-024 | feature/MV-025-upload-flow-ui |
-| MV-026 | Document detail page (PDF viewer + extracted data panel, inline edit) | P1 | Not Started | — | MV-024 | — |
+| MV-026 | Document detail page (PDF viewer + extracted data panel, inline edit) | P1 | In Review | Developer Agent | MV-024 | feature/MV-026-document-detail |
 | MV-027 | Manual field correction API + audit trail | P1 | Not Started | — | MV-023 | — |
 
 ### EPIC: PDF Extraction Pipeline
@@ -129,7 +131,7 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-070 | Lab trend chart data API (time-series per parameter, ≥2 data points check) | P0 | In Review | Developer Agent | MV-050 | feature/MV-070-lab-trend-api |
-| MV-071 | Lab trend chart UI (Recharts, reference range band, out-of-range markers) | P0 | Not Started | — | MV-070, MV-016 | — |
+| MV-071 | Lab trend chart UI (Recharts, reference range band, out-of-range markers) | P0 | In Review | Developer Agent | MV-070, MV-016 | feature/MV-071-lab-trend-chart-ui |
 | MV-072 | Medication Gantt chart (API + UI) | P1 | Not Started | — | MV-050 | — |
 | MV-073 | Vitals trend chart (BP, weight over time) | P1 | Not Started | — | MV-050 | — |
 
@@ -140,9 +142,9 @@
 | MV-080 | Passport generation API (UUID, expiry, section visibility settings) | P0 | In Review | Developer Agent | MV-050 | feature/MV-080-passport-api |
 | MV-081 | Passport revoke/expiry API + access log | P0 | Done | Developer Agent (covered by MV-080) | MV-080 | feature/MV-080-passport-api |
 | MV-082 | Public passport view endpoint (no auth, rate limited) | P0 | Done | Developer Agent (covered by MV-080) | MV-080 | feature/MV-080-passport-api |
-| MV-083 | QR code generation (frontend, links to passport URL) | P0 | Not Started | — | MV-080 | — |
-| MV-084 | Passport management UI — ref: `stitch_health_passport/health_passport/` | P0 | Not Started | — | MV-080, MV-016b | — |
-| MV-085 | Public passport page UI (read-only) — ref: `stitch_health_passport/health_passport/` | P0 | Not Started | — | MV-082 | — |
+| MV-083 | QR code generation (frontend, links to passport URL) | P0 | In Review | Developer Agent | MV-080 | feature/MV-083-084-passport-ui |
+| MV-084 | Passport management UI — ref: `stitch_health_passport/health_passport/` | P0 | In Review | Developer Agent | MV-080, MV-016b | feature/MV-083-084-passport-ui |
+| MV-085 | Public passport page UI (read-only) — ref: `stitch_health_passport/health_passport/` | P0 | In Review | Developer Agent | MV-082 | feature/MV-085-public-passport-ui |
 
 ### EPIC: Family Accounts
 
@@ -241,3 +243,11 @@
 | 2026-04-07 | Developer Agent | Completed MV-061 — Health Timeline UI: TimelineTab.tsx (event feed grouped by month, sidebar, skeleton/empty/error states, load more), Archive/Timeline tab switcher in RecordsPage.tsx | MV-061 | Moved to In Review |
 | 2026-04-07 | Developer Agent | Completed MV-080 — Passport generation API: schemas/passport.py, api/passport.py (POST/GET/DELETE/public endpoints), router registration, 15 unit tests | MV-080, MV-081, MV-082 | Moved to In Review |
 | 2026-04-07 | Developer Agent | Completed MV-025 — Upload flow UI: UploadModal.tsx (4-step modal: file selection with drag-and-drop, document type pills, date picker, uploading spinner, success/error states), RecordsPage updated to open modal on Import Record click | MV-025 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started MV-085 — Public Passport Page UI | MV-085 | branch: feature/MV-085-public-passport-ui |
+| 2026-04-10 | Developer Agent | Completed MV-085 — PublicPassportPage.tsx: standalone page (no AppShell/Auth0), hero card, allergies/medications/diagnoses section cards, 4 page states (loading/404/410/error), plain axios call to public endpoint | MV-085 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started MV-026 — Document Detail Page | MV-026 | branch: feature/MV-026-document-detail |
+| 2026-04-10 | Developer Agent | Completed MV-026 — DocumentDetailPage.tsx: two-column layout (doc header card + PDF placeholder left; extracted data panel right), lab results table, medications/diagnoses/allergies lists, PROCESSING spinner, FAILED error state with Retry button, Download Original link, React Query with useMutation for retry; RecordsPage cards made clickable via Link; /records/:documentId route added to App.tsx | MV-026 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started MV-071 — Lab Trend Chart UI | MV-071 | branch: feature/MV-071-lab-trend-chart-ui |
+| 2026-04-10 | Developer Agent | Completed MV-071 — InsightsPage.tsx: test pill selector, Recharts LineChart with ReferenceArea band, custom dots (red for out-of-range, teal for normal), custom tooltip, stats strip (latest/min/max/avg), skeleton/empty/error states; typed against actual backend schema (date, is_abnormal fields) | MV-071 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started MV-083 + MV-084 — QR code component + Passport management UI | MV-083, MV-084 | branch: feature/MV-083-084-passport-ui |
+| 2026-04-10 | Developer Agent | Completed MV-083 + MV-084 — PassportManagePage.tsx: bento-grid layout (QR module with qrcode.react QRCodeSVG, Medical Identity card, Active Passports table, Visibility Controls, Revoke/Share panel); inline GenerateModal (section checkboxes + 30/60/90 day expiry); PassportPage.tsx updated with Manage Passport button on SELF card; /passport/manage route added to App.tsx | MV-083, MV-084 | Moved to In Review |
