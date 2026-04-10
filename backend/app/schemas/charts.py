@@ -1,4 +1,4 @@
-"""Chart data schemas — MV-070."""
+"""Chart data schemas — MV-070, MV-072."""
 from __future__ import annotations
 
 from datetime import date
@@ -32,3 +32,24 @@ class LabTrendResponse(BaseModel):
 class AvailableTestsResponse(BaseModel):
     member_id: str
     test_names: List[str]  # distinct test names that have >= 1 result with a date
+
+
+# ── MV-072: Medication Gantt chart schemas ──────────────────────────────────
+
+
+class MedicationBar(BaseModel):
+    medication_id: str
+    drug_name: str
+    dosage: Optional[str] = None
+    is_active: bool
+    start_date: Optional[str] = None   # ISO date string or None
+    end_date: Optional[str] = None     # ISO date string or None (None = ongoing)
+    start_day: int                      # days from earliest start date (0-indexed)
+    duration_days: Optional[int] = None  # None if ongoing (no end_date)
+
+
+class MedicationTimelineResponse(BaseModel):
+    bars: List[MedicationBar]
+    member_id: str
+    earliest_date: Optional[str] = None  # ISO date of earliest med start
+    today: str                            # ISO date of today for ongoing bar length

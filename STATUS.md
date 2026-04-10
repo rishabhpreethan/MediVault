@@ -20,6 +20,7 @@
 | Developer Agent | Developer | Public Passport Page UI | MV-085 | feature/MV-085-public-passport-ui | 2026-04-10 |
 | Developer Agent | Developer | Document Detail Page — In Review | MV-026 | feature/MV-026-document-detail | 2026-04-10 |
 | Developer Agent | Developer | QR code component + Passport management UI | MV-083, MV-084 | feature/MV-083-084-passport-ui | 2026-04-10 |
+| Developer Agent | Developer | Manual add/edit/delete API for all entity types — In Review | MV-053 | feature/MV-053-entity-crud-api | 2026-04-10 |
 
 ---
 
@@ -77,12 +78,12 @@
 |---|---|---|---|---|---|---|
 | MV-020 | Document DB model + Alembic migration | P0 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-021 | File upload API (validation, MinIO storage, queue job) | P0 | Done | Developer Agent | MV-011, MV-020 | feature/MV-021-file-upload-api |
-| MV-022 | Scanned PDF detection (embedded text layer check) | P0 | Not Started | — | MV-021 | — |
+| MV-022 | Scanned PDF detection (embedded text layer check) | P0 | In Review | Developer Agent | MV-021 | feature/MV-022-scanned-pdf-detection |
 | MV-023 | Document library API (list, get, delete, retry) | P0 | Done | Developer Agent | MV-021 | feature/MV-023-document-retry-status |
 | MV-024 | Document library UI ("Clinical Archive") — ref: `stitch_health_passport/document_vault/` | P0 | In Review | Developer Agent | MV-016b, MV-023 | feature/MV-024-document-library-ui |
 | MV-025 | Upload flow UI (file picker, type selection, date, progress, rejection) | P0 | In Review | Developer Agent | MV-021, MV-024 | feature/MV-025-upload-flow-ui |
 | MV-026 | Document detail page (PDF viewer + extracted data panel, inline edit) | P1 | In Review | Developer Agent | MV-024 | feature/MV-026-document-detail |
-| MV-027 | Manual field correction API + audit trail | P1 | Not Started | — | MV-023 | — |
+| MV-027 | Manual field correction API + audit trail | P1 | In Review | Developer Agent | MV-023 | feature/MV-027-manual-correction-api |
 
 ### EPIC: PDF Extraction Pipeline
 
@@ -116,7 +117,7 @@
 | MV-050 | Profile aggregation service (builds HealthProfileRM from all entities) | P0 | Done | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
 | MV-051 | Profile API endpoints (GET full profile, GET summary) | P0 | Done | Developer Agent | MV-050 | feature/MV-051-profile-api |
 | MV-052 | Health profile dashboard UI — ref: `stitch_health_passport/health_profile_dashboard/` | P0 | In Review | Developer Agent | MV-051, MV-016b | feature/MV-052-health-profile-ui |
-| MV-053 | Manual add/edit/delete API for all entity types | P1 | Not Started | — | MV-051 | — |
+| MV-053 | Manual add/edit/delete API for all entity types | P1 | In Review | Developer Agent | MV-051 | feature/MV-053-entity-crud-api |
 | MV-054 | Discontinue medication toggle (API + UI) | P2 | Not Started | — | MV-052 | — |
 
 ### EPIC: Health Timeline
@@ -132,7 +133,7 @@
 |---|---|---|---|---|---|---|
 | MV-070 | Lab trend chart data API (time-series per parameter, ≥2 data points check) | P0 | In Review | Developer Agent | MV-050 | feature/MV-070-lab-trend-api |
 | MV-071 | Lab trend chart UI (Recharts, reference range band, out-of-range markers) | P0 | In Review | Developer Agent | MV-070, MV-016 | feature/MV-071-lab-trend-chart-ui |
-| MV-072 | Medication Gantt chart (API + UI) | P1 | Not Started | — | MV-050 | — |
+| MV-072 | Medication Gantt chart (API + UI) | P1 | In Review | Developer Agent | MV-050 | feature/MV-072-medication-gantt |
 | MV-073 | Vitals trend chart (BP, weight over time) | P1 | Not Started | — | MV-050 | — |
 
 ### EPIC: Health Passport
@@ -251,3 +252,11 @@
 | 2026-04-10 | Developer Agent | Completed MV-071 — InsightsPage.tsx: test pill selector, Recharts LineChart with ReferenceArea band, custom dots (red for out-of-range, teal for normal), custom tooltip, stats strip (latest/min/max/avg), skeleton/empty/error states; typed against actual backend schema (date, is_abnormal fields) | MV-071 | Moved to In Review |
 | 2026-04-10 | Developer Agent | Started MV-083 + MV-084 — QR code component + Passport management UI | MV-083, MV-084 | branch: feature/MV-083-084-passport-ui |
 | 2026-04-10 | Developer Agent | Completed MV-083 + MV-084 — PassportManagePage.tsx: bento-grid layout (QR module with qrcode.react QRCodeSVG, Medical Identity card, Active Passports table, Visibility Controls, Revoke/Share panel); inline GenerateModal (section checkboxes + 30/60/90 day expiry); PassportPage.tsx updated with Manage Passport button on SELF card; /passport/manage route added to App.tsx | MV-083, MV-084 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started MV-022 — Scanned PDF detection | MV-022 | branch: feature/MV-022-scanned-pdf-detection |
+| 2026-04-10 | Developer Agent | Completed implementation MV-022 — is_likely_scanned() heuristic in orchestrator.py, mark_manual_review() in document_service.py, page_count via pypdf in extraction_tasks.py, PROCESSING→MANUAL_REVIEW transition added, 10 unit tests in test_scanned_detection.py | MV-022 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started MV-072 — Medication Gantt chart (API + UI) | MV-072 | branch: feature/MV-072-medication-gantt |
+| 2026-04-10 | Developer Agent | Completed MV-072 — GET /charts/medication-timeline endpoint + MedicationBar/MedicationTimelineResponse schemas; MedicationGanttChart component in InsightsPage.tsx (Recharts vertical BarChart with offset+duration stacked bars, teal/grey active/discontinued coloring, custom tooltip, legend, skeleton/empty/error states); top-level Lab Trends / Medications tab switcher; 3 new backend unit tests | MV-072 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started MV-027 — Manual field correction API + audit trail | MV-027 | branch: feature/MV-027-manual-correction-api |
+| 2026-04-10 | Developer Agent | Completed implementation MV-027 — Alembic migration 0003 (correction_audit table), CorrectionAudit ORM model (correction_audit.py, moved out of passport.py), schemas/corrections.py (FieldCorrectionRequest + CorrectionAuditResponse), api/corrections.py (PATCH + GET endpoints with ALLOWED_FIELDS validation, ownership check, audit write), router.py updated, __init__.py updated, 6 unit tests in test_corrections_api.py | MV-027 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started MV-053 — Manual add/edit/delete API for all entity types | MV-053 | branch: feature/MV-053-entity-crud-api |
+| 2026-04-10 | Developer Agent | Completed implementation MV-053 — schemas/entity_crud.py (Create/Update/Response schemas for all 5 entity types), api/entity_crud.py (14 endpoints across medications/lab-results/diagnoses/allergies/vitals; is_manual_entry=True on all creates; PATCH /discontinue for meds; ownership check on all writes), router.py updated with entity_crud_router, 12 unit tests in test_entity_crud_api.py | MV-053 | Moved to In Review |
