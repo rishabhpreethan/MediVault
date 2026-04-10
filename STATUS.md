@@ -71,7 +71,7 @@
 | MV-015 | Login / Signup UI screens — ref: `stitch_health_passport/user_login/` | P0 | Done | Developer Agent | MV-014 | feature/MV-015-login-signup-ui |
 | MV-016 | Frontend app shell, bottom nav, member selector | P0 | Done | Developer Agent | MV-014 | feature/MV-016-app-shell |
 | MV-016b | Redesign app shell to Stitch layout (responsive top nav + left sidebar desktop; 4-tab bottom nav mobile; Manrope + teal design system) | P0 | Done | Developer Agent | MV-016 | feature/MV-016b-app-shell-redesign |
-| MV-017 | Session inactivity (30-day), token refresh, logout | P1 | In Progress | Developer Agent | MV-013 | feature/MV-017-session-inactivity |
+| MV-017 | Session inactivity (30-day), token refresh, logout | P1 | Done | Developer Agent | MV-013 | feature/MV-017-session-inactivity |
 
 ### EPIC: Document Management
 
@@ -109,7 +109,7 @@
 | MV-046 | Doctor/facility/visit date extraction | P1 | Done | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
 | MV-047 | Confidence scoring system (HIGH/MEDIUM/LOW) + low-confidence flagging | P0 | Done | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
 | MV-048 | Entity deduplication across documents (chronic conditions, medications) | P1 | In Review | Developer Agent | MV-043 | feature/MV-048-entity-deduplication |
-| MV-049 | Drug synonym normalization dictionary | P2 | Not Started | — | MV-041 | — |
+| MV-049 | Drug synonym normalization dictionary | P2 | In Review | Developer Agent | MV-041 | feature/MV-049-drug-synonym-normalization |
 
 ### EPIC: Health Profile
 
@@ -135,7 +135,7 @@
 | MV-070 | Lab trend chart data API (time-series per parameter, ≥2 data points check) | P0 | In Review | Developer Agent | MV-050 | feature/MV-070-lab-trend-api |
 | MV-071 | Lab trend chart UI (Recharts, reference range band, out-of-range markers) | P0 | In Review | Developer Agent | MV-070, MV-016 | feature/MV-071-lab-trend-chart-ui |
 | MV-072 | Medication Gantt chart (API + UI) | P1 | In Review | Developer Agent | MV-050 | feature/MV-072-medication-gantt |
-| MV-073 | Vitals trend chart (BP, weight over time) | P1 | In Progress | Developer Agent | MV-050 | feature/MV-073-vitals-trend-chart |
+| MV-073 | Vitals trend chart (BP, weight over time) | P1 | Done | Developer Agent | MV-050 | feature/MV-073-vitals-trend-chart |
 
 ### EPIC: Health Passport
 
@@ -168,16 +168,16 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-110 | Account deletion API (initiates data purge, revokes all passports) | P1 | Not Started | — | MV-011 | — |
-| MV-111 | Data export API (JSON + zip of PDFs, async, email link) | P1 | Not Started | — | MV-050 | — |
-| MV-112 | Account settings UI (delete account, export data) | P1 | Not Started | — | MV-016 | — |
+| MV-110 | Account deletion API (initiates data purge, revokes all passports) | P1 | In Review | Developer Agent | MV-011 | feature/MV-110-account-deletion-api |
+| MV-111 | Data export API (JSON + zip of PDFs, async, email link) | P1 | In Review | Developer Agent | MV-050 | feature/MV-111-data-export-api |
+| MV-112 | Account settings UI (delete account, export data) | P1 | In Progress | Developer Agent | MV-016 | feature/MV-112-account-settings-ui |
 
 ### EPIC: Test Suite
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-120 | pytest setup + Vitest setup + test fixtures (sample PDFs) | P1 | Done | Developer Agent | MV-003, MV-004 | feature/MV-120-test-setup |
-| MV-121 | Backend unit tests (NLP extractors, confidence scorer, deduplication) | P1 | Not Started | — | MV-047 | — |
+| MV-121 | Backend unit tests (NLP extractors, confidence scorer, deduplication) | P1 | In Review | Developer Agent | MV-047 | feature/MV-121-nlp-unit-tests |
 | MV-122 | Backend integration tests (upload → extract → NLP → profile pipeline) | P1 | Not Started | — | MV-050 | — |
 | MV-123 | Playwright E2E tests (critical user journeys UF-001 through UF-009) | P1 | Not Started | — | MV-052, MV-061, MV-084 | — |
 | MV-124 | PDF extraction accuracy benchmarking (≥95% text fidelity target) | P2 | Not Started | — | MV-032 | — |
@@ -268,3 +268,9 @@
 | 2026-04-10 | Developer Agent | Completed MV-054 — ActivePlan component in DashboardPage.tsx: Discontinue button per active med row (useMutation → PATCH /profile/{memberId}/medications/{medId}/discontinue, invalidates profile query); discontinued meds shown with opacity-50 + strikethrough + "Discontinued" badge; "Show N discontinued" toggle button; "No active medications" empty state when all meds are discontinued | MV-054 | Moved to In Review |
 | 2026-04-10 | Developer Agent | Started MV-048 — Entity deduplication across documents | MV-048 | branch: feature/MV-048-entity-deduplication |
 | 2026-04-10 | Developer Agent | Completed implementation MV-048 — deduplication_service.py (deduplicate_medications/diagnoses/allergies + run_deduplication); extraction_tasks.py updated to capture member_id and call run_deduplication after save_extraction_result; 14 unit tests in test_deduplication_service.py; lab_results and vitals explicitly excluded; manual entries skipped | MV-048 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started wave 5: MV-049, MV-110, MV-111, MV-121 in parallel | MV-049, MV-110, MV-111, MV-121 | Running in parallel |
+| 2026-04-10 | Developer Agent | Completed MV-049 — drug_synonyms.py: 26 brand→INN mappings, normalize_drug_name(), integrated into medication_extractor drug_name_normalized; 15 unit tests | MV-049 | PR #44 open |
+| 2026-04-10 | Developer Agent | Completed MV-110 — DELETE /auth/account: soft-delete + passport revocation + purge_user_data Celery task (MinIO cleanup + FamilyMember cascade delete); migration 0004; 8 unit tests | MV-110 | PR #45 open |
+| 2026-04-10 | Developer Agent | Completed MV-111 — POST /export/request-all + POST /export/request + GET /export/status; generate_user_export task builds in-memory ZIP (health_data.json + PDFs), uploads to MinIO, returns presigned URL; 18 unit tests | MV-111 | PR #47 open |
+| 2026-04-10 | Developer Agent | Completed MV-121 — test_nlp_comprehensive.py: 55 tests covering orchestrator scanned heuristics, confidence scorer all combos, flag_low_confidence, medication normalization, dedup manual-entry skip | MV-121 | PR #46 open |
+| 2026-04-10 | Developer Agent | Started MV-112 — Account settings UI (delete account modal + export data button) | MV-112 | feature/MV-112-account-settings-ui |
