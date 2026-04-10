@@ -9,7 +9,8 @@ from app.models.allergy import Allergy
 from app.models.vital import Vital
 from app.models.doctor import Doctor
 from app.models.procedure import Procedure
-from app.models.passport import SharedPassport, PassportAccessLog, CorrectionAudit
+from app.models.passport import SharedPassport, PassportAccessLog
+from app.models.correction_audit import CorrectionAudit
 
 __all__ = [
     "User",
