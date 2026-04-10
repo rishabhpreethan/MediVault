@@ -161,8 +161,8 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-100 | Email notification service (SendGrid integration) | P2 | Not Started | — | MV-034 | — |
-| MV-101 | Processing complete + extraction failed notifications | P2 | Not Started | — | MV-100, MV-034 | — |
+| MV-100 | Email notification service (SendGrid integration) | P2 | In Review | Developer Agent | MV-034 | feature/MV-100-sendgrid-email-service |
+| MV-101 | Processing complete + extraction failed notifications | P2 | In Review | Developer Agent | MV-100, MV-034 | feature/MV-100-sendgrid-email-service |
 
 ### EPIC: Account Management
 
@@ -170,7 +170,7 @@
 |---|---|---|---|---|---|---|
 | MV-110 | Account deletion API (initiates data purge, revokes all passports) | P1 | In Review | Developer Agent | MV-011 | feature/MV-110-account-deletion-api |
 | MV-111 | Data export API (JSON + zip of PDFs, async, email link) | P1 | In Review | Developer Agent | MV-050 | feature/MV-111-data-export-api |
-| MV-112 | Account settings UI (delete account, export data) | P1 | In Progress | Developer Agent | MV-016 | feature/MV-112-account-settings-ui |
+| MV-112 | Account settings UI (delete account, export data) | P1 | Done | Developer Agent | MV-016 | feature/MV-112-account-settings-ui |
 
 ### EPIC: Test Suite
 
@@ -178,9 +178,9 @@
 |---|---|---|---|---|---|---|
 | MV-120 | pytest setup + Vitest setup + test fixtures (sample PDFs) | P1 | Done | Developer Agent | MV-003, MV-004 | feature/MV-120-test-setup |
 | MV-121 | Backend unit tests (NLP extractors, confidence scorer, deduplication) | P1 | In Review | Developer Agent | MV-047 | feature/MV-121-nlp-unit-tests |
-| MV-122 | Backend integration tests (upload → extract → NLP → profile pipeline) | P1 | Not Started | — | MV-050 | — |
-| MV-123 | Playwright E2E tests (critical user journeys UF-001 through UF-009) | P1 | Not Started | — | MV-052, MV-061, MV-084 | — |
-| MV-124 | PDF extraction accuracy benchmarking (≥95% text fidelity target) | P2 | Not Started | — | MV-032 | — |
+| MV-122 | Backend integration tests (upload → extract → NLP → profile pipeline) | P1 | In Review | Developer Agent | MV-050 | feature/MV-122-pipeline-integration-tests |
+| MV-123 | Playwright E2E tests (critical user journeys UF-001 through UF-009) | P1 | In Review | Developer Agent | MV-052, MV-061, MV-084 | feature/MV-123-playwright-e2e-tests |
+| MV-124 | PDF extraction accuracy benchmarking (≥95% text fidelity target) | P2 | In Review | Developer Agent | MV-032 | feature/MV-124-pdf-benchmarking |
 
 ---
 
@@ -274,3 +274,8 @@
 | 2026-04-10 | Developer Agent | Completed MV-111 — POST /export/request-all + POST /export/request + GET /export/status; generate_user_export task builds in-memory ZIP (health_data.json + PDFs), uploads to MinIO, returns presigned URL; 18 unit tests | MV-111 | PR #47 open |
 | 2026-04-10 | Developer Agent | Completed MV-121 — test_nlp_comprehensive.py: 55 tests covering orchestrator scanned heuristics, confidence scorer all combos, flag_low_confidence, medication normalization, dedup manual-entry skip | MV-121 | PR #46 open |
 | 2026-04-10 | Developer Agent | Started MV-112 — Account settings UI (delete account modal + export data button) | MV-112 | feature/MV-112-account-settings-ui |
+| 2026-04-10 | Developer Agent | Started wave 6: MV-122, MV-123, MV-100/101, MV-124 in parallel | MV-122, MV-123, MV-100, MV-101, MV-124 | Running in parallel |
+| 2026-04-10 | Developer Agent | Completed MV-122 — 11 pipeline integration tests: upload API, extraction state machine, NLP extraction, profile reflection, deduplication merge | MV-122 | PR #49 open |
+| 2026-04-10 | Developer Agent | Completed MV-124 — benchmark_extraction.py: BenchmarkSample + calculate_fidelity + run_benchmark with ANSI output; 13 unit tests | MV-124 | PR #50 open |
+| 2026-04-10 | Developer Agent | Completed MV-100 + MV-101 — email_service.py: requests-based SendGrid wrapper, processing_complete + extraction_failed templates (no PHI); extraction_tasks.py hooked with best-effort notify; 6 unit tests | MV-100, MV-101 | PR #51 open |
+| 2026-04-10 | Developer Agent | Completed MV-123 — playwright.config.ts + 6 e2e spec files (auth, navigation, records, health-profile, passport, public-passport); all API calls mocked via page.route() | MV-123 | PR #52 open |
