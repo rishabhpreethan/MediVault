@@ -1,9 +1,10 @@
-"""Charts API — lab trend time-series endpoints — MV-070."""
+"""Charts API — lab trend time-series + medication Gantt endpoints — MV-070, MV-072."""
 from __future__ import annotations
 
 import logging
 import uuid
 from collections import defaultdict
+from datetime import date, timedelta
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, status
@@ -12,11 +13,14 @@ from sqlalchemy import select
 from app.dependencies import CurrentUser, DbSession, require_member_access
 from app.models.family_member import FamilyMember
 from app.models.lab_result import LabResult
+from app.models.medication import Medication
 from app.schemas.charts import (
     AvailableTestsResponse,
     LabDataPoint,
     LabTrendResponse,
     LabTrendSeries,
+    MedicationBar,
+    MedicationTimelineResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -181,4 +185,85 @@ async def get_available_tests(
     return AvailableTestsResponse(
         member_id=str(member.member_id),
         test_names=distinct_names,
+    )
+
+
+@router.get("/medication-timeline", response_model=MedicationTimelineResponse)
+async def get_medication_timeline(
+    member_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> MedicationTimelineResponse:
+    """Return medication timeline data for Gantt chart rendering.
+
+    Query params:
+    - member_id: UUID of the family member (required)
+
+    Returns all medications with drug_name IS NOT NULL, sorted by start_day asc
+    then drug_name asc.  Relative start_day and duration_days are pre-computed
+    so the frontend can render bars without date arithmetic.
+    """
+    member = await _load_member_or_404(db, member_id, current_user)
+
+    rows: List[Medication] = (
+        await db.execute(
+            select(Medication)
+            .where(
+                Medication.member_id == member.member_id,
+                Medication.drug_name.is_not(None),
+            )
+        )
+    ).scalars().all()
+
+    today: date = date.today()
+
+    # Determine earliest start date across all medications
+    start_dates = [m.start_date for m in rows if m.start_date is not None]
+    if start_dates:
+        earliest_date: date = min(start_dates)
+    else:
+        earliest_date = today - timedelta(days=365)
+
+    bars: List[MedicationBar] = []
+    for med in rows:
+        if med.start_date is not None:
+            start_day = (med.start_date - earliest_date).days
+        else:
+            start_day = 0
+
+        if med.end_date is not None and med.start_date is not None:
+            duration_days: Optional[int] = (med.end_date - med.start_date).days
+        else:
+            duration_days = None
+
+        bars.append(
+            MedicationBar(
+                medication_id=str(med.medication_id),
+                drug_name=med.drug_name,
+                dosage=med.dosage,
+                is_active=med.is_active,
+                start_date=med.start_date.isoformat() if med.start_date is not None else None,
+                end_date=med.end_date.isoformat() if med.end_date is not None else None,
+                start_day=start_day,
+                duration_days=duration_days,
+            )
+        )
+
+    # Sort by start_day asc, then drug_name asc
+    bars.sort(key=lambda b: (b.start_day, b.drug_name))
+
+    logger.info(
+        "Medication timeline retrieved",
+        extra={
+            "member_id": str(member.member_id),
+            "user_id": str(current_user.user_id),
+            "count": len(bars),
+        },
+    )
+
+    return MedicationTimelineResponse(
+        bars=bars,
+        member_id=str(member.member_id),
+        earliest_date=earliest_date.isoformat() if start_dates else None,
+        today=today.isoformat(),
     )

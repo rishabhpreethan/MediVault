@@ -25,8 +25,8 @@ for _mod in ("boto3", "aioboto3", "botocore", "botocore.exceptions"):
     if _mod not in sys.modules:
         sys.modules[_mod] = ModuleType(_mod)
 
-from app.api.charts import get_available_tests, get_lab_trends
-from app.schemas.charts import AvailableTestsResponse, LabTrendResponse
+from app.api.charts import get_available_tests, get_lab_trends, get_medication_timeline
+from app.schemas.charts import AvailableTestsResponse, LabTrendResponse, MedicationTimelineResponse
 
 
 # ---------------------------------------------------------------------------
@@ -338,3 +338,126 @@ class TestAvailableTestsReturnsDistinctNames:
         # HbA1c appears twice in DB rows but should be de-duped to once
         assert len(response.test_names) == 3
         assert set(response.test_names) == {"HbA1c", "Cholesterol", "Glucose"}
+
+
+# ---------------------------------------------------------------------------
+# Tests: get_medication_timeline (MV-072)
+# ---------------------------------------------------------------------------
+
+
+def _make_medication(
+    member_id: uuid.UUID,
+    drug_name: str = "Metformin",
+    dosage: Optional[str] = "500 mg",
+    is_active: bool = True,
+    start_date: date | None = date(2025, 1, 1),
+    end_date: date | None = None,
+) -> MagicMock:
+    from app.models.medication import Medication
+
+    m = MagicMock(spec=Medication)
+    m.medication_id = uuid.uuid4()
+    m.member_id = member_id
+    m.drug_name = drug_name
+    m.dosage = dosage
+    m.is_active = is_active
+    m.start_date = start_date
+    m.end_date = end_date
+    return m
+
+
+class TestMedicationTimelineReturnsBars:
+    """test_medication_timeline_returns_bars — two meds → two bars with correct offsets."""
+
+    @pytest.mark.asyncio
+    async def test_medication_timeline_returns_bars(self):
+        user = _make_user()
+        member = _make_member(user_id=user.user_id)
+        mid = member.member_id
+
+        med1 = _make_medication(mid, drug_name="Metformin", start_date=date(2025, 1, 1), end_date=date(2025, 6, 1))
+        med2 = _make_medication(mid, drug_name="Atorvastatin", start_date=date(2025, 3, 1), end_date=None, is_active=True)
+
+        db = _mock_db()
+        db.execute = AsyncMock(
+            side_effect=[
+                _db_result_scalar(member),
+                _db_result_scalars([med1, med2]),
+            ]
+        )
+
+        response = await get_medication_timeline(
+            member_id=mid,
+            current_user=user,
+            db=db,
+        )
+
+        assert isinstance(response, MedicationTimelineResponse)
+        assert response.member_id == str(mid)
+        assert len(response.bars) == 2
+
+        # Bars are sorted by start_day asc then drug_name asc
+        # Metformin starts on earliest date → start_day == 0
+        metformin_bar = next(b for b in response.bars if b.drug_name == "Metformin")
+        atorva_bar = next(b for b in response.bars if b.drug_name == "Atorvastatin")
+
+        assert metformin_bar.start_day == 0
+        assert metformin_bar.duration_days == (date(2025, 6, 1) - date(2025, 1, 1)).days
+        assert metformin_bar.end_date == "2025-06-01"
+
+        # Atorvastatin starts 59 days after Metformin (Jan 1 → Mar 1 = 59 days)
+        assert atorva_bar.start_day == (date(2025, 3, 1) - date(2025, 1, 1)).days
+        assert atorva_bar.duration_days is None  # ongoing
+
+        assert response.earliest_date == "2025-01-01"
+
+
+class TestMedicationTimelineEmptyReturnsEmptyBars:
+    """test_medication_timeline_empty_returns_empty_bars — no medications → bars=[]."""
+
+    @pytest.mark.asyncio
+    async def test_medication_timeline_empty_returns_empty_bars(self):
+        user = _make_user()
+        member = _make_member(user_id=user.user_id)
+        mid = member.member_id
+
+        db = _mock_db()
+        db.execute = AsyncMock(
+            side_effect=[
+                _db_result_scalar(member),
+                _db_result_scalars([]),
+            ]
+        )
+
+        response = await get_medication_timeline(
+            member_id=mid,
+            current_user=user,
+            db=db,
+        )
+
+        assert isinstance(response, MedicationTimelineResponse)
+        assert response.bars == []
+        assert response.earliest_date is None
+        assert response.member_id == str(mid)
+
+
+class TestMedicationTimeline403WrongUser:
+    """test_medication_timeline_403_wrong_user — member belongs to another user."""
+
+    @pytest.mark.asyncio
+    async def test_medication_timeline_403_wrong_user(self):
+        user = _make_user()
+        other_user_id = uuid.uuid4()
+        member = _make_member(user_id=other_user_id)  # belongs to a different user
+
+        db = _mock_db()
+        db.execute = AsyncMock(return_value=_db_result_scalar(member))
+
+        with pytest.raises(HTTPException) as exc_info:
+            await get_medication_timeline(
+                member_id=member.member_id,
+                current_user=user,
+                db=db,
+            )
+
+        assert exc_info.value.status_code == 403
