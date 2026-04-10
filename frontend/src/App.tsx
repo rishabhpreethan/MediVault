@@ -18,6 +18,7 @@ import { AddFamilyMemberPage } from './pages/passport/AddFamilyMemberPage'
 import { PublicPassportPage } from './pages/passport/PublicPassportPage'
 import { LoginPage } from './pages/auth/LoginPage'
 import { CallbackPage } from './pages/auth/CallbackPage'
+import { AccountSettingsPage } from './pages/settings/AccountSettingsPage'
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
                 <Route path="/passport" element={<PassportPage />} />
                 <Route path="/passport/add-member" element={<AddFamilyMemberPage />} />
                 <Route path="/passport/manage" element={<PassportManagePage />} />
+                <Route path="/settings" element={<AccountSettingsPage />} />
               </Route>
             </Route>
           </Routes>
