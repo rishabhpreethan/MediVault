@@ -113,7 +113,7 @@ function PrimaryCard({ member, onViewRecord }: { member: FamilyMember; onViewRec
         </div>
       </div>
 
-      <div className="mt-5 pt-4 border-t border-outline-variant/40 flex gap-3">
+      <div className="mt-5 pt-4 border-t border-outline-variant/40 flex gap-3 flex-wrap">
         <button
           type="button"
           onClick={onViewRecord}
@@ -121,6 +121,12 @@ function PrimaryCard({ member, onViewRecord }: { member: FamilyMember; onViewRec
         >
           View Full Record
         </button>
+        <Link
+          to="/passport/manage"
+          className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl border-2 border-primary text-primary text-sm font-semibold hover:bg-primary/5 transition-colors min-h-[44px]"
+        >
+          Manage Passport
+        </Link>
       </div>
     </div>
   )
