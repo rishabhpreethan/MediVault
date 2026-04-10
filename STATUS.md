@@ -21,6 +21,7 @@
 | Developer Agent | Developer | Document Detail Page — In Review | MV-026 | feature/MV-026-document-detail | 2026-04-10 |
 | Developer Agent | Developer | QR code component + Passport management UI | MV-083, MV-084 | feature/MV-083-084-passport-ui | 2026-04-10 |
 | Developer Agent | Developer | Manual add/edit/delete API for all entity types — In Review | MV-053 | feature/MV-053-entity-crud-api | 2026-04-10 |
+| Developer Agent | Developer | Discontinue medication toggle (UI) — In Review | MV-054 | feature/MV-054-discontinue-medication-ui | 2026-04-10 |
 
 ---
 
@@ -70,7 +71,7 @@
 | MV-015 | Login / Signup UI screens — ref: `stitch_health_passport/user_login/` | P0 | Done | Developer Agent | MV-014 | feature/MV-015-login-signup-ui |
 | MV-016 | Frontend app shell, bottom nav, member selector | P0 | Done | Developer Agent | MV-014 | feature/MV-016-app-shell |
 | MV-016b | Redesign app shell to Stitch layout (responsive top nav + left sidebar desktop; 4-tab bottom nav mobile; Manrope + teal design system) | P0 | Done | Developer Agent | MV-016 | feature/MV-016b-app-shell-redesign |
-| MV-017 | Session inactivity (30-day), token refresh, logout | P1 | Not Started | — | MV-013 | — |
+| MV-017 | Session inactivity (30-day), token refresh, logout | P1 | In Progress | Developer Agent | MV-013 | feature/MV-017-session-inactivity |
 
 ### EPIC: Document Management
 
@@ -107,7 +108,7 @@
 | MV-045 | Vitals extraction (BP, weight, height, BMI, SpO2) | P1 | Done | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
 | MV-046 | Doctor/facility/visit date extraction | P1 | Done | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
 | MV-047 | Confidence scoring system (HIGH/MEDIUM/LOW) + low-confidence flagging | P0 | Done | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
-| MV-048 | Entity deduplication across documents (chronic conditions, medications) | P1 | Not Started | — | MV-043 | — |
+| MV-048 | Entity deduplication across documents (chronic conditions, medications) | P1 | In Review | Developer Agent | MV-043 | feature/MV-048-entity-deduplication |
 | MV-049 | Drug synonym normalization dictionary | P2 | Not Started | — | MV-041 | — |
 
 ### EPIC: Health Profile
@@ -118,7 +119,7 @@
 | MV-051 | Profile API endpoints (GET full profile, GET summary) | P0 | Done | Developer Agent | MV-050 | feature/MV-051-profile-api |
 | MV-052 | Health profile dashboard UI — ref: `stitch_health_passport/health_profile_dashboard/` | P0 | In Review | Developer Agent | MV-051, MV-016b | feature/MV-052-health-profile-ui |
 | MV-053 | Manual add/edit/delete API for all entity types | P1 | In Review | Developer Agent | MV-051 | feature/MV-053-entity-crud-api |
-| MV-054 | Discontinue medication toggle (API + UI) | P2 | Not Started | — | MV-052 | — |
+| MV-054 | Discontinue medication toggle (API + UI) | P2 | In Review | Developer Agent | MV-052 | feature/MV-054-discontinue-medication-ui |
 
 ### EPIC: Health Timeline
 
@@ -134,7 +135,7 @@
 | MV-070 | Lab trend chart data API (time-series per parameter, ≥2 data points check) | P0 | In Review | Developer Agent | MV-050 | feature/MV-070-lab-trend-api |
 | MV-071 | Lab trend chart UI (Recharts, reference range band, out-of-range markers) | P0 | In Review | Developer Agent | MV-070, MV-016 | feature/MV-071-lab-trend-chart-ui |
 | MV-072 | Medication Gantt chart (API + UI) | P1 | In Review | Developer Agent | MV-050 | feature/MV-072-medication-gantt |
-| MV-073 | Vitals trend chart (BP, weight over time) | P1 | Not Started | — | MV-050 | — |
+| MV-073 | Vitals trend chart (BP, weight over time) | P1 | In Progress | Developer Agent | MV-050 | feature/MV-073-vitals-trend-chart |
 
 ### EPIC: Health Passport
 
@@ -154,7 +155,7 @@
 | MV-090 | Family member DB model + migration (included in MV-012 if done together) | P1 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-091 | Family member CRUD API (add, list, update, delete with data purge) | P1 | Done | Developer Agent | MV-090, MV-011 | feature/MV-091-family-crud |
 | MV-092 | Family management UI ("Family Circle") — ref: `stitch_health_passport/family_health_ecosystem/` + `add_family_member/` | P1 | In Review | Developer Agent | MV-091, MV-016b | feature/MV-092-family-ui |
-| MV-093 | Per-member data isolation verification (all queries scoped to member_id) | P0 | Not Started | — | MV-091 | — |
+| MV-093 | Per-member data isolation verification (all queries scoped to member_id) | P0 | In Review | Developer Agent | MV-091 | feature/MV-093-data-isolation-tests |
 
 ### EPIC: Notifications
 
@@ -260,3 +261,10 @@
 | 2026-04-10 | Developer Agent | Completed implementation MV-027 — Alembic migration 0003 (correction_audit table), CorrectionAudit ORM model (correction_audit.py, moved out of passport.py), schemas/corrections.py (FieldCorrectionRequest + CorrectionAuditResponse), api/corrections.py (PATCH + GET endpoints with ALLOWED_FIELDS validation, ownership check, audit write), router.py updated, __init__.py updated, 6 unit tests in test_corrections_api.py | MV-027 | Moved to In Review |
 | 2026-04-10 | Developer Agent | Started MV-053 — Manual add/edit/delete API for all entity types | MV-053 | branch: feature/MV-053-entity-crud-api |
 | 2026-04-10 | Developer Agent | Completed implementation MV-053 — schemas/entity_crud.py (Create/Update/Response schemas for all 5 entity types), api/entity_crud.py (14 endpoints across medications/lab-results/diagnoses/allergies/vitals; is_manual_entry=True on all creates; PATCH /discontinue for meds; ownership check on all writes), router.py updated with entity_crud_router, 12 unit tests in test_entity_crud_api.py | MV-053 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started MV-073 — Vitals trend chart (BP, weight over time) | MV-073 | branch: feature/MV-073-vitals-trend-chart |
+| 2026-04-10 | Developer Agent | Started MV-093 — Per-member data isolation verification | MV-093 | branch: feature/MV-093-data-isolation-tests |
+| 2026-04-10 | Developer Agent | Completed implementation MV-093 — 13 cross-user isolation tests in backend/tests/integration/test_data_isolation.py; covers profile, timeline, documents, charts (lab-trends + medication-timeline), entity-crud, corrections, passport, and family APIs; 9 negative-path 403 tests + 2 positive-path ownership tests + 2 additional scope tests | MV-093 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started MV-054 — Discontinue medication toggle (UI) | MV-054 | branch: feature/MV-054-discontinue-medication-ui |
+| 2026-04-10 | Developer Agent | Completed MV-054 — ActivePlan component in DashboardPage.tsx: Discontinue button per active med row (useMutation → PATCH /profile/{memberId}/medications/{medId}/discontinue, invalidates profile query); discontinued meds shown with opacity-50 + strikethrough + "Discontinued" badge; "Show N discontinued" toggle button; "No active medications" empty state when all meds are discontinued | MV-054 | Moved to In Review |
+| 2026-04-10 | Developer Agent | Started MV-048 — Entity deduplication across documents | MV-048 | branch: feature/MV-048-entity-deduplication |
+| 2026-04-10 | Developer Agent | Completed implementation MV-048 — deduplication_service.py (deduplicate_medications/diagnoses/allergies + run_deduplication); extraction_tasks.py updated to capture member_id and call run_deduplication after save_extraction_result; 14 unit tests in test_deduplication_service.py; lab_results and vitals explicitly excluded; manual entries skipped | MV-048 | Moved to In Review |
