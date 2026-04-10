@@ -53,6 +53,7 @@ async def _run_extraction(document_id: str) -> dict:
             logger.warning("Document not found, skipping", extra={"document_id": document_id})
             return {"document_id": document_id, "status": "NOT_FOUND"}
         storage_path = doc.storage_path
+        member_id = doc.member_id
 
     # Transition to PROCESSING via state machine
     async with AsyncSessionLocal() as session:
@@ -107,6 +108,17 @@ async def _run_extraction(document_id: str) -> dict:
             "char_count": len(extraction.text),
         },
     )
+
+    # Run entity deduplication for the member whose document was just processed.
+    # member_id is read from the document loaded earlier in this function.
+    async with AsyncSessionLocal() as session:
+        from app.services.deduplication_service import run_deduplication  # noqa: PLC0415
+        dedup_counts = await run_deduplication(session, member_id)
+        logger.info(
+            "Deduplication complete",
+            extra={"document_id": document_id, **dedup_counts},
+        )
+
     return {
         "document_id": document_id,
         "status": "COMPLETE",
