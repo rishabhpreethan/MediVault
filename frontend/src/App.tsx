@@ -13,6 +13,7 @@ import { RecordsPage } from './pages/records/RecordsPage'
 import { InsightsPage } from './pages/insights/InsightsPage'
 import { PassportPage } from './pages/passport/PassportPage'
 import { AddFamilyMemberPage } from './pages/passport/AddFamilyMemberPage'
+import { PassportManagePage } from './pages/passport/PassportManagePage'
 import { PublicPassportPage } from './pages/passport/PublicPassportPage'
 import { LoginPage } from './pages/auth/LoginPage'
 import { CallbackPage } from './pages/auth/CallbackPage'
@@ -36,6 +37,7 @@ export default function App() {
                 <Route path="/insights" element={<InsightsPage />} />
                 <Route path="/passport" element={<PassportPage />} />
                 <Route path="/passport/add-member" element={<AddFamilyMemberPage />} />
+                <Route path="/passport/manage" element={<PassportManagePage />} />
               </Route>
             </Route>
           </Routes>
