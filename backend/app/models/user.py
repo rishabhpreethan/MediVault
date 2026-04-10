@@ -26,6 +26,9 @@ class User(Base):
     last_login_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    deletion_requested_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     family_members: Mapped[list] = relationship(
         "FamilyMember", back_populates="user", cascade="all, delete-orphan"
