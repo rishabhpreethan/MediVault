@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { api } from '../../lib/api'
 import { useResolvedMemberId } from '../../hooks/useFamily'
@@ -373,8 +374,26 @@ function BiochemicalMetrics({ labs }: { labs: LabResult[] }) {
 
 // ── Section: Active Plan (Medications) ───────────────────────────────────
 
-function ActivePlan({ medications }: { medications: Medication[] }) {
+function ActivePlan({ medications, memberId }: { medications: Medication[]; memberId: string }) {
+  const queryClient = useQueryClient()
+  const [showDiscontinued, setShowDiscontinued] = useState(false)
+
+  const discontinueMutation = useMutation({
+    mutationFn: async (medId: string) => {
+      await api.patch(`/profile/${memberId}/medications/${medId}/discontinue`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', memberId] })
+    },
+  })
+
   const activeMeds = medications.filter(m => m.is_active).slice(0, 6)
+  const discontinuedMeds = medications.filter(m => !m.is_active)
+  const allActiveDiscontinued = activeMeds.length === 0
+
+  const visibleMeds = showDiscontinued
+    ? [...activeMeds, ...discontinuedMeds.slice(0, 6)]
+    : activeMeds
 
   return (
     <div className="bg-surface-container-lowest rounded-xl p-5 shadow-sm shadow-teal-900/5">
@@ -391,7 +410,7 @@ function ActivePlan({ medications }: { medications: Medication[] }) {
         </button>
       </div>
 
-      {activeMeds.length === 0 ? (
+      {allActiveDiscontinued && !showDiscontinued ? (
         <EmptyState
           icon={<IconActivity />}
           title="No active medications"
@@ -399,20 +418,66 @@ function ActivePlan({ medications }: { medications: Medication[] }) {
         />
       ) : (
         <ul className="space-y-3 mb-4">
-          {activeMeds.map((med) => (
-            <li key={med.medication_id} className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" aria-hidden="true" />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-on-surface leading-tight">
-                  {med.drug_name_normalized ?? med.drug_name}
-                </p>
-                <p className="text-xs text-on-surface-variant">
-                  {[med.dosage, med.frequency].filter((v): v is string => v !== null).join(' · ')}
-                </p>
-              </div>
-            </li>
-          ))}
+          {visibleMeds.map((med) => {
+            const isDiscontinued = !med.is_active
+            const isPending = discontinueMutation.isPending && discontinueMutation.variables === med.medication_id
+            return (
+              <li
+                key={med.medication_id}
+                className={`flex items-start gap-2 ${isDiscontinued ? 'opacity-50' : ''}`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${isDiscontinued ? 'bg-on-surface-variant' : 'bg-primary'}`}
+                  aria-hidden="true"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-semibold text-on-surface leading-tight ${isDiscontinued ? 'line-through' : ''}`}>
+                    {med.drug_name_normalized ?? med.drug_name}
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {([med.dosage, med.frequency].filter((v): v is string => v !== null).length > 0) && (
+                      <p className="text-xs text-on-surface-variant">
+                        {[med.dosage, med.frequency].filter((v): v is string => v !== null).join(' · ')}
+                      </p>
+                    )}
+                    {isDiscontinued && (
+                      <span className="text-[10px] font-bold bg-surface-container text-on-surface-variant rounded px-2 py-0.5">
+                        Discontinued
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {!isDiscontinued && (
+                  <button
+                    type="button"
+                    aria-label={`Discontinue ${med.drug_name_normalized ?? med.drug_name}`}
+                    disabled={isPending}
+                    onClick={() => discontinueMutation.mutate(med.medication_id)}
+                    className={`text-xs text-error hover:bg-error-container/30 rounded px-2 py-1 transition-colors flex-shrink-0 min-h-[44px] flex items-center ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {isPending ? '…' : 'Discontinue'}
+                  </button>
+                )}
+              </li>
+            )
+          })}
         </ul>
+      )}
+
+      {discontinuedMeds.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowDiscontinued(prev => !prev)}
+          className="text-xs text-on-surface-variant hover:text-on-surface transition-colors mb-4 min-h-[44px] px-1 flex items-center gap-1"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className={`w-3 h-3 transition-transform ${showDiscontinued ? 'rotate-180' : ''}`}
+            aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+          {showDiscontinued ? 'Hide discontinued' : `Show ${discontinuedMeds.length} discontinued`}
+        </button>
       )}
 
       <button
@@ -537,7 +602,7 @@ export function DashboardPage() {
 
         {/* Right column: Active Plan + Upcoming Consult */}
         <div className="md:col-span-2 space-y-4">
-          <ActivePlan medications={profile.medications} />
+          <ActivePlan medications={profile.medications} memberId={memberId!} />
           <UpcomingConsult profile={profile} />
         </div>
       </div>
