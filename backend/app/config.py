@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,7 +29,9 @@ class Settings(BaseSettings):
     encryption_key: str
 
     # Notifications
-    sendgrid_api_key: str = ""
+    sendgrid_api_key: Optional[str] = None
+    from_email: str = "noreply@medivault.health"
+    notifications_enabled: bool = False  # off by default; set to True in prod
 
     # App
     environment: str = "development"
