@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useResolvedMemberId } from '../../hooks/useFamily'
@@ -144,7 +145,12 @@ function DocumentCard({ doc }: { doc: Document }) {
   const badge = getStatusBadge(doc.processing_status)
 
   return (
-    <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm shadow-teal-900/5 flex gap-3 items-start">
+    <Link
+      to={`/records/${doc.document_id}`}
+      className="block bg-surface-container-lowest rounded-xl p-4 shadow-sm shadow-teal-900/5 flex gap-3 items-start hover:shadow-md hover:shadow-teal-900/10 transition-shadow focus:outline-none focus:ring-2 focus:ring-primary/30"
+      aria-label={`View details for ${getDocTypeLabel(doc.document_type)} document`}
+    >
+      <div className="flex gap-3 items-start w-full">
       {/* Icon */}
       <DocTypeIcon type={doc.document_type} />
 
@@ -188,16 +194,16 @@ function DocumentCard({ doc }: { doc: Document }) {
                 ? 'Pending...'
                 : 'N/A'}
           </span>
-          <button
-            type="button"
-            className="text-xs font-semibold text-primary hover:underline whitespace-nowrap min-h-[28px] flex items-center focus:outline-none focus:ring-2 focus:ring-primary/30 rounded"
-            aria-label={`View full analysis for document ${doc.document_id}`}
+          <span
+            className="text-xs font-semibold text-primary whitespace-nowrap min-h-[28px] flex items-center"
+            aria-hidden="true"
           >
             Full Analysis →
-          </button>
+          </span>
         </div>
       </div>
-    </div>
+      </div>
+    </Link>
   )
 }
 
