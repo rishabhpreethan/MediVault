@@ -1,8 +1,12 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useResolvedMemberId } from '../../hooks/useFamily'
 import type { Document, ProcessingStatus } from '../../types'
+import { TimelineTab } from './TimelineTab'
+import { UploadModal } from '../../components/upload/UploadModal'
+
+type RecordsTab = 'archive' | 'timeline'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -220,9 +224,11 @@ function SkeletonCard() {
 
 export function RecordsPage() {
   const memberId = useResolvedMemberId()
+  const resolvedMemberId = memberId ?? ''
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [search, setSearch] = useState('')
+  const [activeTab, setActiveTab] = useState<RecordsTab>('archive')
+  const [uploadOpen, setUploadOpen] = useState(false)
 
   const { data, isLoading, isError } = useQuery<DocumentsResponse>({
     queryKey: ['documents', memberId],
@@ -248,35 +254,29 @@ export function RecordsPage() {
       })
     : documents
 
-  function handleImportClick() {
-    fileInputRef.current?.click()
-  }
-
   return (
     <div className="space-y-6">
-      {/* Hidden file input — upload flow wired in MV-025 */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf"
-        className="hidden"
-        aria-hidden="true"
-        tabIndex={-1}
+      <UploadModal
+        isOpen={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        memberId={resolvedMemberId}
       />
 
       {/* ── Page header ───────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-on-surface tracking-tight">
-            Clinical Archive
+            {activeTab === 'archive' ? 'Clinical Archive' : 'Records'}
           </h1>
           <p className="text-sm text-on-surface-variant mt-1">
-            Your complete medical document library — extracted and indexed
+            {activeTab === 'archive'
+              ? 'Your complete medical document library — extracted and indexed'
+              : 'Archive and Timeline views of your clinical history'}
           </p>
         </div>
         <button
           type="button"
-          onClick={handleImportClick}
+          onClick={() => setUploadOpen(true)}
           className="bg-primary text-white font-semibold rounded-full px-5 py-2.5 hover:bg-primary/90 transition-colors shadow-sm shadow-teal-900/10 min-h-[44px] flex items-center gap-2 self-start whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-primary/40"
           aria-label="Import a new medical record"
         >
@@ -295,6 +295,47 @@ export function RecordsPage() {
           Import Record
         </button>
       </div>
+
+      {/* ── Tab switcher ──────────────────────────────────────────────── */}
+      <div
+        className="flex gap-1 bg-surface-container-low rounded-full p-1 w-fit"
+        role="tablist"
+        aria-label="Records view"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'archive'}
+          onClick={() => setActiveTab('archive')}
+          className={`px-5 py-2 rounded-full text-sm font-semibold transition-all min-h-[36px] focus:outline-none focus:ring-2 focus:ring-primary/30 ${
+            activeTab === 'archive'
+              ? 'bg-white text-primary shadow-sm shadow-teal-900/5'
+              : 'text-on-surface-variant hover:text-on-surface'
+          }`}
+        >
+          Archive
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'timeline'}
+          onClick={() => setActiveTab('timeline')}
+          className={`px-5 py-2 rounded-full text-sm font-semibold transition-all min-h-[36px] focus:outline-none focus:ring-2 focus:ring-primary/30 ${
+            activeTab === 'timeline'
+              ? 'bg-white text-primary shadow-sm shadow-teal-900/5'
+              : 'text-on-surface-variant hover:text-on-surface'
+          }`}
+        >
+          Timeline
+        </button>
+      </div>
+
+      {/* ── Timeline tab ──────────────────────────────────────────────── */}
+      {activeTab === 'timeline' && <TimelineTab />}
+
+      {/* ── Archive tab content ───────────────────────────────────────── */}
+      {activeTab === 'archive' && (
+        <>
 
       {/* ── Banner row: Extraction accuracy + Active Markers ─────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -436,7 +477,7 @@ export function RecordsPage() {
               {!search.trim() && (
                 <button
                   type="button"
-                  onClick={handleImportClick}
+                  onClick={() => setUploadOpen(true)}
                   className="mt-5 bg-primary text-white font-semibold rounded-full px-5 py-2.5 hover:bg-primary/90 transition-colors shadow-sm shadow-teal-900/10 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary/40"
                 >
                   Import Record
@@ -453,6 +494,9 @@ export function RecordsPage() {
             ))}
         </div>
       </section>
+
+        </>
+      )}
     </div>
   )
 }
