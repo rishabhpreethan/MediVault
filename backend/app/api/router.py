@@ -6,6 +6,7 @@ from app.api.charts import router as charts_router
 from app.api.corrections import router as corrections_router
 from app.api.documents import router as documents_router
 from app.api.entity_crud import router as entity_crud_router
+from app.api.export import router as export_router
 from app.api.family import router as family_router
 from app.api.passport import router as passport_router
 from app.api.profile import router as profile_router
@@ -19,6 +20,7 @@ api_router.include_router(charts_router, prefix="/charts", tags=["charts"])
 api_router.include_router(corrections_router, prefix="/corrections", tags=["corrections"])
 api_router.include_router(documents_router, prefix="/documents", tags=["documents"])
 api_router.include_router(entity_crud_router, tags=["entity-crud"])
+api_router.include_router(export_router, prefix="/export", tags=["export"])
 api_router.include_router(family_router, prefix="/family", tags=["family"])
 api_router.include_router(passport_router, prefix="/passport", tags=["passport"])
 api_router.include_router(profile_router, prefix="/profile", tags=["profile"])

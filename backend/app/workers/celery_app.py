@@ -19,6 +19,10 @@ TASK_ROUTES = {
         "queue": "extraction",
         "routing_key": "extraction",
     },
+    "app.workers.export_tasks.generate_user_export": {
+        "queue": "default",
+        "routing_key": "default",
+    },
     "app.workers.nlp_tasks.process_nlp": {
         "queue": "nlp",
         "routing_key": "nlp",
@@ -32,6 +36,7 @@ celery_app = Celery(
     backend=settings.redis_url,
     include=[
         "app.workers.extraction_tasks",
+        "app.workers.export_tasks",
         "app.workers.nlp_tasks",
         "app.workers.health_tasks",
     ],
