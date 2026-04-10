@@ -78,7 +78,7 @@
 | MV-022 | Scanned PDF detection (embedded text layer check) | P0 | Not Started | — | MV-021 | — |
 | MV-023 | Document library API (list, get, delete, retry) | P0 | Done | Developer Agent | MV-021 | feature/MV-023-document-retry-status |
 | MV-024 | Document library UI ("Clinical Archive") — ref: `stitch_health_passport/document_vault/` | P0 | In Review | Developer Agent | MV-016b, MV-023 | feature/MV-024-document-library-ui |
-| MV-025 | Upload flow UI (file picker, type selection, date, progress, rejection) | P0 | In Progress | Developer Agent | MV-021, MV-024 | feature/MV-025-upload-flow-ui |
+| MV-025 | Upload flow UI (file picker, type selection, date, progress, rejection) | P0 | In Review | Developer Agent | MV-021, MV-024 | feature/MV-025-upload-flow-ui |
 | MV-026 | Document detail page (PDF viewer + extracted data panel, inline edit) | P1 | Not Started | — | MV-024 | — |
 | MV-027 | Manual field correction API + audit trail | P1 | Not Started | — | MV-023 | — |
 
@@ -122,13 +122,13 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-060 | Timeline data API (paginated, filterable by type/date) | P0 | In Review | Developer Agent | MV-050 | feature/MV-060-timeline-api |
-| MV-061 | Timeline UI (under Records tab) — ref: `stitch_health_passport/health_timeline/` | P0 | In Progress | Developer Agent | MV-060, MV-016b | feature/MV-061-timeline-ui |
+| MV-061 | Timeline UI (under Records tab) — ref: `stitch_health_passport/health_timeline/` | P0 | In Review | Developer Agent | MV-060, MV-016b | feature/MV-061-timeline-ui |
 
 ### EPIC: Trend Visualizations
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-070 | Lab trend chart data API (time-series per parameter, ≥2 data points check) | P0 | In Progress | Developer Agent | MV-050 | feature/MV-070-lab-trend-api |
+| MV-070 | Lab trend chart data API (time-series per parameter, ≥2 data points check) | P0 | In Review | Developer Agent | MV-050 | feature/MV-070-lab-trend-api |
 | MV-071 | Lab trend chart UI (Recharts, reference range band, out-of-range markers) | P0 | Not Started | — | MV-070, MV-016 | — |
 | MV-072 | Medication Gantt chart (API + UI) | P1 | Not Started | — | MV-050 | — |
 | MV-073 | Vitals trend chart (BP, weight over time) | P1 | Not Started | — | MV-050 | — |
@@ -137,9 +137,9 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-080 | Passport generation API (UUID, expiry, section visibility settings) | P0 | In Progress | Developer Agent | MV-050 | feature/MV-080-passport-api |
-| MV-081 | Passport revoke/expiry API + access log | P0 | Not Started | — | MV-080 | — |
-| MV-082 | Public passport view endpoint (no auth, rate limited) | P0 | Not Started | — | MV-080 | — |
+| MV-080 | Passport generation API (UUID, expiry, section visibility settings) | P0 | In Review | Developer Agent | MV-050 | feature/MV-080-passport-api |
+| MV-081 | Passport revoke/expiry API + access log | P0 | Done | Developer Agent (covered by MV-080) | MV-080 | feature/MV-080-passport-api |
+| MV-082 | Public passport view endpoint (no auth, rate limited) | P0 | Done | Developer Agent (covered by MV-080) | MV-080 | feature/MV-080-passport-api |
 | MV-083 | QR code generation (frontend, links to passport URL) | P0 | Not Started | — | MV-080 | — |
 | MV-084 | Passport management UI — ref: `stitch_health_passport/health_passport/` | P0 | Not Started | — | MV-080, MV-016b | — |
 | MV-085 | Public passport page UI (read-only) — ref: `stitch_health_passport/health_passport/` | P0 | Not Started | — | MV-082 | — |
@@ -237,3 +237,7 @@
 | 2026-04-09 | Rishabh | Merged PRs #23 (MV-024), #24 (MV-052), #25 (MV-060), #26 (MV-092) | MV-024, MV-052, MV-060, MV-092 | — |
 | 2026-04-09 | neerajmenon4 | Fix: startup errors, auth race conditions, blank pages, member vault switching | — | Runnable baseline commit |
 | 2026-04-09 | Developer Agent | Started MV-061, MV-025, MV-070, MV-080 in parallel | MV-061, MV-025, MV-070, MV-080 | Running in parallel |
+| 2026-04-09 | Developer Agent | Completed MV-070 — lab trend chart data API: GET /charts/lab-trends + GET /charts/available-tests, schemas, router registered, 8 unit tests | MV-070 | Moved to In Review |
+| 2026-04-07 | Developer Agent | Completed MV-061 — Health Timeline UI: TimelineTab.tsx (event feed grouped by month, sidebar, skeleton/empty/error states, load more), Archive/Timeline tab switcher in RecordsPage.tsx | MV-061 | Moved to In Review |
+| 2026-04-07 | Developer Agent | Completed MV-080 — Passport generation API: schemas/passport.py, api/passport.py (POST/GET/DELETE/public endpoints), router registration, 15 unit tests | MV-080, MV-081, MV-082 | Moved to In Review |
+| 2026-04-07 | Developer Agent | Completed MV-025 — Upload flow UI: UploadModal.tsx (4-step modal: file selection with drag-and-drop, document type pills, date picker, uploading spinner, success/error states), RecordsPage updated to open modal on Import Record click | MV-025 | Moved to In Review |
