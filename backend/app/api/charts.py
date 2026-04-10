@@ -1,4 +1,4 @@
-"""Charts API — lab trend time-series + medication Gantt endpoints — MV-070, MV-072."""
+"""Charts API — lab trend time-series + medication Gantt + vitals trend endpoints — MV-070, MV-072, MV-073."""
 from __future__ import annotations
 
 import logging
@@ -14,6 +14,7 @@ from app.dependencies import CurrentUser, DbSession, require_member_access
 from app.models.family_member import FamilyMember
 from app.models.lab_result import LabResult
 from app.models.medication import Medication
+from app.models.vital import Vital
 from app.schemas.charts import (
     AvailableTestsResponse,
     LabDataPoint,
@@ -21,6 +22,9 @@ from app.schemas.charts import (
     LabTrendSeries,
     MedicationBar,
     MedicationTimelineResponse,
+    VitalDataPoint,
+    VitalsTrendResponse,
+    VitalsTrendSeries,
 )
 
 logger = logging.getLogger(__name__)
@@ -266,4 +270,102 @@ async def get_medication_timeline(
         member_id=str(member.member_id),
         earliest_date=earliest_date.isoformat() if start_dates else None,
         today=today.isoformat(),
+    )
+
+
+_VITAL_DISPLAY_NAMES: Dict[str, str] = {
+    "blood_pressure": "Blood Pressure",
+    "heart_rate": "Heart Rate",
+    "weight": "Weight",
+    "height": "Height",
+    "temperature": "Temperature",
+    "spo2": "SpO₂",
+    "bmi": "BMI",
+}
+
+
+@router.get("/vitals-trends", response_model=VitalsTrendResponse)
+async def get_vitals_trends(
+    member_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> VitalsTrendResponse:
+    """Return time-series vital data grouped by vital_type for charting.
+
+    Query params:
+    - member_id: UUID of the family member (required)
+    """
+    member = await _load_member_or_404(db, member_id, current_user)
+
+    rows: List[Vital] = (
+        await db.execute(
+            select(Vital)
+            .where(
+                Vital.member_id == member.member_id,
+                Vital.recorded_date.is_not(None),
+            )
+            .order_by(Vital.recorded_date.asc())
+        )
+    ).scalars().all()
+
+    # Group by vital_type
+    groups: Dict[str, List[Vital]] = defaultdict(list)
+    for row in rows:
+        groups[row.vital_type].append(row)
+
+    series: List[VitalsTrendSeries] = []
+    for vital_type, vital_rows in groups.items():
+        data_points: List[VitalDataPoint] = []
+        unit: Optional[str] = None
+
+        for v in vital_rows:
+            value_float = float(v.value)
+            if v.unit is not None:
+                unit = v.unit
+
+            # For blood_pressure: systolic = value, diastolic = None
+            # (The Numeric(8,2) column cannot store "120/80" strings;
+            #  systolic is stored as the value directly.)
+            if vital_type == "blood_pressure":
+                systolic: Optional[float] = value_float
+                diastolic: Optional[float] = None
+            else:
+                systolic = None
+                diastolic = None
+
+            data_points.append(
+                VitalDataPoint(
+                    recorded_at=v.recorded_date.isoformat() if v.recorded_date is not None else None,
+                    value=value_float,
+                    unit=v.unit,
+                    vital_type=vital_type,
+                    systolic=systolic,
+                    diastolic=diastolic,
+                )
+            )
+
+        display_name = _VITAL_DISPLAY_NAMES.get(vital_type, vital_type.replace("_", " ").title())
+
+        series.append(
+            VitalsTrendSeries(
+                vital_type=vital_type,
+                display_name=display_name,
+                unit=unit,
+                data_points=data_points,
+                has_enough_data=len(data_points) >= 2,
+            )
+        )
+
+    logger.info(
+        "Vitals trend data retrieved",
+        extra={
+            "member_id": str(member.member_id),
+            "user_id": str(current_user.user_id),
+            "series_count": len(series),
+        },
+    )
+
+    return VitalsTrendResponse(
+        series=series,
+        member_id=str(member.member_id),
     )

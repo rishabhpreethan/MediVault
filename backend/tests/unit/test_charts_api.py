@@ -25,8 +25,8 @@ for _mod in ("boto3", "aioboto3", "botocore", "botocore.exceptions"):
     if _mod not in sys.modules:
         sys.modules[_mod] = ModuleType(_mod)
 
-from app.api.charts import get_available_tests, get_lab_trends, get_medication_timeline
-from app.schemas.charts import AvailableTestsResponse, LabTrendResponse, MedicationTimelineResponse
+from app.api.charts import get_available_tests, get_lab_trends, get_medication_timeline, get_vitals_trends
+from app.schemas.charts import AvailableTestsResponse, LabTrendResponse, MedicationTimelineResponse, VitalsTrendResponse
 
 
 # ---------------------------------------------------------------------------
@@ -455,6 +455,132 @@ class TestMedicationTimeline403WrongUser:
 
         with pytest.raises(HTTPException) as exc_info:
             await get_medication_timeline(
+                member_id=member.member_id,
+                current_user=user,
+                db=db,
+            )
+
+        assert exc_info.value.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Helpers: Vital
+# ---------------------------------------------------------------------------
+
+
+def _make_vital(
+    member_id: uuid.UUID,
+    vital_type: str = "weight",
+    value: Decimal | None = Decimal("70.50"),
+    unit: str | None = "kg",
+    recorded_date: date | None = date(2025, 1, 1),
+) -> MagicMock:
+    from app.models.vital import Vital
+
+    m = MagicMock(spec=Vital)
+    m.vital_id = uuid.uuid4()
+    m.member_id = member_id
+    m.vital_type = vital_type
+    m.value = value
+    m.unit = unit
+    m.recorded_date = recorded_date
+    return m
+
+
+# ---------------------------------------------------------------------------
+# Tests: get_vitals_trends (MV-073)
+# ---------------------------------------------------------------------------
+
+
+class TestVitalsTrendsReturnsSeriesGroupedByType:
+    """test_vitals_trends_returns_series_grouped_by_type — mixed types → one series per type."""
+
+    @pytest.mark.asyncio
+    async def test_vitals_trends_returns_series_grouped_by_type(self):
+        user = _make_user()
+        member = _make_member(user_id=user.user_id)
+        mid = member.member_id
+
+        w1 = _make_vital(mid, vital_type="weight", value=Decimal("70.00"), recorded_date=date(2025, 1, 1))
+        w2 = _make_vital(mid, vital_type="weight", value=Decimal("69.50"), recorded_date=date(2025, 6, 1))
+        hr1 = _make_vital(mid, vital_type="heart_rate", value=Decimal("72.00"), unit="bpm", recorded_date=date(2025, 1, 15))
+        hr2 = _make_vital(mid, vital_type="heart_rate", value=Decimal("75.00"), unit="bpm", recorded_date=date(2025, 5, 15))
+
+        db = _mock_db()
+        db.execute = AsyncMock(
+            side_effect=[
+                _db_result_scalar(member),
+                _db_result_scalars([w1, w2, hr1, hr2]),
+            ]
+        )
+
+        response = await get_vitals_trends(member_id=mid, current_user=user, db=db)
+
+        assert isinstance(response, VitalsTrendResponse)
+        assert response.member_id == str(mid)
+        assert len(response.series) == 2
+
+        vital_types = {s.vital_type for s in response.series}
+        assert vital_types == {"weight", "heart_rate"}
+
+        weight_series = next(s for s in response.series if s.vital_type == "weight")
+        assert len(weight_series.data_points) == 2
+        assert weight_series.has_enough_data is True
+        assert weight_series.display_name == "Weight"
+
+        hr_series = next(s for s in response.series if s.vital_type == "heart_rate")
+        assert hr_series.display_name == "Heart Rate"
+        assert hr_series.has_enough_data is True
+
+
+class TestVitalsTrendsBpParsingSystolicDiastolic:
+    """test_vitals_trends_bp_parsing_systolic_diastolic — blood_pressure series sets systolic=value, diastolic=None."""
+
+    @pytest.mark.asyncio
+    async def test_vitals_trends_bp_parsing_systolic_diastolic(self):
+        user = _make_user()
+        member = _make_member(user_id=user.user_id)
+        mid = member.member_id
+
+        bp1 = _make_vital(mid, vital_type="blood_pressure", value=Decimal("120.00"), unit="mmHg", recorded_date=date(2025, 1, 1))
+        bp2 = _make_vital(mid, vital_type="blood_pressure", value=Decimal("118.00"), unit="mmHg", recorded_date=date(2025, 4, 1))
+
+        db = _mock_db()
+        db.execute = AsyncMock(
+            side_effect=[
+                _db_result_scalar(member),
+                _db_result_scalars([bp1, bp2]),
+            ]
+        )
+
+        response = await get_vitals_trends(member_id=mid, current_user=user, db=db)
+
+        assert len(response.series) == 1
+        bp_series = response.series[0]
+        assert bp_series.vital_type == "blood_pressure"
+        assert bp_series.display_name == "Blood Pressure"
+        assert bp_series.has_enough_data is True
+
+        # systolic equals value; diastolic is None (single Numeric column)
+        for point in bp_series.data_points:
+            assert point.systolic == point.value
+            assert point.diastolic is None
+
+
+class TestVitalsTrends403WrongUser:
+    """test_vitals_trends_403_wrong_user — member belongs to another user."""
+
+    @pytest.mark.asyncio
+    async def test_vitals_trends_403_wrong_user(self):
+        user = _make_user()
+        other_user_id = uuid.uuid4()
+        member = _make_member(user_id=other_user_id)
+
+        db = _mock_db()
+        db.execute = AsyncMock(return_value=_db_result_scalar(member))
+
+        with pytest.raises(HTTPException) as exc_info:
+            await get_vitals_trends(
                 member_id=member.member_id,
                 current_user=user,
                 db=db,

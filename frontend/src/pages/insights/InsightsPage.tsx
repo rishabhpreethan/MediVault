@@ -44,6 +44,30 @@ interface AvailableTestsResponse {
   member_id: string
 }
 
+// ── Vitals trend types (MV-073) ───────────────────────────────────────────
+
+interface VitalDataPoint {
+  recorded_at: string | null
+  value: number
+  unit: string | null
+  vital_type: string
+  systolic: number | null
+  diastolic: number | null
+}
+
+interface VitalsTrendSeries {
+  vital_type: string
+  display_name: string
+  unit: string | null
+  data_points: VitalDataPoint[]
+  has_enough_data: boolean
+}
+
+interface VitalsTrendResponse {
+  series: VitalsTrendSeries[]
+  member_id: string
+}
+
 // ── Medication timeline types (MV-072) ─────────────────────────────────────
 
 interface MedicationBar {
@@ -433,6 +457,26 @@ function LabChartCard({ series }: { series: LabTrendSeries }) {
   )
 }
 
+// ── SVG Heartbeat icon (MV-073) ───────────────────────────────────────────
+
+function IconHeartbeat() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-8 h-8"
+      aria-hidden="true"
+    >
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  )
+}
+
 // ── SVG Pill icon (MV-072) ────────────────────────────────────────────────
 
 function IconPill() {
@@ -624,9 +668,251 @@ function MedicationGanttChart({ memberId }: { memberId: string }) {
   )
 }
 
+// ── Vitals stats strip (MV-073) ───────────────────────────────────────────
+
+function VitalsStatsStrip({ series }: { series: VitalsTrendSeries }) {
+  const { data_points, unit } = series
+  if (data_points.length === 0) return null
+
+  const values = data_points.map((p) => p.value)
+  const latest = data_points[data_points.length - 1]
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+
+  const latestLabel =
+    series.vital_type === 'blood_pressure' && latest.systolic !== null
+      ? `${latest.systolic}`
+      : `${latest.value}`
+
+  return (
+    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-outline-variant/20">
+      <div>
+        <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">
+          Latest
+        </p>
+        <p className="text-xl font-extrabold text-primary">
+          {latestLabel}
+          {unit && (
+            <span className="text-sm font-semibold text-on-surface-variant ml-1">{unit}</span>
+          )}
+        </p>
+      </div>
+      <div>
+        <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">
+          Min
+        </p>
+        <p className="text-xl font-extrabold text-on-surface">
+          {min}
+          {unit && (
+            <span className="text-sm font-semibold text-on-surface-variant ml-1">{unit}</span>
+          )}
+        </p>
+      </div>
+      <div>
+        <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">
+          Max
+        </p>
+        <p className="text-xl font-extrabold text-on-surface">
+          {max}
+          {unit && (
+            <span className="text-sm font-semibold text-on-surface-variant ml-1">{unit}</span>
+          )}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── VitalsChartCard (MV-073) ──────────────────────────────────────────────
+
+function VitalsChartCard({ series }: { series: VitalsTrendSeries }) {
+  const { vital_type, display_name, has_enough_data, data_points, unit } = series
+
+  if (!has_enough_data) {
+    return (
+      <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm shadow-teal-900/5">
+        <h2 className="text-base font-extrabold text-on-surface tracking-tight mb-4">
+          {display_name}
+        </h2>
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center mb-3 text-primary/40">
+            <IconHeartbeat />
+          </div>
+          <p className="text-sm font-bold text-on-surface">Not enough data yet</p>
+          <p className="text-xs text-on-surface-variant mt-1">
+            Need at least 2 readings to display a trend
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  const chartData = data_points.map((p) => ({
+    ...p,
+    formattedDate: p.recorded_at ? formatDateShort(p.recorded_at) : '—',
+  }))
+
+  const values = data_points.map((p) => p.value)
+  const dataMin = Math.min(...values)
+  const dataMax = Math.max(...values)
+  const domainMin = Math.floor(dataMin * 0.9)
+  const domainMax = Math.ceil(dataMax * 1.1)
+
+  const yLabel = unit
+    ? { value: unit, angle: -90, position: 'insideLeft' as const, offset: 10, style: { fontSize: 11, fill: '#3c4a46' } }
+    : undefined
+
+  const isBP = vital_type === 'blood_pressure'
+
+  return (
+    <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm shadow-teal-900/5">
+      <h2 className="text-base font-extrabold text-on-surface tracking-tight mb-4">
+        {display_name}
+      </h2>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart
+          data={chartData}
+          margin={{ top: 8, right: 16, left: unit ? 8 : 0, bottom: 4 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#bacac5" strokeOpacity={0.4} />
+          <XAxis
+            dataKey="formattedDate"
+            tick={{ fontSize: 11, fill: '#3c4a46' }}
+            axisLine={{ stroke: '#bacac5' }}
+            tickLine={false}
+          />
+          <YAxis
+            domain={[domainMin, domainMax]}
+            tick={{ fontSize: 11, fill: '#3c4a46' }}
+            axisLine={false}
+            tickLine={false}
+            label={yLabel}
+          />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload || payload.length === 0) return null
+              const point = payload[0].payload as VitalDataPoint & { formattedDate: string }
+              return (
+                <div className="bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant/30 p-3 text-xs min-w-[140px]">
+                  <p className="font-bold text-on-surface mb-2">{point.formattedDate}</p>
+                  {isBP ? (
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-base font-extrabold text-primary">{point.value}</span>
+                      {unit && <span className="text-on-surface-variant">{unit}</span>}
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-base font-extrabold text-primary">{point.value}</span>
+                      {unit && <span className="text-on-surface-variant">{unit}</span>}
+                    </div>
+                  )}
+                </div>
+              )
+            }}
+          />
+          {/* Blood pressure: single line in teal; other vitals: same pattern */}
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#006b5f"
+            strokeWidth={2}
+            dot={{ r: 4, fill: '#006b5f', stroke: '#62fae3', strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: '#006b5f' }}
+            isAnimationActive={true}
+            name={isBP ? 'Systolic' : display_name}
+          />
+          {/* For BP, also render a second lighter line at diastolic if available */}
+          {isBP && chartData.some((p) => p.diastolic !== null) && (
+            <Line
+              type="monotone"
+              dataKey="diastolic"
+              stroke="#2dd4bf"
+              strokeWidth={2}
+              dot={{ r: 4, fill: '#2dd4bf', stroke: '#62fae3', strokeWidth: 2 }}
+              activeDot={{ r: 6, fill: '#2dd4bf' }}
+              isAnimationActive={true}
+              name="Diastolic"
+            />
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+      <VitalsStatsStrip series={series} />
+    </div>
+  )
+}
+
+// ── VitalsTrendChart component (MV-073) ───────────────────────────────────
+
+function VitalsTrendChart({ memberId }: { memberId: string }) {
+  const { data, isLoading, isError, error } = useQuery<VitalsTrendResponse>({
+    queryKey: ['vitals-trends', memberId],
+    queryFn: async () => {
+      const { data: responseData } = await api.get<VitalsTrendResponse>(
+        `/charts/vitals-trends?member_id=${memberId}`
+      )
+      return responseData
+    },
+    enabled: !!memberId,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse space-y-4" aria-label="Loading vitals">
+        <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm shadow-teal-900/5 space-y-4">
+          <div className="h-5 w-40 bg-surface-container rounded-lg" />
+          <div className="h-[300px] bg-surface-container rounded-xl" />
+          <div className="grid grid-cols-3 gap-4 pt-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="space-y-2">
+                <div className="h-3 w-12 bg-surface-container rounded" />
+                <div className="h-6 w-20 bg-surface-container rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="bg-error-container rounded-2xl p-5">
+        <p className="text-sm font-bold text-error">Failed to load vitals data</p>
+        <p className="text-xs text-on-surface-variant mt-1">
+          {error instanceof Error ? error.message : 'Please try again later'}
+        </p>
+      </div>
+    )
+  }
+
+  const seriesWithData = data?.series.filter((s) => s.has_enough_data) ?? []
+
+  if (!data || seriesWithData.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center mb-4 text-primary/40">
+          <IconHeartbeat />
+        </div>
+        <p className="text-base font-bold text-on-surface">No vitals data yet</p>
+        <p className="text-sm text-on-surface-variant mt-1 max-w-xs">
+          Upload documents containing vital measurements
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      {seriesWithData.map((series) => (
+        <VitalsChartCard key={series.vital_type} series={series} />
+      ))}
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────
 
-type InsightsTab = 'lab-trends' | 'medications'
+type InsightsTab = 'lab-trends' | 'medications' | 'vitals'
 
 export function InsightsPage() {
   const memberId = useResolvedMemberId()
@@ -702,6 +988,7 @@ export function InsightsPage() {
           [
             { id: 'lab-trends', label: 'Lab Trends' },
             { id: 'medications', label: 'Medications' },
+            { id: 'vitals', label: 'Vitals' },
           ] as { id: InsightsTab; label: string }[]
         ).map(({ id, label }) => {
           const isActive = activeTab === id
@@ -838,6 +1125,21 @@ export function InsightsPage() {
       {activeTab === 'medications' && !memberId && (
         <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm shadow-teal-900/5">
           <GanttSkeleton />
+        </div>
+      )}
+
+      {/* ── Vitals tab ──────────────────────────────────────────────────── */}
+      {activeTab === 'vitals' && memberId && (
+        <VitalsTrendChart memberId={memberId} />
+      )}
+
+      {/* Edge case: memberId not yet resolved while on vitals tab */}
+      {activeTab === 'vitals' && !memberId && (
+        <div className="animate-pulse space-y-4" aria-label="Loading vitals">
+          <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-sm shadow-teal-900/5 space-y-4">
+            <div className="h-5 w-40 bg-surface-container rounded-lg" />
+            <div className="h-[300px] bg-surface-container rounded-xl" />
+          </div>
         </div>
       )}
     </div>

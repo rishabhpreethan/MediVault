@@ -1,4 +1,4 @@
-"""Chart data schemas — MV-070, MV-072."""
+"""Chart data schemas — MV-070, MV-072, MV-073."""
 from __future__ import annotations
 
 from datetime import date
@@ -53,3 +53,28 @@ class MedicationTimelineResponse(BaseModel):
     member_id: str
     earliest_date: Optional[str] = None  # ISO date of earliest med start
     today: str                            # ISO date of today for ongoing bar length
+
+
+# ── MV-073: Vitals trend chart schemas ─────────────────────────────────────
+
+
+class VitalDataPoint(BaseModel):
+    recorded_at: Optional[str] = None   # ISO date string or None
+    value: float
+    unit: Optional[str] = None
+    vital_type: str
+    systolic: Optional[float] = None    # for blood_pressure: same as value
+    diastolic: Optional[float] = None   # for blood_pressure: not available from single Numeric column
+
+
+class VitalsTrendSeries(BaseModel):
+    vital_type: str
+    display_name: str            # human-readable, e.g. "Blood Pressure"
+    unit: Optional[str] = None
+    data_points: List[VitalDataPoint]
+    has_enough_data: bool        # >= 2 points
+
+
+class VitalsTrendResponse(BaseModel):
+    series: List[VitalsTrendSeries]
+    member_id: str
