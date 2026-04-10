@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useActiveMemberDetails, useSetActiveMember } from '../../hooks/useFamily'
+import { SessionManager } from '../common/SessionManager'
 
 // ── Inline SVG icons ───────────────────────────────────────────────────────
 
@@ -258,6 +259,9 @@ export function AppShell() {
 
       {/* Mobile bottom nav */}
       <BottomNav />
+
+      {/* Session inactivity + token refresh manager */}
+      <SessionManager />
     </div>
   )
 }
