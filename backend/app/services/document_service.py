@@ -5,6 +5,7 @@ Status state machine:
   QUEUED → PROCESSING
   PROCESSING → COMPLETE
   PROCESSING → FAILED
+  PROCESSING → MANUAL_REVIEW (scanned document detected)
   FAILED → PROCESSING        (on manual retry)
   FAILED → MANUAL_REVIEW     (after max attempts exceeded)
   MANUAL_REVIEW → PROCESSING (on manual retry — operator override)
@@ -39,7 +40,7 @@ MAX_AUTO_ATTEMPTS = 3
 # ---------------------------------------------------------------------------
 _ALLOWED: dict[str, set[str]] = {
     QUEUED: {PROCESSING},
-    PROCESSING: {COMPLETE, FAILED},
+    PROCESSING: {COMPLETE, FAILED, MANUAL_REVIEW},
     FAILED: {PROCESSING, MANUAL_REVIEW},
     MANUAL_REVIEW: {PROCESSING},
     COMPLETE: {PROCESSING},
@@ -105,6 +106,32 @@ async def mark_failed(
     to_status = MANUAL_REVIEW if attempts >= MAX_AUTO_ATTEMPTS else FAILED
     assert_valid_transition(doc.processing_status, to_status)
     doc.processing_status = to_status
+    await session.commit()
+
+
+async def mark_manual_review(
+    session: AsyncSession,
+    document_id: uuid.UUID,
+    reason: str,
+) -> None:
+    """Transition a PROCESSING document directly to MANUAL_REVIEW.
+
+    Used when a scanned (image-only) PDF is detected after extraction so that
+    no extraction result is persisted and the document is queued for human
+    review instead.
+
+    Args:
+        session: Active async SQLAlchemy session.
+        document_id: UUID of the Document record to update.
+        reason: Short string describing why manual review is needed
+                (e.g. "scanned_document"). Stored for operator visibility.
+    """
+    from app.models.document import Document  # noqa: PLC0415
+
+    doc = await _get_or_raise(session, document_id)
+    assert_valid_transition(doc.processing_status, MANUAL_REVIEW)
+    doc.processing_status = MANUAL_REVIEW
+    doc.has_text_layer = False
     await session.commit()
 
 

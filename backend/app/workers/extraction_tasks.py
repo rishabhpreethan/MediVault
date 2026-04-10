@@ -1,4 +1,6 @@
 """Celery task: extract text from an uploaded PDF document."""
+from __future__ import annotations
+
 import asyncio
 import uuid
 
@@ -59,8 +61,38 @@ async def _run_extraction(document_id: str) -> dict:
     # Fetch PDF from MinIO (sync boto3)
     pdf_bytes = _fetch_pdf_bytes(storage_path)
 
+    # Get page count for scanned detection (pypdf is already a dependency)
+    try:
+        import io  # noqa: PLC0415
+        from pypdf import PdfReader  # noqa: PLC0415
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        page_count = len(reader.pages)
+    except Exception:
+        page_count = 0
+
     # Extract via orchestrator (pdfminer → pypdf fallback)
-    extraction = extract_with_fallback(pdf_bytes)
+    extraction = extract_with_fallback(pdf_bytes, page_count=page_count)
+
+    # Scanned document: route to MANUAL_REVIEW instead of COMPLETE
+    if not extraction.has_text_layer:
+        logger.warning(
+            "Scanned document detected",
+            extra={
+                "document_id": document_id,
+                "page_count": page_count,
+                "char_count": len(extraction.text),
+            },
+        )
+        async with AsyncSessionLocal() as session:
+            await document_service.mark_manual_review(
+                session, doc_uuid, reason="scanned_document"
+            )
+        return {
+            "document_id": document_id,
+            "status": "MANUAL_REVIEW",
+            "library_used": extraction.library_used,
+            "has_text_layer": False,
+        }
 
     # Persist result and transition to COMPLETE
     async with AsyncSessionLocal() as session:
