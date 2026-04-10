@@ -10,8 +10,10 @@ import { AppShell } from './components/layout/AppShell'
 // Pages
 import { DashboardPage } from './pages/dashboard/DashboardPage'
 import { RecordsPage } from './pages/records/RecordsPage'
+import { DocumentDetailPage } from './pages/records/DocumentDetailPage'
 import { InsightsPage } from './pages/insights/InsightsPage'
 import { PassportPage } from './pages/passport/PassportPage'
+import { PassportManagePage } from './pages/passport/PassportManagePage'
 import { AddFamilyMemberPage } from './pages/passport/AddFamilyMemberPage'
 import { PublicPassportPage } from './pages/passport/PublicPassportPage'
 import { LoginPage } from './pages/auth/LoginPage'
@@ -33,9 +35,11 @@ export default function App() {
               <Route element={<AppShell />}>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/records" element={<RecordsPage />} />
+                <Route path="/records/:documentId" element={<DocumentDetailPage />} />
                 <Route path="/insights" element={<InsightsPage />} />
                 <Route path="/passport" element={<PassportPage />} />
                 <Route path="/passport/add-member" element={<AddFamilyMemberPage />} />
+                <Route path="/passport/manage" element={<PassportManagePage />} />
               </Route>
             </Route>
           </Routes>
