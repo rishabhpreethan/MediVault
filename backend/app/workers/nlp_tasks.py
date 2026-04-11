@@ -96,7 +96,7 @@ async def _run_nlp(document_id: str) -> dict:
 
 @celery_app.task(
     bind=True,
-    name="nlp.process_document",
+    name="nlp.process_nlp",
     queue="nlp",
     max_retries=3,
     default_retry_delay=60,
@@ -105,7 +105,7 @@ async def _run_nlp(document_id: str) -> dict:
     retry_backoff_max=600,
     retry_jitter=True,
 )
-def process_document(self, document_id: str) -> dict:
+def process_nlp(self, document_id: str) -> dict:
     """Run NLP entity extraction on a document's extracted raw text.
 
     Fetches the document's ``extracted_raw_text`` from the database, runs the
@@ -121,5 +121,5 @@ def process_document(self, document_id: str) -> dict:
         dict with keys: document_id, status, medications_found, labs_found,
         diagnoses_found
     """
-    logger.info("process_document started", extra={"document_id": document_id})
+    logger.info("process_nlp started", extra={"document_id": document_id})
     return asyncio.run(_run_nlp(document_id))

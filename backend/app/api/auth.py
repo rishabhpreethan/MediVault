@@ -1,10 +1,8 @@
 """Auth routes — user provisioning (MV-013) and account deletion (MV-110)."""
-from __future__ import annotations
-
 from datetime import datetime, timezone
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from pydantic import BaseModel
@@ -14,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import verify_token
 from app.database import get_db
 from app.dependencies import CurrentUser
+from app.limiter import limiter
 from app.models.passport import SharedPassport
 from app.models.user import User
 
@@ -44,6 +43,7 @@ class UserResponse(BaseModel):
 
 @router.post("/provision", response_model=UserResponse, status_code=200)
 async def provision_user(
+    request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(_bearer)],
     db: DbSession,
 ) -> User:
@@ -57,6 +57,7 @@ async def provision_user(
       - email         → email
       - email_verified → email_verified
     """
+    from app.services import audit_service  # noqa: PLC0415
     try:
         payload = await verify_token(credentials.credentials)
     except JWTError:
@@ -78,6 +79,9 @@ async def provision_user(
 
     now = datetime.now(tz=timezone.utc)
 
+    ip_address: Optional[str] = request.client.host if request.client else None
+    user_agent_header: Optional[str] = request.headers.get("user-agent")
+
     if user is None:
         user = User(
             auth0_sub=sub,
@@ -86,10 +90,25 @@ async def provision_user(
             last_login_at=now,
         )
         db.add(user)
+        await db.flush()
+        await audit_service.log_auth_event(
+            db,
+            event_type=audit_service.EVENT_PROVISION,
+            user_id=user.user_id,
+            ip_address=ip_address,
+            user_agent=user_agent_header,
+        )
     else:
         user.email = email
         user.email_verified = email_verified
         user.last_login_at = now
+        await audit_service.log_auth_event(
+            db,
+            event_type=audit_service.EVENT_LOGIN,
+            user_id=user.user_id,
+            ip_address=ip_address,
+            user_agent=user_agent_header,
+        )
 
     await db.commit()
     await db.refresh(user)
@@ -102,6 +121,7 @@ async def provision_user(
 
 @router.delete("/account", response_model=None, status_code=204)
 async def delete_account(
+    request: Request,
     current_user: CurrentUser,
     db: DbSession,
 ) -> Response:
@@ -114,10 +134,13 @@ async def delete_account(
 
     Returns 204 No Content.
     """
+    from app.services import audit_service  # noqa: PLC0415
     from app.workers.health_tasks import purge_user_data  # noqa: PLC0415
 
     now = datetime.now(tz=timezone.utc)
     user_id_str = str(current_user.user_id)
+    ip_address: Optional[str] = request.client.host if request.client else None
+    user_agent_header: Optional[str] = request.headers.get("user-agent")
 
     # 1. Soft-delete the user
     current_user.is_active = False
@@ -130,9 +153,18 @@ async def delete_account(
         .values(is_active=False)
     )
 
+    # 3. Audit log the deletion request
+    await audit_service.log_auth_event(
+        db,
+        event_type=audit_service.EVENT_ACCOUNT_DELETION_REQUESTED,
+        user_id=current_user.user_id,
+        ip_address=ip_address,
+        user_agent=user_agent_header,
+    )
+
     await db.commit()
 
-    # 3. Queue async purge task
+    # 4. Queue async purge task
     purge_user_data.delay(user_id_str)
 
     return Response(status_code=204)

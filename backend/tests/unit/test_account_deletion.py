@@ -9,6 +9,7 @@ from typing import List
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from fastapi import Request
 
 # Stub boto3 and botocore before any app imports
 for _mod in ("boto3", "botocore", "botocore.exceptions"):
@@ -19,6 +20,11 @@ for _mod in ("boto3", "botocore", "botocore.exceptions"):
         sys.modules[_mod] = _fake
 
 from app.api.auth import delete_account
+
+_MOCK_REQUEST = MagicMock(spec=Request)
+_MOCK_REQUEST.client = MagicMock()
+_MOCK_REQUEST.client.host = "127.0.0.1"
+_MOCK_REQUEST.headers = {}
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +70,7 @@ class TestDeleteAccountEndpoint:
 
         with patch("app.workers.health_tasks.purge_user_data") as mock_task:
             mock_task.delay = MagicMock()
-            response = await delete_account(current_user=user, db=db)
+            response = await delete_account(request=_MOCK_REQUEST, current_user=user, db=db)  # noqa: E501
 
         assert response.status_code == 204
 
@@ -76,7 +82,7 @@ class TestDeleteAccountEndpoint:
 
         with patch("app.workers.health_tasks.purge_user_data") as mock_task:
             mock_task.delay = MagicMock()
-            await delete_account(current_user=user, db=db)
+            await delete_account(request=_MOCK_REQUEST, current_user=user, db=db)
 
         assert user.is_active is False
 
@@ -88,7 +94,7 @@ class TestDeleteAccountEndpoint:
 
         with patch("app.workers.health_tasks.purge_user_data") as mock_task:
             mock_task.delay = MagicMock()
-            await delete_account(current_user=user, db=db)
+            await delete_account(request=_MOCK_REQUEST, current_user=user, db=db)
 
         assert user.deletion_requested_at is not None
         assert isinstance(user.deletion_requested_at, datetime)
@@ -101,7 +107,7 @@ class TestDeleteAccountEndpoint:
 
         with patch("app.workers.health_tasks.purge_user_data") as mock_task:
             mock_task.delay = MagicMock()
-            await delete_account(current_user=user, db=db)
+            await delete_account(request=_MOCK_REQUEST, current_user=user, db=db)
 
         # db.execute should be called at least once (for the passport UPDATE)
         db.execute.assert_called_once()
@@ -114,7 +120,7 @@ class TestDeleteAccountEndpoint:
 
         with patch("app.workers.health_tasks.purge_user_data") as mock_task:
             mock_task.delay = MagicMock()
-            await delete_account(current_user=user, db=db)
+            await delete_account(request=_MOCK_REQUEST, current_user=user, db=db)
 
         db.commit.assert_called_once()
 
@@ -126,7 +132,7 @@ class TestDeleteAccountEndpoint:
 
         with patch("app.workers.health_tasks.purge_user_data") as mock_task:
             mock_task.delay = MagicMock()
-            await delete_account(current_user=user, db=db)
+            await delete_account(request=_MOCK_REQUEST, current_user=user, db=db)
 
         mock_task.delay.assert_called_once_with(str(user.user_id))
 

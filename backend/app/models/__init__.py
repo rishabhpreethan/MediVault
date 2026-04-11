@@ -11,6 +11,7 @@ from app.models.doctor import Doctor
 from app.models.procedure import Procedure
 from app.models.passport import SharedPassport, PassportAccessLog
 from app.models.correction_audit import CorrectionAudit
+from app.models.auth_audit import AuthAuditLog
 
 __all__ = [
     "User",
@@ -26,4 +27,5 @@ __all__ = [
     "SharedPassport",
     "PassportAccessLog",
     "CorrectionAudit",
+    "AuthAuditLog",
 ]

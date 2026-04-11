@@ -28,6 +28,8 @@ if "botocore" not in sys.modules:
     sys.modules["botocore"] = _fake_botocore
     sys.modules["botocore.exceptions"] = _fake_botocore_exc
 
+from fastapi import Request
+
 from app.api.documents import (
     _MAX_FILE_SIZE,
     _document_to_response,
@@ -36,6 +38,11 @@ from app.api.documents import (
     retry_document,
     upload_document,
 )
+
+_MOCK_REQUEST = MagicMock(spec=Request)
+_MOCK_REQUEST.client = MagicMock()
+_MOCK_REQUEST.client.host = "127.0.0.1"
+_MOCK_REQUEST.headers = {}
 
 
 # ---------------------------------------------------------------------------
@@ -212,6 +219,7 @@ class TestUploadDocumentValidation:
 
         with pytest.raises(HTTPException) as exc_info:
             await upload_document(
+                request=_MOCK_REQUEST,
                 current_user=user,
                 db=db,
                 file=upload_file,
@@ -233,6 +241,7 @@ class TestUploadDocumentValidation:
 
         with pytest.raises(HTTPException) as exc_info:
             await upload_document(
+                request=_MOCK_REQUEST,
                 current_user=user,
                 db=db,
                 file=upload_file,
@@ -252,6 +261,7 @@ class TestUploadDocumentValidation:
 
         with pytest.raises(HTTPException) as exc_info:
             await upload_document(
+                request=_MOCK_REQUEST,
                 current_user=user,
                 db=db,
                 file=upload_file,
@@ -270,6 +280,7 @@ class TestUploadDocumentValidation:
 
         with pytest.raises(HTTPException) as exc_info:
             await upload_document(
+                request=_MOCK_REQUEST,
                 current_user=user,
                 db=db,
                 file=upload_file,
@@ -291,6 +302,7 @@ class TestUploadDocumentValidation:
 
         with pytest.raises(HTTPException) as exc_info:
             await upload_document(
+                request=_MOCK_REQUEST,
                 current_user=user,
                 db=db,
                 file=upload_file,
@@ -338,6 +350,7 @@ class TestUploadDocumentSuccess:
             db.refresh = AsyncMock(side_effect=mock_refresh)
 
             response = await upload_document(
+                request=_MOCK_REQUEST,
                 current_user=user,
                 db=db,
                 file=upload_file,
@@ -384,6 +397,7 @@ class TestUploadDocumentSuccess:
         ):
             with pytest.raises(HTTPException) as exc_info:
                 await upload_document(
+                    request=_MOCK_REQUEST,
                     current_user=user,
                     db=db,
                     file=upload_file,

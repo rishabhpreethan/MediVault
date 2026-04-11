@@ -5,8 +5,10 @@ import logging
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Form, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import func, select
+
+from app.limiter import limiter
 
 from app.dependencies import CurrentUser, DbSession, require_member_access
 from app.models.document import Document
@@ -95,6 +97,7 @@ def _document_to_response(doc: Document) -> DocumentResponse:
 
 @router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
+    request: Request,
     current_user: CurrentUser,
     db: DbSession,
     file: UploadFile,

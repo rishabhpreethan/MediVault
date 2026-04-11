@@ -27,9 +27,12 @@ class FamilyMemberResponse(BaseModel):
     member_id: str
     user_id: str
     full_name: str
+    name: str
     relationship: str
     date_of_birth: Optional[date] = None
     blood_group: Optional[str] = None
+    gender: Optional[str] = None
     is_self: bool = False
+    created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
