@@ -17,11 +17,7 @@
 
 | Person | Agent Role | Currently Working On | Task ID | Branch | Last Updated |
 |---|---|---|---|---|---|
-| Developer Agent | Developer | Public Passport Page UI | MV-085 | feature/MV-085-public-passport-ui | 2026-04-10 |
-| Developer Agent | Developer | Document Detail Page — Done | MV-026 | feature/MV-026-document-detail | 2026-04-10 |
-| Developer Agent | Developer | QR code component + Passport management UI | MV-083, MV-084 | feature/MV-083-084-passport-ui | 2026-04-10 |
-| Developer Agent | Developer | Manual add/edit/delete API for all entity types — Done | MV-053 | feature/MV-053-entity-crud-api | 2026-04-10 |
-| Developer Agent | Developer | Discontinue medication toggle (UI) — Done | MV-054 | feature/MV-054-discontinue-medication-ui | 2026-04-10 |
+| Developer Agent | Developer | MV-055/056/057 — bugfixes + dashboard polish + records corrections | MV-055, MV-056, MV-057 | feature/MV-055-056-057-fixes-and-polish | 2026-04-11 |
 
 ---
 
@@ -120,6 +116,9 @@
 | MV-052 | Health profile dashboard UI — ref: `stitch_health_passport/health_profile_dashboard/` | P0 | Done | Developer Agent | MV-051, MV-016b | feature/MV-052-health-profile-ui |
 | MV-053 | Manual add/edit/delete API for all entity types | P1 | Done | Developer Agent | MV-051 | feature/MV-053-entity-crud-api |
 | MV-054 | Discontinue medication toggle (API + UI) | P2 | Done | Developer Agent | MV-052 | feature/MV-054-discontinue-medication-ui |
+| MV-055 | Production bugfixes — Auth0 redirect flow, Celery event loop isolation, scispaCy NLP pipeline (replaces Med7), entity UUID serialization, document entity joins | P0 | Done (Pending Merge) | Developer Agent | — | feature/MV-055-056-057-fixes-and-polish |
+| MV-056 | Dashboard UI polish — remove Pulse Rate card + Sparkline, fix BP empty state, fix Blood Type badges, replace Upcoming Consult with Known Conditions (live diagnoses) | P1 | Done (Pending Merge) | Developer Agent | MV-052 | feature/MV-055-056-057-fixes-and-polish |
+| MV-057 | Records UI corrections — DISCHARGE→DISCHARGE_SUMMARY enum fix, add doctor_name to document cards | P1 | Done (Pending Merge) | Developer Agent | MV-024 | feature/MV-055-056-057-fixes-and-polish |
 
 ### EPIC: Health Timeline
 
@@ -284,3 +283,6 @@
 | 2026-04-11 | Developer Agent | Completed auth audit logging — AuthAuditLog model + migration 0005 + audit_service.py; provision/login/delete-account events logged with IP+user-agent; 5 unit tests | auth-audit | feature/MV-SEC-rate-limit-audit |
 | 2026-04-11 | Developer Agent | Completed MV-FR-DOC-004 — multi-file upload (up to 10 files), individual per-file type/date/status in UploadModal.tsx; failures don't block other uploads | MV-FR-DOC-004 | feature/MV-SEC-rate-limit-audit |
 | 2026-04-11 | Developer Agent | Fixed test stubs — added boto3/spacy stubs to 6 test files; fixed patch targets, request param, FamilyMemberResponse fields, dependency_overrides for health test; 563 unit tests passing at 86% coverage | test-fixes | feature/MV-SEC-rate-limit-audit |
+| 2026-04-11 | Developer Agent | [1-Way Door] Dashboard polish: removed Pulse Rate card (no wearable data source), removed Sparkline decorative component, removed hardcoded BP fallback 118/76 → proper empty state, removed fake "Donor"/"Insured" badges from Blood Type card, expanded allergy badges to show actual allergen names (up to 3) | MV-052 polish | — |
+| 2026-04-11 | Developer Agent | [1.5-Way Door] Dashboard: replaced static Upcoming Consult card with KnownConditions component (diagnoses from profile API, with ICD-10 codes and status badges); VitalsStrip grid changed from 3-col to 2-col | MV-052 polish | — |
+| 2026-04-11 | Developer Agent | [1-Way Door] Records: fixed DISCHARGE → DISCHARGE_SUMMARY type label/icon/color to match backend enum; added doctor_name to document card subtitle row | MV-024 polish | — |

@@ -13,7 +13,7 @@ export interface FamilyMember {
   is_self: boolean
 }
 
-export type DocumentType = 'LAB_REPORT' | 'PRESCRIPTION' | 'DISCHARGE' | 'SCAN' | 'OTHER'
+export type DocumentType = 'LAB_REPORT' | 'PRESCRIPTION' | 'DISCHARGE_SUMMARY' | 'SCAN' | 'OTHER'
 export type ProcessingStatus = 'QUEUED' | 'PROCESSING' | 'COMPLETE' | 'FAILED' | 'MANUAL_REVIEW'
 export type ConfidenceScore = 'HIGH' | 'MEDIUM' | 'LOW'
 export type LabFlag = 'NORMAL' | 'HIGH' | 'LOW' | 'CRITICAL'

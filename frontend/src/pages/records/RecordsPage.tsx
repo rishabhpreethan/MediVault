@@ -63,7 +63,7 @@ function getDocTypeLabel(type: Document['document_type']): string {
       return 'Lab Report'
     case 'PRESCRIPTION':
       return 'Prescription'
-    case 'DISCHARGE':
+    case 'DISCHARGE_SUMMARY':
       return 'Discharge Summary'
     case 'SCAN':
       return 'Imaging / Scan'
@@ -105,7 +105,7 @@ function DocTypeIcon({ type }: { type: Document['document_type'] }) {
   const colorMap: Record<Document['document_type'], string> = {
     LAB_REPORT: 'bg-primary-fixed text-primary',
     PRESCRIPTION: 'bg-secondary-container text-secondary',
-    DISCHARGE: 'bg-tertiary-container text-tertiary',
+    DISCHARGE_SUMMARY: 'bg-tertiary-container text-tertiary',
     SCAN: 'bg-surface-container-high text-on-surface-variant',
     OTHER: 'bg-surface-container-high text-on-surface-variant',
   }
@@ -126,7 +126,7 @@ function DocTypeIcon({ type }: { type: Document['document_type'] }) {
           <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 3a1 1 0 0 1 1 1v2h2a1 1 0 1 1 0 2h-2v2a1 1 0 1 1-2 0v-2H9a1 1 0 1 1 0-2h2V7a1 1 0 0 1 1-1zm-4 9h8a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2z" />
         </svg>
       )}
-      {type === 'DISCHARGE' && (
+      {type === 'DISCHARGE_SUMMARY' && (
         <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6zm2-5h8v1.5H8V15zm0 2.5h5v1.5H8V17.5z" />
         </svg>
@@ -163,6 +163,7 @@ function DocumentCard({ doc }: { doc: Document }) {
             </p>
             <p className="text-xs text-on-surface-variant mt-0.5">
               {formatDate(doc.document_date ?? doc.uploaded_at)}
+              {doc.doctor_name ? ` · ${doc.doctor_name}` : ''}
               {doc.facility_name ? ` · ${doc.facility_name}` : ''}
             </p>
           </div>
