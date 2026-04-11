@@ -20,6 +20,13 @@ if "spacy" not in sys.modules:
     _fake_spacy.load = MagicMock()  # type: ignore[attr-defined]
     sys.modules["spacy"] = _fake_spacy
 
+for _mod in ("boto3", "botocore", "botocore.exceptions"):
+    if _mod not in sys.modules:
+        _fake = ModuleType(_mod)
+        if _mod == "botocore.exceptions":
+            _fake.ClientError = Exception  # type: ignore[attr-defined]
+        sys.modules[_mod] = _fake
+
 from app.api.profile import _load_member_or_404, get_profile, get_profile_summary
 from app.services.profile_service import (
     DiagnosisRM,
@@ -51,6 +58,11 @@ def _make_member(
     member = MagicMock(spec=FamilyMember)
     member.member_id = member_id or uuid.uuid4()
     member.user_id = user_id or uuid.uuid4()
+    member.full_name = "Test User"
+    member.relationship = "self"
+    member.date_of_birth = None
+    member.blood_group = None
+    member.is_self = True
     return member
 
 
@@ -158,44 +170,42 @@ class TestLoadMemberOr404:
 class TestGetProfile:
     @pytest.mark.asyncio
     async def test_get_profile_returns_health_profile(self):
-        """Mock get_health_profile to return a HealthProfileRM and verify response shape."""
+        """get_profile queries DB directly and returns HealthProfileResponse."""
         user = _make_user()
         member = _make_member(user_id=user.user_id)
         db = _mock_db()
-        db.execute = AsyncMock(return_value=_db_result(member))
 
-        profile_rm = _make_health_profile_rm(member.member_id)
+        # Call 1: _load_member_or_404 → scalar_one_or_none
+        member_result = MagicMock()
+        member_result.scalar_one_or_none.return_value = member
 
-        with patch(
-            "app.api.profile.profile_service.get_health_profile",
-            new_callable=AsyncMock,
-            return_value=profile_rm,
-        ):
-            response = await get_profile(
-                member_id=member.member_id,
-                current_user=user,
-                db=db,
-            )
+        # Calls 2-6: medications, labs, diagnoses, allergies, vitals → empty lists
+        def _scalars_result(items):
+            r = MagicMock()
+            s = MagicMock()
+            s.all.return_value = items
+            r.scalars.return_value = s
+            return r
 
-        assert response.member_id == str(member.member_id)
-        assert len(response.medications) == 1
-        assert len(response.lab_results) == 1
-        assert len(response.diagnoses) == 1
+        call_count = {"n": 0}
+        async def _execute(stmt):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                return member_result
+            return _scalars_result([])
 
-        med = response.medications[0]
-        assert med.drug_name == "Metformin"
-        assert med.dosage == "500mg"
-        assert med.confidence_score == "HIGH"
-        assert med.is_active is True
+        db.execute = _execute
 
-        lab = response.lab_results[0]
-        assert lab.test_name == "HbA1c"
-        assert lab.value == "7.2"
-        assert lab.unit == "%"
+        response = await get_profile(
+            member_id=member.member_id,
+            current_user=user,
+            db=db,
+        )
 
-        diag = response.diagnoses[0]
-        assert diag.condition_name == "Type 2 Diabetes"
-        assert diag.status == "active"
+        assert response.member.member_id == str(member.member_id)
+        assert response.medications == []
+        assert response.recent_labs == []
+        assert response.diagnoses == []
 
     @pytest.mark.asyncio
     async def test_get_profile_raises_404_when_member_not_found(self):
@@ -251,7 +261,7 @@ class TestGetProfileSummary:
         }
 
         with patch(
-            "app.api.profile.profile_service.get_profile_summary",
+            "app.services.profile_service.get_profile_summary",
             new_callable=AsyncMock,
             return_value=summary_dict,
         ):

@@ -1,5 +1,15 @@
 """Unit tests for Celery worker configuration and task registration."""
+import sys
+from types import ModuleType
+
 import pytest
+
+for _mod in ("boto3", "botocore", "botocore.exceptions"):
+    if _mod not in sys.modules:
+        _fake = ModuleType(_mod)
+        if _mod == "botocore.exceptions":
+            _fake.ClientError = Exception  # type: ignore[attr-defined]
+        sys.modules[_mod] = _fake
 
 from app.workers.celery_app import celery_app, TASK_QUEUES, TASK_ROUTES
 from app.workers.extraction_tasks import extract_document
@@ -71,9 +81,6 @@ class TestExtractionTask:
     def test_queue(self):
         assert extract_document.queue == "extraction"
 
-    def test_raises_not_implemented(self):
-        with pytest.raises(NotImplementedError):
-            extract_document.run("test-doc-id")
 
 
 class TestNlpTask:
@@ -89,9 +96,6 @@ class TestNlpTask:
     def test_queue(self):
         assert process_nlp.queue == "nlp"
 
-    def test_raises_not_implemented(self):
-        with pytest.raises(NotImplementedError):
-            process_nlp.run("test-doc-id")
 
 
 class TestPingTask:

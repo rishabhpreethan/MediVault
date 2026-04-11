@@ -1,6 +1,6 @@
 # MediVault — Project Status
 
-**Last Updated:** 2026-04-07 (PRs #16–#19 open; Stitch designs adopted as UI source of truth)
+**Last Updated:** 2026-04-11
 **SRS Version:** 1.2
 **Active Phase:** V1 MVP
 
@@ -18,10 +18,10 @@
 | Person | Agent Role | Currently Working On | Task ID | Branch | Last Updated |
 |---|---|---|---|---|---|
 | Developer Agent | Developer | Public Passport Page UI | MV-085 | feature/MV-085-public-passport-ui | 2026-04-10 |
-| Developer Agent | Developer | Document Detail Page — In Review | MV-026 | feature/MV-026-document-detail | 2026-04-10 |
+| Developer Agent | Developer | Document Detail Page — Done | MV-026 | feature/MV-026-document-detail | 2026-04-10 |
 | Developer Agent | Developer | QR code component + Passport management UI | MV-083, MV-084 | feature/MV-083-084-passport-ui | 2026-04-10 |
-| Developer Agent | Developer | Manual add/edit/delete API for all entity types — In Review | MV-053 | feature/MV-053-entity-crud-api | 2026-04-10 |
-| Developer Agent | Developer | Discontinue medication toggle (UI) — In Review | MV-054 | feature/MV-054-discontinue-medication-ui | 2026-04-10 |
+| Developer Agent | Developer | Manual add/edit/delete API for all entity types — Done | MV-053 | feature/MV-053-entity-crud-api | 2026-04-10 |
+| Developer Agent | Developer | Discontinue medication toggle (UI) — Done | MV-054 | feature/MV-054-discontinue-medication-ui | 2026-04-10 |
 
 ---
 
@@ -79,12 +79,12 @@
 |---|---|---|---|---|---|---|
 | MV-020 | Document DB model + Alembic migration | P0 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-021 | File upload API (validation, MinIO storage, queue job) | P0 | Done | Developer Agent | MV-011, MV-020 | feature/MV-021-file-upload-api |
-| MV-022 | Scanned PDF detection (embedded text layer check) | P0 | In Review | Developer Agent | MV-021 | feature/MV-022-scanned-pdf-detection |
+| MV-022 | Scanned PDF detection (embedded text layer check) | P0 | Done | Developer Agent | MV-021 | feature/MV-022-scanned-pdf-detection |
 | MV-023 | Document library API (list, get, delete, retry) | P0 | Done | Developer Agent | MV-021 | feature/MV-023-document-retry-status |
-| MV-024 | Document library UI ("Clinical Archive") — ref: `stitch_health_passport/document_vault/` | P0 | In Review | Developer Agent | MV-016b, MV-023 | feature/MV-024-document-library-ui |
-| MV-025 | Upload flow UI (file picker, type selection, date, progress, rejection) | P0 | In Review | Developer Agent | MV-021, MV-024 | feature/MV-025-upload-flow-ui |
-| MV-026 | Document detail page (PDF viewer + extracted data panel, inline edit) | P1 | In Review | Developer Agent | MV-024 | feature/MV-026-document-detail |
-| MV-027 | Manual field correction API + audit trail | P1 | In Review | Developer Agent | MV-023 | feature/MV-027-manual-correction-api |
+| MV-024 | Document library UI ("Clinical Archive") — ref: `stitch_health_passport/document_vault/` | P0 | Done | Developer Agent | MV-016b, MV-023 | feature/MV-024-document-library-ui |
+| MV-025 | Upload flow UI (file picker, type selection, date, progress, rejection) | P0 | Done | Developer Agent | MV-021, MV-024 | feature/MV-025-upload-flow-ui |
+| MV-026 | Document detail page (PDF viewer + extracted data panel, inline edit) | P1 | Done | Developer Agent | MV-024 | feature/MV-026-document-detail |
+| MV-027 | Manual field correction API + audit trail | P1 | Done | Developer Agent | MV-023 | feature/MV-027-manual-correction-api |
 
 ### EPIC: PDF Extraction Pipeline
 
@@ -108,8 +108,8 @@
 | MV-045 | Vitals extraction (BP, weight, height, BMI, SpO2) | P1 | Done | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
 | MV-046 | Doctor/facility/visit date extraction | P1 | Done | Developer Agent | MV-040 | feature/MV-044-045-046-extractors |
 | MV-047 | Confidence scoring system (HIGH/MEDIUM/LOW) + low-confidence flagging | P0 | Done | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
-| MV-048 | Entity deduplication across documents (chronic conditions, medications) | P1 | In Review | Developer Agent | MV-043 | feature/MV-048-entity-deduplication |
-| MV-049 | Drug synonym normalization dictionary | P2 | In Review | Developer Agent | MV-041 | feature/MV-049-drug-synonym-normalization |
+| MV-048 | Entity deduplication across documents (chronic conditions, medications) | P1 | Done | Developer Agent | MV-043 | feature/MV-048-entity-deduplication |
+| MV-049 | Drug synonym normalization dictionary | P2 | Done | Developer Agent | MV-041 | feature/MV-049-drug-synonym-normalization |
 
 ### EPIC: Health Profile
 
@@ -117,36 +117,36 @@
 |---|---|---|---|---|---|---|
 | MV-050 | Profile aggregation service (builds HealthProfileRM from all entities) | P0 | Done | Developer Agent | MV-041, MV-042, MV-043 | feature/MV-047-050-confidence-profile |
 | MV-051 | Profile API endpoints (GET full profile, GET summary) | P0 | Done | Developer Agent | MV-050 | feature/MV-051-profile-api |
-| MV-052 | Health profile dashboard UI — ref: `stitch_health_passport/health_profile_dashboard/` | P0 | In Review | Developer Agent | MV-051, MV-016b | feature/MV-052-health-profile-ui |
-| MV-053 | Manual add/edit/delete API for all entity types | P1 | In Review | Developer Agent | MV-051 | feature/MV-053-entity-crud-api |
-| MV-054 | Discontinue medication toggle (API + UI) | P2 | In Review | Developer Agent | MV-052 | feature/MV-054-discontinue-medication-ui |
+| MV-052 | Health profile dashboard UI — ref: `stitch_health_passport/health_profile_dashboard/` | P0 | Done | Developer Agent | MV-051, MV-016b | feature/MV-052-health-profile-ui |
+| MV-053 | Manual add/edit/delete API for all entity types | P1 | Done | Developer Agent | MV-051 | feature/MV-053-entity-crud-api |
+| MV-054 | Discontinue medication toggle (API + UI) | P2 | Done | Developer Agent | MV-052 | feature/MV-054-discontinue-medication-ui |
 
 ### EPIC: Health Timeline
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-060 | Timeline data API (paginated, filterable by type/date) | P0 | In Review | Developer Agent | MV-050 | feature/MV-060-timeline-api |
-| MV-061 | Timeline UI (under Records tab) — ref: `stitch_health_passport/health_timeline/` | P0 | In Review | Developer Agent | MV-060, MV-016b | feature/MV-061-timeline-ui |
+| MV-060 | Timeline data API (paginated, filterable by type/date) | P0 | Done | Developer Agent | MV-050 | feature/MV-060-timeline-api |
+| MV-061 | Timeline UI (under Records tab) — ref: `stitch_health_passport/health_timeline/` | P0 | Done | Developer Agent | MV-060, MV-016b | feature/MV-061-timeline-ui |
 
 ### EPIC: Trend Visualizations
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-070 | Lab trend chart data API (time-series per parameter, ≥2 data points check) | P0 | In Review | Developer Agent | MV-050 | feature/MV-070-lab-trend-api |
-| MV-071 | Lab trend chart UI (Recharts, reference range band, out-of-range markers) | P0 | In Review | Developer Agent | MV-070, MV-016 | feature/MV-071-lab-trend-chart-ui |
-| MV-072 | Medication Gantt chart (API + UI) | P1 | In Review | Developer Agent | MV-050 | feature/MV-072-medication-gantt |
+| MV-070 | Lab trend chart data API (time-series per parameter, ≥2 data points check) | P0 | Done | Developer Agent | MV-050 | feature/MV-070-lab-trend-api |
+| MV-071 | Lab trend chart UI (Recharts, reference range band, out-of-range markers) | P0 | Done | Developer Agent | MV-070, MV-016 | feature/MV-071-lab-trend-chart-ui |
+| MV-072 | Medication Gantt chart (API + UI) | P1 | Done | Developer Agent | MV-050 | feature/MV-072-medication-gantt |
 | MV-073 | Vitals trend chart (BP, weight over time) | P1 | Done | Developer Agent | MV-050 | feature/MV-073-vitals-trend-chart |
 
 ### EPIC: Health Passport
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-080 | Passport generation API (UUID, expiry, section visibility settings) | P0 | In Review | Developer Agent | MV-050 | feature/MV-080-passport-api |
+| MV-080 | Passport generation API (UUID, expiry, section visibility settings) | P0 | Done | Developer Agent | MV-050 | feature/MV-080-passport-api |
 | MV-081 | Passport revoke/expiry API + access log | P0 | Done | Developer Agent (covered by MV-080) | MV-080 | feature/MV-080-passport-api |
 | MV-082 | Public passport view endpoint (no auth, rate limited) | P0 | Done | Developer Agent (covered by MV-080) | MV-080 | feature/MV-080-passport-api |
-| MV-083 | QR code generation (frontend, links to passport URL) | P0 | In Review | Developer Agent | MV-080 | feature/MV-083-084-passport-ui |
-| MV-084 | Passport management UI — ref: `stitch_health_passport/health_passport/` | P0 | In Review | Developer Agent | MV-080, MV-016b | feature/MV-083-084-passport-ui |
-| MV-085 | Public passport page UI (read-only) — ref: `stitch_health_passport/health_passport/` | P0 | In Review | Developer Agent | MV-082 | feature/MV-085-public-passport-ui |
+| MV-083 | QR code generation (frontend, links to passport URL) | P0 | Done | Developer Agent | MV-080 | feature/MV-083-084-passport-ui |
+| MV-084 | Passport management UI — ref: `stitch_health_passport/health_passport/` | P0 | Done | Developer Agent | MV-080, MV-016b | feature/MV-083-084-passport-ui |
+| MV-085 | Public passport page UI (read-only) — ref: `stitch_health_passport/health_passport/` | P0 | Done | Developer Agent | MV-082 | feature/MV-085-public-passport-ui |
 
 ### EPIC: Family Accounts
 
@@ -154,22 +154,22 @@
 |---|---|---|---|---|---|---|
 | MV-090 | Family member DB model + migration (included in MV-012 if done together) | P1 | Done | Developer Agent | MV-005 | feature/MV-005-db-migrations |
 | MV-091 | Family member CRUD API (add, list, update, delete with data purge) | P1 | Done | Developer Agent | MV-090, MV-011 | feature/MV-091-family-crud |
-| MV-092 | Family management UI ("Family Circle") — ref: `stitch_health_passport/family_health_ecosystem/` + `add_family_member/` | P1 | In Review | Developer Agent | MV-091, MV-016b | feature/MV-092-family-ui |
-| MV-093 | Per-member data isolation verification (all queries scoped to member_id) | P0 | In Review | Developer Agent | MV-091 | feature/MV-093-data-isolation-tests |
+| MV-092 | Family management UI ("Family Circle") — ref: `stitch_health_passport/family_health_ecosystem/` + `add_family_member/` | P1 | Done | Developer Agent | MV-091, MV-016b | feature/MV-092-family-ui |
+| MV-093 | Per-member data isolation verification (all queries scoped to member_id) | P0 | Done | Developer Agent | MV-091 | feature/MV-093-data-isolation-tests |
 
 ### EPIC: Notifications
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-100 | Email notification service (SendGrid integration) | P2 | In Review | Developer Agent | MV-034 | feature/MV-100-sendgrid-email-service |
-| MV-101 | Processing complete + extraction failed notifications | P2 | In Review | Developer Agent | MV-100, MV-034 | feature/MV-100-sendgrid-email-service |
+| MV-100 | Email notification service (SendGrid integration) | P2 | Done | Developer Agent | MV-034 | feature/MV-100-sendgrid-email-service |
+| MV-101 | Processing complete + extraction failed notifications | P2 | Done | Developer Agent | MV-100, MV-034 | feature/MV-100-sendgrid-email-service |
 
 ### EPIC: Account Management
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-110 | Account deletion API (initiates data purge, revokes all passports) | P1 | In Review | Developer Agent | MV-011 | feature/MV-110-account-deletion-api |
-| MV-111 | Data export API (JSON + zip of PDFs, async, email link) | P1 | In Review | Developer Agent | MV-050 | feature/MV-111-data-export-api |
+| MV-110 | Account deletion API (initiates data purge, revokes all passports) | P1 | Done | Developer Agent | MV-011 | feature/MV-110-account-deletion-api |
+| MV-111 | Data export API (JSON + zip of PDFs, async, email link) | P1 | Done | Developer Agent | MV-050 | feature/MV-111-data-export-api |
 | MV-112 | Account settings UI (delete account, export data) | P1 | Done | Developer Agent | MV-016 | feature/MV-112-account-settings-ui |
 
 ### EPIC: Test Suite
@@ -177,10 +177,10 @@
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
 | MV-120 | pytest setup + Vitest setup + test fixtures (sample PDFs) | P1 | Done | Developer Agent | MV-003, MV-004 | feature/MV-120-test-setup |
-| MV-121 | Backend unit tests (NLP extractors, confidence scorer, deduplication) | P1 | In Review | Developer Agent | MV-047 | feature/MV-121-nlp-unit-tests |
-| MV-122 | Backend integration tests (upload → extract → NLP → profile pipeline) | P1 | In Review | Developer Agent | MV-050 | feature/MV-122-pipeline-integration-tests |
-| MV-123 | Playwright E2E tests (critical user journeys UF-001 through UF-009) | P1 | In Review | Developer Agent | MV-052, MV-061, MV-084 | feature/MV-123-playwright-e2e-tests |
-| MV-124 | PDF extraction accuracy benchmarking (≥95% text fidelity target) | P2 | In Review | Developer Agent | MV-032 | feature/MV-124-pdf-benchmarking |
+| MV-121 | Backend unit tests (NLP extractors, confidence scorer, deduplication) | P1 | Done | Developer Agent | MV-047 | feature/MV-121-nlp-unit-tests |
+| MV-122 | Backend integration tests (upload → extract → NLP → profile pipeline) | P1 | Done | Developer Agent | MV-050 | feature/MV-122-pipeline-integration-tests |
+| MV-123 | Playwright E2E tests (critical user journeys UF-001 through UF-009) | P1 | Done | Developer Agent | MV-052, MV-061, MV-084 | feature/MV-123-playwright-e2e-tests |
+| MV-124 | PDF extraction accuracy benchmarking (≥95% text fidelity target) | P2 | Done | Developer Agent | MV-032 | feature/MV-124-pdf-benchmarking |
 
 ---
 
@@ -279,3 +279,8 @@
 | 2026-04-10 | Developer Agent | Completed MV-124 — benchmark_extraction.py: BenchmarkSample + calculate_fidelity + run_benchmark with ANSI output; 13 unit tests | MV-124 | PR #50 open |
 | 2026-04-10 | Developer Agent | Completed MV-100 + MV-101 — email_service.py: requests-based SendGrid wrapper, processing_complete + extraction_failed templates (no PHI); extraction_tasks.py hooked with best-effort notify; 6 unit tests | MV-100, MV-101 | PR #51 open |
 | 2026-04-10 | Developer Agent | Completed MV-123 — playwright.config.ts + 6 e2e spec files (auth, navigation, records, health-profile, passport, public-passport); all API calls mocked via page.route() | MV-123 | PR #52 open |
+| 2026-04-11 | Developer Agent | Started wave 7: rate limiting middleware (NFR-SEC-007), auth audit logging, multi-file upload (MV-FR-DOC-004), test stub fixes | NFR-SEC-007, MV-FR-DOC-004 | feature/MV-SEC-rate-limit-audit |
+| 2026-04-11 | Developer Agent | Completed NFR-SEC-007 — middleware-based rate limiting (limits library), app/limiter.py extracted to avoid circular imports; 3 paths rate-limited: upload 20/min, provision 10/min, delete-account 5/hr | NFR-SEC-007 | feature/MV-SEC-rate-limit-audit |
+| 2026-04-11 | Developer Agent | Completed auth audit logging — AuthAuditLog model + migration 0005 + audit_service.py; provision/login/delete-account events logged with IP+user-agent; 5 unit tests | auth-audit | feature/MV-SEC-rate-limit-audit |
+| 2026-04-11 | Developer Agent | Completed MV-FR-DOC-004 — multi-file upload (up to 10 files), individual per-file type/date/status in UploadModal.tsx; failures don't block other uploads | MV-FR-DOC-004 | feature/MV-SEC-rate-limit-audit |
+| 2026-04-11 | Developer Agent | Fixed test stubs — added boto3/spacy stubs to 6 test files; fixed patch targets, request param, FamilyMemberResponse fields, dependency_overrides for health test; 563 unit tests passing at 86% coverage | test-fixes | feature/MV-SEC-rate-limit-audit |

@@ -47,10 +47,13 @@ def _member_to_response(member: FamilyMember) -> FamilyMemberResponse:
         member_id=str(member.member_id),
         user_id=str(member.user_id),
         full_name=member.full_name,
+        name=member.full_name,
         relationship=member.relationship,
         date_of_birth=member.date_of_birth,
         blood_group=member.blood_group,
+        gender=None,
         is_self=member.is_self,
+        created_at=member.created_at,
     )
 
 
@@ -73,6 +76,7 @@ async def create_member(
         relationship=body.relationship,
         date_of_birth=body.date_of_birth,
         blood_group=body.blood_group,
+        is_self=False,
     )
     db.add(member)
     await db.commit()

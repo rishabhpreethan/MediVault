@@ -5,12 +5,27 @@ using TestClient (greenlet compatibility issue in local dev).
 """
 from __future__ import annotations
 
+import sys
 import uuid
 from datetime import date, datetime, timezone
+from types import ModuleType
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException
+
+# Stub heavy dependencies before any app imports
+if "spacy" not in sys.modules:
+    _fake_spacy = ModuleType("spacy")
+    _fake_spacy.load = MagicMock()
+    sys.modules["spacy"] = _fake_spacy
+
+for _mod in ("boto3", "botocore", "botocore.exceptions"):
+    if _mod not in sys.modules:
+        _fake = ModuleType(_mod)
+        if _mod == "botocore.exceptions":
+            _fake.ClientError = Exception
+        sys.modules[_mod] = _fake
 
 from app.api.family import (
     _load_member_or_404,
@@ -54,6 +69,7 @@ def _make_member(
     member.relationship = relationship
     member.date_of_birth = date_of_birth
     member.blood_group = blood_group
+    member.is_self = False
     member.created_at = datetime.now(tz=timezone.utc)
     return member
 

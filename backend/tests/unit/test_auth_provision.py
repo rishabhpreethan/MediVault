@@ -1,13 +1,27 @@
 """Unit tests for POST /auth/provision logic (MV-013)."""
+import sys
+from types import ModuleType
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 import uuid
 
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials
 
+for _mod in ("boto3", "botocore", "botocore.exceptions"):
+    if _mod not in sys.modules:
+        _fake = ModuleType(_mod)
+        if _mod == "botocore.exceptions":
+            _fake.ClientError = Exception  # type: ignore[attr-defined]
+        sys.modules[_mod] = _fake
+
 from app.api.auth import provision_user, UserResponse
+
+_MOCK_REQUEST = MagicMock(spec=Request)
+_MOCK_REQUEST.client = MagicMock()
+_MOCK_REQUEST.client.host = "127.0.0.1"
+_MOCK_REQUEST.headers = {}
 
 
 def _mock_db():
@@ -53,11 +67,12 @@ class TestProvisionLogic:
             created_user = _mock_user()
             db.refresh = AsyncMock(side_effect=lambda u: None)
 
-            # We can't easily inspect the User() constructor call, so just
-            # verify db.add and db.commit were called
-            await provision_user(_CREDENTIALS, db)
+            # After refresh, simulate the created user being returned
+            await provision_user(_MOCK_REQUEST, _CREDENTIALS, db)
 
-        db.add.assert_called_once()
+        from app.models.user import User
+        user_adds = [c for c in db.add.call_args_list if isinstance(c.args[0], User)]
+        assert len(user_adds) == 1, "db.add must be called once with a User"
         db.commit.assert_called_once()
 
     @pytest.mark.asyncio
@@ -69,10 +84,12 @@ class TestProvisionLogic:
         db.execute = AsyncMock(return_value=mock_result)
 
         with patch("app.api.auth.verify_token", new=AsyncMock(return_value=_VALID_PAYLOAD)):
-            await provision_user(_CREDENTIALS, db)
+            await provision_user(_MOCK_REQUEST, _CREDENTIALS, db)
 
-        # update path: add should NOT be called, commit should
-        db.add.assert_not_called()
+        # update path: User should NOT be added (only audit log may be added)
+        from app.models.user import User
+        user_adds = [c for c in db.add.call_args_list if isinstance(c.args[0], User)]
+        assert len(user_adds) == 0, "db.add should not be called with User on update path"
         db.commit.assert_called_once()
 
     @pytest.mark.asyncio
@@ -84,7 +101,7 @@ class TestProvisionLogic:
         db.execute = AsyncMock(return_value=mock_result)
 
         with patch("app.api.auth.verify_token", new=AsyncMock(return_value=_VALID_PAYLOAD)):
-            await provision_user(_CREDENTIALS, db)
+            await provision_user(_MOCK_REQUEST, _CREDENTIALS, db)
 
         assert existing_user.last_login_at is not None
 
@@ -95,7 +112,7 @@ class TestProvisionLogic:
 
         with patch("app.api.auth.verify_token", new=AsyncMock(side_effect=JWTError("bad token"))):
             with pytest.raises(HTTPException) as exc_info:
-                await provision_user(_CREDENTIALS, db)
+                await provision_user(_MOCK_REQUEST, _CREDENTIALS, db)
 
         assert exc_info.value.status_code == 401
 
@@ -105,7 +122,7 @@ class TestProvisionLogic:
 
         with patch("app.api.auth.verify_token", new=AsyncMock(return_value={"email": "x@y.com"})):
             with pytest.raises(HTTPException) as exc_info:
-                await provision_user(_CREDENTIALS, db)
+                await provision_user(_MOCK_REQUEST, _CREDENTIALS, db)
 
         assert exc_info.value.status_code == 401
 
@@ -119,7 +136,7 @@ class TestProvisionLogic:
 
         payload = {**_VALID_PAYLOAD, "email": "new@example.com"}
         with patch("app.api.auth.verify_token", new=AsyncMock(return_value=payload)):
-            await provision_user(_CREDENTIALS, db)
+            await provision_user(_MOCK_REQUEST, _CREDENTIALS, db)
 
         assert existing_user.email == "new@example.com"
 
