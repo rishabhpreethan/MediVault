@@ -3,7 +3,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { api } from '../../lib/api'
 import { useResolvedMemberId } from '../../hooks/useFamily'
-import type { HealthProfile, LabResult, Medication, Vital, LabFlag } from '../../types/index'
+import type { HealthProfile, LabResult, Medication, Vital, LabFlag, Diagnosis } from '../../types/index'
 
 // ── Inline SVG icons ───────────────────────────────────────────────────────
 
@@ -82,19 +82,6 @@ function IconDroplet() {
   )
 }
 
-function IconCalendar() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-      className="w-4 h-4" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  )
-}
-
 // ── Skeleton components ───────────────────────────────────────────────────
 
 function SkeletonBlock({ className }: { className?: string }) {
@@ -118,8 +105,7 @@ function DashboardSkeleton() {
         </div>
       </div>
       {/* Vitals strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <SkeletonBlock className="h-32 rounded-xl" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SkeletonBlock className="h-32 rounded-xl" />
         <SkeletonBlock className="h-32 rounded-xl" />
       </div>
@@ -153,24 +139,6 @@ function LabFlagBadge({ flag }: { flag: LabFlag }) {
   )
 }
 
-// ── Static sparkline (no real data needed) ────────────────────────────────
-
-function Sparkline() {
-  // Static bar heights for visual decoration
-  const bars = [6, 10, 8, 14, 10, 12, 9, 14, 11, 13]
-  return (
-    <div className="flex items-end gap-0.5 h-8" aria-hidden="true">
-      {bars.map((h, i) => (
-        <div
-          key={i}
-          className="w-1.5 rounded-sm bg-primary/20"
-          style={{ height: `${h * 2}px` }}
-        />
-      ))}
-    </div>
-  )
-}
-
 // ── Empty state component ─────────────────────────────────────────────────
 
 function EmptyState({ icon, title, subtitle }: {
@@ -198,49 +166,15 @@ function deriveBloodPressure(vitals: Vital[]): { systolic: number; diastolic: nu
   return null
 }
 
-function deriveHeartRate(vitals: Vital[]): number | null {
-  const hr = vitals.find(v =>
-    v.vital_type === 'HEART_RATE' ||
-    v.vital_type.toLowerCase().includes('pulse') ||
-    v.vital_type.toLowerCase().includes('heart_rate')
-  )
-  return hr ? hr.value : null
-}
-
 // ── Section: Vitals Strip ─────────────────────────────────────────────────
 
 function VitalsStrip({ profile }: { profile: HealthProfile }) {
   const bpReading = deriveBloodPressure(profile.recent_vitals)
-  const heartRate = deriveHeartRate(profile.recent_vitals)
   const bloodGroup = profile.member.blood_group
-  const hasAllergies = profile.allergies.length > 0
+  const allergies = profile.allergies
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      {/* Pulse Rate card */}
-      <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm shadow-teal-900/5">
-        <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">
-          Pulse Rate
-        </p>
-        {heartRate !== null ? (
-          <>
-            <div className="flex items-baseline gap-1 mb-2">
-              <span className="text-4xl font-extrabold text-on-surface">{Math.round(heartRate)}</span>
-              <span className="text-sm text-on-surface-variant">bpm</span>
-              <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-fixed text-primary">
-                STABLE
-              </span>
-            </div>
-            <Sparkline />
-          </>
-        ) : (
-          <div className="flex items-baseline gap-1 mb-2">
-            <span className="text-4xl font-extrabold text-on-surface">—</span>
-            <span className="text-xs text-on-surface-variant mt-1">No data yet</span>
-          </div>
-        )}
-      </div>
-
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {/* Blood Pressure card */}
       <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm shadow-teal-900/5">
         <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">
@@ -258,18 +192,15 @@ function VitalsStrip({ profile }: { profile: HealthProfile }) {
               </span>
               <span className="text-sm text-on-surface-variant">mmHg</span>
             </div>
-            <p className="text-xs text-on-surface-variant/70 mt-2">Last checked recently</p>
+            <p className="text-xs text-on-surface-variant/70 mt-2">From uploaded records</p>
           </>
         ) : (
-          <>
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-extrabold text-on-surface">118</span>
-              <span className="text-lg font-bold text-on-surface-variant">/</span>
-              <span className="text-4xl font-extrabold text-on-surface">76</span>
-              <span className="text-sm text-on-surface-variant">mmHg</span>
-            </div>
-            <p className="text-xs text-on-surface-variant/70 mt-2">Last checked 2h ago</p>
-          </>
+          <div className="flex flex-col gap-1 mt-1">
+            <span className="text-4xl font-extrabold text-on-surface">—</span>
+            <p className="text-xs text-on-surface-variant/70">
+              Upload a vitals record to see your BP
+            </p>
+          </div>
         )}
       </div>
 
@@ -282,21 +213,22 @@ function VitalsStrip({ profile }: { profile: HealthProfile }) {
           {bloodGroup ?? 'Unknown'}
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {hasAllergies ? (
+          {allergies.length === 0 ? (
             <span className="text-xs font-semibold bg-white/20 rounded-full px-2 py-0.5">
-              {profile.allergies.length} {profile.allergies.length === 1 ? 'Allergy' : 'Allergies'}
+              No known allergies
             </span>
           ) : (
+            allergies.slice(0, 3).map(a => (
+              <span key={a.allergy_id} className="text-xs font-semibold bg-white/20 rounded-full px-2 py-0.5">
+                {a.allergen_name}
+              </span>
+            ))
+          )}
+          {allergies.length > 3 && (
             <span className="text-xs font-semibold bg-white/20 rounded-full px-2 py-0.5">
-              No Allergies
+              +{allergies.length - 3} more
             </span>
           )}
-          <span className="text-xs font-semibold bg-white/20 rounded-full px-2 py-0.5">
-            Donor
-          </span>
-          <span className="text-xs font-semibold bg-white/20 rounded-full px-2 py-0.5">
-            Insured
-          </span>
         </div>
       </div>
     </div>
@@ -490,35 +422,66 @@ function ActivePlan({ medications, memberId }: { medications: Medication[]; memb
   )
 }
 
-// ── Section: Upcoming Consult ─────────────────────────────────────────────
+// ── Section: Known Conditions ─────────────────────────────────────────────
 
-function UpcomingConsult({ profile }: { profile: HealthProfile }) {
-  // Find the most recent doctor visit from vitals metadata — we use a static placeholder
-  // until MV-046 doctor extraction is surfaced in the profile API response
-  const memberName = profile.member.full_name
+function IconCondition() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className="w-4 h-4" aria-hidden="true">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  )
+}
+
+function KnownConditions({ diagnoses }: { diagnoses: Diagnosis[] }) {
+  const statusColors: Record<string, string> = {
+    ACTIVE: 'bg-error-container text-error',
+    CHRONIC: 'bg-tertiary-container text-tertiary',
+    RESOLVED: 'bg-primary-fixed text-primary',
+    UNKNOWN: 'bg-surface-container text-on-surface-variant',
+  }
 
   return (
     <div className="bg-surface-container-lowest rounded-xl p-5 shadow-sm shadow-teal-900/5">
       <h2 className="text-base font-extrabold text-on-surface tracking-tight mb-4">
-        Upcoming Consult
+        Known Conditions
       </h2>
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-full bg-primary-fixed flex items-center justify-center flex-shrink-0">
-          <span className="text-primary font-bold text-sm">DR</span>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-on-surface">Dr. General Physician</p>
-          <p className="text-xs text-on-surface-variant">Annual checkup</p>
-        </div>
-        <div className="flex items-center gap-1 text-xs text-on-surface-variant flex-shrink-0">
-          <IconCalendar />
-          <span>Schedule</span>
-        </div>
-      </div>
-      {memberName && (
-        <p className="text-xs text-on-surface-variant/60 mt-3">
-          Profile: {memberName}
-        </p>
+
+      {diagnoses.length === 0 ? (
+        <EmptyState
+          icon={<IconCondition />}
+          title="No conditions recorded"
+          subtitle="Diagnoses extracted from uploaded documents will appear here"
+        />
+      ) : (
+        <ul className="space-y-2">
+          {diagnoses.slice(0, 5).map(d => (
+            <li key={d.diagnosis_id} className="flex items-center gap-2">
+              <span
+                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${d.status === 'ACTIVE' || d.status === 'CHRONIC' ? 'bg-error' : 'bg-primary'}`}
+                aria-hidden="true"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-on-surface truncate">
+                  {d.condition_name}
+                </p>
+                {d.icd10_code && (
+                  <p className="text-xs text-on-surface-variant/60">{d.icd10_code}</p>
+                )}
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${statusColors[d.status] ?? statusColors['UNKNOWN']}`}>
+                {d.status}
+              </span>
+            </li>
+          ))}
+          {diagnoses.length > 5 && (
+            <p className="text-xs text-on-surface-variant/60 pt-1">
+              +{diagnoses.length - 5} more conditions
+            </p>
+          )}
+        </ul>
       )}
     </div>
   )
@@ -600,10 +563,10 @@ export function DashboardPage() {
           <BiochemicalMetrics labs={profile.recent_labs} />
         </div>
 
-        {/* Right column: Active Plan + Upcoming Consult */}
+        {/* Right column: Active Plan + Known Conditions */}
         <div className="md:col-span-2 space-y-4">
           <ActivePlan medications={profile.medications} memberId={memberId!} />
-          <UpcomingConsult profile={profile} />
+          <KnownConditions diagnoses={profile.diagnoses} />
         </div>
       </div>
     </div>

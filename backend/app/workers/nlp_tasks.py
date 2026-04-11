@@ -11,6 +11,13 @@ from app.workers.celery_app import celery_app
 logger = get_task_logger(__name__)
 
 
+def _make_async_session_factory():
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine  # noqa: PLC0415
+    from app.config import settings  # noqa: PLC0415
+    _engine = create_async_engine(settings.database_url, pool_pre_ping=True, pool_size=2, max_overflow=0)
+    return async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
+
+
 async def _run_nlp(document_id: str) -> dict:
     """Core async NLP logic: fetch raw text from DB, extract entities, persist results.
 
@@ -24,7 +31,7 @@ async def _run_nlp(document_id: str) -> dict:
         dict with keys: document_id, status, medications_found, labs_found,
         diagnoses_found
     """
-    from app.database import AsyncSessionLocal  # noqa: PLC0415
+    AsyncSessionLocal = _make_async_session_factory()
     from app.models.document import Document  # noqa: PLC0415
     from app.nlp.pipeline import extract_entities  # noqa: PLC0415
     from app.nlp.medication_extractor import MedicationExtractor  # noqa: PLC0415
@@ -68,6 +75,7 @@ async def _run_nlp(document_id: str) -> dict:
     diagnoses = diagnosis_extractor.extract(entities, doc_uuid)
 
     # Step 4: Persist all results in a single async session
+    AsyncSessionLocal = _make_async_session_factory()
     async with AsyncSessionLocal() as session:
         session.add_all(medications)
         session.add_all(labs)

@@ -35,9 +35,21 @@ def _fetch_pdf_bytes(storage_path: str) -> bytes:
         raise ExtractionError(f"MinIO fetch failed for path={storage_path}: {exc}") from exc
 
 
+def _make_async_session_factory():
+    """Create a fresh async engine + session factory bound to the current event loop.
+
+    Must be called *inside* an asyncio.run() so the engine is bound to the
+    correct loop. The module-level engine (database.py) is attached to the
+    FastAPI loop and cannot be reused inside Celery's asyncio.run() calls.
+    """
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine  # noqa: PLC0415
+    _engine = create_async_engine(settings.database_url, pool_pre_ping=True, pool_size=2, max_overflow=0)
+    return async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
+
+
 async def _run_extraction(document_id: str) -> dict:
     """Core async extraction logic using the document service state machine."""
-    from app.database import AsyncSessionLocal  # noqa: PLC0415
+    AsyncSessionLocal = _make_async_session_factory()
     from app.models.document import Document  # noqa: PLC0415
     from app.services import document_service  # noqa: PLC0415
     from sqlalchemy import select  # noqa: PLC0415
@@ -139,6 +151,10 @@ async def _run_extraction(document_id: str) -> dict:
             extra={"document_id": document_id, **dedup_counts},
         )
 
+    # Chain to NLP task to extract structured entities from the raw text
+    from app.workers.nlp_tasks import process_nlp  # noqa: PLC0415
+    process_nlp.apply_async(args=[document_id], queue="nlp")
+
     return {
         "document_id": document_id,
         "status": "COMPLETE",
@@ -149,7 +165,7 @@ async def _run_extraction(document_id: str) -> dict:
 
 async def _run_mark_failed(document_id: str, attempts: int) -> Optional[dict]:
     """Mark a document as failed and return metadata needed for notifications."""
-    from app.database import AsyncSessionLocal  # noqa: PLC0415
+    AsyncSessionLocal = _make_async_session_factory()
     from app.models.document import Document  # noqa: PLC0415
     from app.models.user import User  # noqa: PLC0415
     from app.services import document_service  # noqa: PLC0415

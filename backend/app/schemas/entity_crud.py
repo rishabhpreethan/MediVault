@@ -6,6 +6,7 @@ All Update schemas have every field optional for PATCH semantics.
 """
 from __future__ import annotations
 
+import uuid
 from datetime import date
 from typing import Optional
 
@@ -40,8 +41,8 @@ class MedicationUpdate(BaseModel):
 
 
 class MedicationResponse(BaseModel):
-    medication_id: str
-    member_id: str
+    medication_id: uuid.UUID
+    member_id: uuid.UUID
     drug_name: str
     drug_name_normalized: Optional[str] = None
     dosage: Optional[str] = None
@@ -83,8 +84,8 @@ class LabResultUpdate(BaseModel):
 
 
 class LabResultResponse(BaseModel):
-    result_id: str
-    member_id: str
+    result_id: uuid.UUID
+    member_id: uuid.UUID
     test_name: str
     test_name_normalized: Optional[str] = None
     value: Optional[float] = None
@@ -119,8 +120,8 @@ class DiagnosisUpdate(BaseModel):
 
 
 class DiagnosisResponse(BaseModel):
-    diagnosis_id: str
-    member_id: str
+    diagnosis_id: uuid.UUID
+    member_id: uuid.UUID
     condition_name: str
     condition_normalized: Optional[str] = None
     icd10_code: Optional[str] = None
@@ -149,8 +150,8 @@ class AllergyUpdate(BaseModel):
 
 
 class AllergyResponse(BaseModel):
-    allergy_id: str
-    member_id: str
+    allergy_id: uuid.UUID
+    member_id: uuid.UUID
     allergen_name: str
     reaction_type: Optional[str] = None
     severity: Optional[str] = None
