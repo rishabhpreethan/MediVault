@@ -6,6 +6,13 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from app.schemas.entity_crud import (
+    AllergyResponse,
+    DiagnosisResponse,
+    LabResultResponse,
+    MedicationResponse,
+)
+
 
 class DocumentResponse(BaseModel):
     document_id: str
@@ -19,6 +26,11 @@ class DocumentResponse(BaseModel):
     extraction_library: Optional[str]
     uploaded_at: datetime
     processed_at: Optional[datetime]
+    # Extracted entities — populated by GET /documents/{id}
+    medications: list[MedicationResponse] = []
+    lab_results: list[LabResultResponse] = []
+    diagnoses: list[DiagnosisResponse] = []
+    allergies: list[AllergyResponse] = []
 
     model_config = {"from_attributes": True}
 

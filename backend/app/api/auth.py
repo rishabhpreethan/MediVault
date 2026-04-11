@@ -1,4 +1,5 @@
 """Auth routes — user provisioning (MV-013) and account deletion (MV-110)."""
+import uuid
 from datetime import datetime, timezone
 from typing import Annotated, Optional
 
@@ -27,7 +28,7 @@ DbSession = Annotated[AsyncSession, Depends(get_db)]
 # ---------------------------------------------------------------------------
 
 class UserResponse(BaseModel):
-    user_id: str
+    user_id: uuid.UUID
     auth0_sub: str
     email: Optional[str] = None
     email_verified: bool

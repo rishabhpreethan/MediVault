@@ -3,6 +3,6 @@ export const auth0Config = {
   clientId: import.meta.env.VITE_AUTH0_CLIENT_ID as string,
   authorizationParams: {
     audience: import.meta.env.VITE_AUTH0_AUDIENCE as string,
-    redirect_uri: window.location.origin,
+    redirect_uri: `${window.location.origin}/callback`,
   },
 }

@@ -4,11 +4,15 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { api, setAuthToken } from '../../lib/api'
 
 export function CallbackPage() {
-  const { getAccessTokenSilently, loginWithRedirect } = useAuth0()
+  const { getAccessTokenSilently, loginWithRedirect, isAuthenticated, isLoading } = useAuth0()
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Wait until Auth0Provider has finished processing the callback
+    if (isLoading) return
+    if (!isAuthenticated) return
+
     let cancelled = false
 
     async function provision() {
@@ -33,7 +37,7 @@ export function CallbackPage() {
     return () => {
       cancelled = true
     }
-  }, [getAccessTokenSilently, navigate])
+  }, [isLoading, isAuthenticated, getAccessTokenSilently, navigate])
 
   if (error) {
     return (

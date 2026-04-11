@@ -11,9 +11,19 @@ from sqlalchemy import func, select
 from app.limiter import limiter
 
 from app.dependencies import CurrentUser, DbSession, require_member_access
+from app.models.allergy import Allergy
+from app.models.diagnosis import Diagnosis
 from app.models.document import Document
 from app.models.family_member import FamilyMember
+from app.models.lab_result import LabResult
+from app.models.medication import Medication
 from app.schemas.documents import DocumentListResponse, DocumentResponse, DocumentStatusResponse
+from app.schemas.entity_crud import (
+    AllergyResponse,
+    DiagnosisResponse,
+    LabResultResponse,
+    MedicationResponse,
+)
 from app.services import document_service
 from app.services.storage_service import delete_file, upload_pdf
 
@@ -253,9 +263,21 @@ async def get_document(
     current_user: CurrentUser,
     db: DbSession,
 ) -> DocumentResponse:
-    """Return a single document by ID (ownership verified)."""
+    """Return a single document by ID with all extracted entities."""
     doc = await _load_document_or_404(db, document_id, current_user)
-    return _document_to_response(doc)
+    base = _document_to_response(doc)
+
+    meds_r = await db.execute(select(Medication).where(Medication.document_id == document_id))
+    labs_r = await db.execute(select(LabResult).where(LabResult.document_id == document_id))
+    diag_r = await db.execute(select(Diagnosis).where(Diagnosis.document_id == document_id))
+    algy_r = await db.execute(select(Allergy).where(Allergy.document_id == document_id))
+
+    base.medications = [MedicationResponse.model_validate(m) for m in meds_r.scalars()]
+    base.lab_results = [LabResultResponse.model_validate(l) for l in labs_r.scalars()]
+    base.diagnoses = [DiagnosisResponse.model_validate(d) for d in diag_r.scalars()]
+    base.allergies = [AllergyResponse.model_validate(a) for a in algy_r.scalars()]
+
+    return base
 
 
 # ---------------------------------------------------------------------------
