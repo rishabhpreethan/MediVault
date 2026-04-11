@@ -324,27 +324,9 @@ def upgrade() -> None:
     )
     op.create_index("idx_passport_access_passport_id", "passport_access_log", ["passport_id"])
 
-    # ── correction_audit ───────────────────────────────────────────────────────
-    op.create_table(
-        "correction_audit",
-        sa.Column("audit_id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("entity_type", sa.String(50), nullable=False),
-        sa.Column("entity_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("field_name", sa.String(100), nullable=False),
-        sa.Column("old_value", sa.Text(), nullable=True),
-        sa.Column("new_value", sa.Text(), nullable=True),
-        sa.Column(
-            "corrected_by",
-            postgresql.UUID(as_uuid=True),
-            sa.ForeignKey("users.user_id"),
-            nullable=True,
-        ),
-        sa.Column("corrected_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
-    )
 
 
 def downgrade() -> None:
-    op.drop_table("correction_audit")
     op.drop_table("passport_access_log")
     op.drop_table("shared_passports")
     op.drop_table("procedures")
