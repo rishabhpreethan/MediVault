@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from typing import Optional
+import json
+from typing import Any, Optional
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,6 +38,16 @@ class Settings(BaseSettings):
     # App
     environment: str = "development"
     cors_origins: list[str] = ["http://localhost:5173"]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("["):
+                return json.loads(v)
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
 
     # Dev-only superuser bypass (only honoured when environment=development)
     dev_superuser_token: str = ""
