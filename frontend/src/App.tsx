@@ -34,11 +34,11 @@ export default function App() {
             {/* Protected routes */}
             <Route element={<AuthGuard />}>
               <Route element={<AppShell />}>
-                <Route path="/" element={<DashboardPage />} />
+                <Route path="/" element={<PassportPage />} />
+                <Route path="/health" element={<DashboardPage />} />
                 <Route path="/records" element={<RecordsPage />} />
                 <Route path="/records/:documentId" element={<DocumentDetailPage />} />
                 <Route path="/insights" element={<InsightsPage />} />
-                <Route path="/passport" element={<PassportPage />} />
                 <Route path="/passport/add-member" element={<AddFamilyMemberPage />} />
                 <Route path="/passport/manage" element={<PassportManagePage />} />
                 <Route path="/settings" element={<AccountSettingsPage />} />

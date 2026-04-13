@@ -17,7 +17,7 @@
 
 | Person | Agent Role | Currently Working On | Task ID | Branch | Last Updated |
 |---|---|---|---|---|---|
-| Developer Agent | Developer | MV-055/056/057 — bugfixes + dashboard polish + records corrections | MV-055, MV-056, MV-057 | feature/MV-055-056-057-fixes-and-polish | 2026-04-11 |
+| Developer Agent | Developer | MV-058 — Make Health Passport the default landing page | MV-058 | feature/MV-058-passport-as-home | 2026-04-13 |
 
 ---
 
@@ -116,9 +116,10 @@
 | MV-052 | Health profile dashboard UI — ref: `stitch_health_passport/health_profile_dashboard/` | P0 | Done | Developer Agent | MV-051, MV-016b | feature/MV-052-health-profile-ui |
 | MV-053 | Manual add/edit/delete API for all entity types | P1 | Done | Developer Agent | MV-051 | feature/MV-053-entity-crud-api |
 | MV-054 | Discontinue medication toggle (API + UI) | P2 | Done | Developer Agent | MV-052 | feature/MV-054-discontinue-medication-ui |
-| MV-055 | Production bugfixes — Auth0 redirect flow, Celery event loop isolation, scispaCy NLP pipeline (replaces Med7), entity UUID serialization, document entity joins | P0 | Done (Pending Merge) | Developer Agent | — | feature/MV-055-056-057-fixes-and-polish |
-| MV-056 | Dashboard UI polish — remove Pulse Rate card + Sparkline, fix BP empty state, fix Blood Type badges, replace Upcoming Consult with Known Conditions (live diagnoses) | P1 | Done (Pending Merge) | Developer Agent | MV-052 | feature/MV-055-056-057-fixes-and-polish |
-| MV-057 | Records UI corrections — DISCHARGE→DISCHARGE_SUMMARY enum fix, add doctor_name to document cards | P1 | Done (Pending Merge) | Developer Agent | MV-024 | feature/MV-055-056-057-fixes-and-polish |
+| MV-055 | Production bugfixes — Auth0 redirect flow, Celery event loop isolation, scispaCy NLP pipeline (replaces Med7), entity UUID serialization, document entity joins | P0 | Done | Developer Agent | — | feature/MV-055-056-057-fixes-and-polish |
+| MV-056 | Dashboard UI polish — remove Pulse Rate card + Sparkline, fix BP empty state, fix Blood Type badges, replace Upcoming Consult with Known Conditions (live diagnoses) | P1 | Done | Developer Agent | MV-052 | feature/MV-055-056-057-fixes-and-polish |
+| MV-057 | Records UI corrections — DISCHARGE→DISCHARGE_SUMMARY enum fix, add doctor_name to document cards | P1 | Done | Developer Agent | MV-024 | feature/MV-055-056-057-fixes-and-polish |
+| MV-058 | Make Health Passport the default landing page — route `/` → PassportPage, move Health Profile to `/health`, update nav order and labels | P1 | In Progress | Developer Agent | MV-084 | feature/MV-058-passport-as-home |
 
 ### EPIC: Health Timeline
 
@@ -286,3 +287,6 @@
 | 2026-04-11 | Developer Agent | [1-Way Door] Dashboard polish: removed Pulse Rate card (no wearable data source), removed Sparkline decorative component, removed hardcoded BP fallback 118/76 → proper empty state, removed fake "Donor"/"Insured" badges from Blood Type card, expanded allergy badges to show actual allergen names (up to 3) | MV-052 polish | — |
 | 2026-04-11 | Developer Agent | [1.5-Way Door] Dashboard: replaced static Upcoming Consult card with KnownConditions component (diagnoses from profile API, with ICD-10 codes and status badges); VitalsStrip grid changed from 3-col to 2-col | MV-052 polish | — |
 | 2026-04-11 | Developer Agent | [1-Way Door] Records: fixed DISCHARGE → DISCHARGE_SUMMARY type label/icon/color to match backend enum; added doctor_name to document card subtitle row | MV-024 polish | — |
+| 2026-04-13 | Rishabh | Decision: Health Passport replaces Dashboard as default landing page — Dashboard (Health Profile) moves to /health; Passport at / | MV-058 | [1.5-Way Door] |
+| 2026-04-13 | Developer Agent | Updated specs for MV-058: srs.md §3.5 + §7.2 + §7.3, user-flows.md UF-001 + UF-002, architecture.md frontend routing; added MV-058 to task board | MV-058 | — |
+| 2026-04-13 | Developer Agent | Started MV-058 — Passport as default landing page | MV-058 | feature/MV-058-passport-as-home |

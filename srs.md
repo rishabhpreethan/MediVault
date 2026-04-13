@@ -341,7 +341,7 @@ The NLP/NER parser processes raw text output from the PDF extraction stage to id
 
 #### 3.5.1 Description
 
-The health profile is the central screen of MediVault. It aggregates all extracted data from all uploaded documents into a single, structured, scannable view. It is designed to answer the question a doctor would ask in the first 30 seconds of a consultation.
+The Health Passport is the default landing screen of MediVault post-authentication. It provides an instant, scannable overview of the user's (and their family's) health identity. The Health Profile is a deeper data view accessible from the navigation — it aggregates all extracted data from all uploaded documents and is designed to answer the question a doctor would ask in the first 30 seconds of a consultation.
 
 #### 3.5.2 Profile Sections
 
@@ -696,15 +696,15 @@ The V1 pipeline remains unchanged. OCR is an additive layer, not a replacement.
 | **Onboarding / Auth** | Sign up, login, OTP verification. Minimal fields. Google OAuth prominent. |
 | **Document Library** | Grid/list of all uploaded PDFs with status badges. Upload button always visible. |
 | **Upload Flow** | File picker (PDF only). Document type selection. Date confirmation. Embedded text check feedback. Progress indicator. |
-| **Health Profile** | Single-page dashboard. Summary card at top. Sectioned cards for medications, conditions, allergies, labs. |
+| **Health Passport** *(default landing)* | Family health overview. Member cards showing blood group, active conditions, allergies. QR code generation. Share/Revoke controls. Default route `/` post-authentication. |
+| **Health Profile** | Deep health data view at `/health`. Summary card at top. Sectioned cards for medications, conditions, allergies, labs. |
 | **Timeline View** | Chronological vertical timeline. Filterable by type and date. Expandable events. |
 | **Charts / Trends** | Parameter selector at top. Trend chart with reference band. Medication Gantt below. |
-| **Health Passport** | Clean, printable single-page view. QR code. Share/Revoke controls. |
 | **Document Detail** | PDF viewer alongside extracted data panel. Edit/correct extracted fields inline. |
 
 ### 7.3 Mobile-Specific Requirements
 
-- Bottom navigation bar for primary sections (Profile, Timeline, Charts, Documents)
+- Bottom navigation bar for primary sections (Passport, Records, Insights, Health)
 - Swipe gestures for timeline navigation
 - PDF file picker from device storage
 - Offline state handled gracefully with clear messaging
