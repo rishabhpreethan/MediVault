@@ -37,8 +37,7 @@ interface DocTypeOption {
 const DOC_TYPE_OPTIONS: DocTypeOption[] = [
   { value: 'LAB_REPORT', label: 'Lab Report' },
   { value: 'PRESCRIPTION', label: 'Prescription' },
-  { value: 'DISCHARGE', label: 'Discharge Summary' },
-  { value: 'SCAN', label: 'Scan / Imaging' },
+  { value: 'DISCHARGE_SUMMARY', label: 'Discharge Summary' },
   { value: 'OTHER', label: 'Other' },
 ]
 
@@ -344,6 +343,17 @@ export function UploadModal({ isOpen, onClose, memberId }: UploadModalProps) {
 
   async function handleUploadAll() {
     if (entries.length === 0 || isUploading) return
+    if (!memberId) {
+      // Member ID not yet resolved — surface a clear error on all files
+      setEntries((prev) =>
+        prev.map((e) => ({
+          ...e,
+          status: 'error',
+          errorMessage: 'No family member selected. Please refresh and try again.',
+        })),
+      )
+      return
+    }
     setIsUploading(true)
 
     await Promise.all(
@@ -359,9 +369,7 @@ export function UploadModal({ isOpen, onClose, memberId }: UploadModalProps) {
           formData.append('member_id', memberId)
           formData.append('document_type', entry.documentType)
           if (entry.documentDate) formData.append('document_date', entry.documentDate)
-          await api.post('/documents/upload', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          })
+          await api.post('/documents/upload', formData)
           setEntries((prev) =>
             prev.map((e) => (e.id === entry.id ? { ...e, status: 'done' } : e)),
           )
@@ -375,11 +383,17 @@ export function UploadModal({ isOpen, onClose, memberId }: UploadModalProps) {
             typeof err.response === 'object' &&
             'data' in err.response &&
             err.response.data &&
-            typeof err.response.data === 'object' &&
-            'message' in err.response.data &&
-            typeof (err.response.data as { message: unknown }).message === 'string'
+            typeof err.response.data === 'object'
           ) {
-            message = (err.response.data as { message: string }).message
+            const data = err.response.data as Record<string, unknown>
+            if (typeof data['detail'] === 'string') {
+              message = data['detail']
+            } else if (Array.isArray(data['detail']) && data['detail'].length > 0) {
+              const first = data['detail'][0] as Record<string, unknown>
+              if (typeof first['msg'] === 'string') message = first['msg']
+            } else if (typeof data['message'] === 'string') {
+              message = data['message']
+            }
           }
           setEntries((prev) =>
             prev.map((e) =>
