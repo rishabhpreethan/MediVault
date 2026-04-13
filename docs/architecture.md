@@ -142,11 +142,12 @@ medivault/
 │   │   ├── App.tsx
 │   │   ├── pages/
 │   │   │   ├── auth/               # Login, signup, OTP
-│   │   │   ├── profile/            # Health profile dashboard
-│   │   │   ├── timeline/           # Timeline view
-│   │   │   ├── charts/             # Trends + charts
-│   │   │   ├── documents/          # Document library + detail
-│   │   │   └── passport/           # Passport management + public view
+│   │   │   ├── passport/           # Passport overview — default route / + public view
+│   │   │   ├── records/            # Document library + detail (route: /records)
+│   │   │   ├── insights/           # Trends + charts (route: /insights)
+│   │   │   ├── dashboard/          # Health profile deep-view (route: /health)
+│   │   │   └── settings/           # Account settings (route: /settings)
+│   │   │   {Note: / → PassportPage, /health → DashboardPage (Health Profile)}
 │   │   ├── components/
 │   │   │   ├── layout/             # AppShell, NavBar, BottomNav
 │   │   │   ├── profile/            # Profile cards, sections

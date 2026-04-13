@@ -19,7 +19,7 @@ All actors, their goals, and their complete journeys through the system.
 ## UF-001 — Account Registration and Onboarding
 
 **Actor:** Account Owner (new user)
-**Goal:** Create an account and get to an empty health dashboard ready to upload
+**Goal:** Create an account and land on their Health Passport overview ready to upload
 
 ```
 1. User visits MediVault web app
@@ -34,7 +34,7 @@ All actors, their goals, and their complete journeys through the system.
 4. Lands on onboarding screen:
    - Prompted to enter: Full name, date of birth, blood group (optional)
    - These fields populate the "self" family member profile
-5. Sees empty Health Profile with an onboarding prompt:
+5. Lands on Health Passport overview (default route `/`) with an onboarding prompt:
    "Upload your first document to get started"
 6. Onboarding complete → user is in the app
 ```
@@ -50,7 +50,7 @@ All actors, their goals, and their complete journeys through the system.
 ## UF-002 — Log In (Returning User)
 
 **Actor:** Account Owner (returning)
-**Goal:** Access their health dashboard
+**Goal:** Access their Health Passport overview
 
 ```
 1. User visits MediVault
@@ -60,7 +60,8 @@ All actors, their goals, and their complete journeys through the system.
    b. Google OAuth → single click → authenticated
    c. Phone OTP → enters number → receives OTP → enters OTP → authenticated
 4. If session is still valid (within 30-day inactivity window) → auto-logged in
-5. Lands on Health Profile dashboard for their default family member (self)
+5. Lands on Health Passport overview (default route `/`) for their account —
+   shows family member cards with blood group, active conditions, allergies summary
 ```
 
 **Error paths:**

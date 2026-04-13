@@ -113,10 +113,10 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { to: '/', label: 'Dashboard', Icon: IconDashboard, end: true },
+  { to: '/', label: 'Passport', Icon: IconPassport, end: true },
   { to: '/records', label: 'Records', Icon: IconRecords },
   { to: '/insights', label: 'Insights', Icon: IconInsights },
-  { to: '/passport', label: 'Passport', Icon: IconPassport },
+  { to: '/health', label: 'Health', Icon: IconDashboard },
   { to: '/settings', label: 'Settings', Icon: IconSettings },
 ]
 
