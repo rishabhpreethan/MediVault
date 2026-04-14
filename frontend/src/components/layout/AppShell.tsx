@@ -1,6 +1,9 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useRef, useState } from 'react'
+import { NavLink, Outlet, useLocation, Link } from 'react-router-dom'
 import { useActiveMemberDetails, useSetActiveMember } from '../../hooks/useFamily'
+import { useUnreadCount } from '../../hooks/useNotifications'
 import { SessionManager } from '../common/SessionManager'
+import { NotificationCentre } from '../common/NotificationCentre'
 
 // ── Inline SVG icons ───────────────────────────────────────────────────────
 
@@ -65,6 +68,20 @@ function IconPassport() {
   )
 }
 
+function IconFamily() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className="w-5 h-5"
+      aria-hidden="true"
+    >
+      <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+    </svg>
+  )
+}
+
 function IconSettings() {
   return (
     <svg
@@ -117,12 +134,17 @@ const navItems: NavItem[] = [
   { to: '/records', label: 'Records', Icon: IconRecords },
   { to: '/insights', label: 'Insights', Icon: IconInsights },
   { to: '/health', label: 'Health', Icon: IconDashboard },
-  { to: '/settings', label: 'Settings', Icon: IconSettings },
+  { to: '/family', label: 'Family', Icon: IconFamily },
 ]
 
 // ── TopNav (desktop, hidden on mobile) ────────────────────────────────────
 
 function TopNav() {
+  const bellRef = useRef<HTMLDivElement>(null)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const { data: unreadData } = useUnreadCount()
+  const unreadCount = unreadData?.count ?? 0
+
   return (
     <header
       className="hidden md:flex fixed top-0 w-full z-50 h-16 items-center justify-between px-6 bg-white/70 backdrop-blur-md border-b border-teal-500/10 shadow-sm shadow-teal-900/5"
@@ -151,15 +173,40 @@ function TopNav() {
         ))}
       </nav>
 
-      {/* Right: notification bell + avatar */}
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
+      {/* Right: notification bell + settings icon + avatar */}
+      <div className="flex items-center gap-2">
+        {/* Notification bell */}
+        <div ref={bellRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setNotifOpen((prev) => !prev)}
+            className="relative text-slate-500 hover:text-teal-600 transition-colors p-1.5 rounded-full hover:bg-teal-50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+            aria-expanded={notifOpen}
+          >
+            <IconBell />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {notifOpen && (
+            <NotificationCentre onClose={() => setNotifOpen(false)} />
+          )}
+        </div>
+
+        {/* Settings icon */}
+        <Link
+          to="/settings"
           className="text-slate-500 hover:text-teal-600 transition-colors p-1.5 rounded-full hover:bg-teal-50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-          aria-label="Notifications"
+          aria-label="Settings"
         >
-          <IconBell />
-        </button>
+          <IconSettings />
+        </Link>
+
+        {/* Avatar */}
         <div
           className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-semibold select-none"
           aria-label="User avatar"
@@ -216,7 +263,7 @@ export function BottomNav() {
  * AppShell — responsive chrome wrapping all authenticated routes.
  *
  * Desktop (md+): fixed top nav bar, full-width content below.
- * Mobile: fixed bottom 4-tab nav bar, content above.
+ * Mobile: fixed bottom 5-tab nav bar, content above.
  *
  *   Desktop:
  *   ┌─────────────────────────────────────────┐

@@ -11,6 +11,7 @@ from app.auth import verify_token
 from app.config import settings
 from app.database import get_db
 from app.models.user import User
+from app.models.family_member import FamilyMember  # noqa: TC002 — used at runtime
 
 security = HTTPBearer()
 
@@ -76,14 +77,63 @@ async def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+async def require_vault_access(
+    member_id: UUID,
+    current_user: User,
+    db: AsyncSession,
+) -> None:
+    """Verify that *current_user* is permitted to access *member_id*'s vault.
+
+    Two access paths are allowed:
+    1. **Owner** — the FamilyMember's user_id equals current_user.user_id.
+    2. **Delegate** — a VaultAccessGrant exists where
+       grantee_user_id == current_user.user_id AND
+       target_user_id  == the member's owning user_id.
+
+    Raises:
+        404 if the FamilyMember row does not exist.
+        403 if neither owner nor delegate access applies.
+    """
+    from app.models.family_circle import VaultAccessGrant  # noqa: PLC0415 — avoids circular import
+
+    # Load the member
+    member_result = await db.execute(
+        select(FamilyMember).where(FamilyMember.member_id == member_id)
+    )
+    member = member_result.scalar_one_or_none()
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Family member not found",
+        )
+
+    # Path 1 — owner
+    if member.user_id == current_user.user_id:
+        return
+
+    # Path 2 — delegate via VaultAccessGrant
+    target_user_id = member.user_id
+    grant_result = await db.execute(
+        select(VaultAccessGrant).where(
+            VaultAccessGrant.grantee_user_id == current_user.user_id,
+            VaultAccessGrant.target_user_id == target_user_id,
+        )
+    )
+    if grant_result.scalar_one_or_none() is not None:
+        return
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Access denied",
+    )
+
+
 def require_member_access(member_id: UUID, current_user: User) -> None:
     """Verify that current_user owns the requested family member.
 
     Raises:
         403 if the member does not belong to the current user.
     """
-    from app.models.family_member import FamilyMember  # noqa: PLC0415 — avoids circular import
-
     # member_id is checked against the current_user's family members.
     # The actual DB lookup happens in the route; this guard is called after
     # the FamilyMember is loaded to confirm ownership.

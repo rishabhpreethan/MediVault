@@ -114,3 +114,92 @@ export interface TimelineEvent {
   summary: string
   document_id: string | null
 }
+
+// Family Circle types
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED' | 'REVOKED'
+export type MembershipRole = 'ADMIN' | 'MEMBER'
+
+export interface Family {
+  family_id: string
+  name: string | null
+  created_by_user_id: string
+  created_at: string
+}
+
+export interface FamilyInvitation {
+  invitation_id: string
+  family_id: string
+  invited_by_user_id: string
+  invited_email: string
+  invited_user_id: string | null
+  relationship: string
+  status: InvitationStatus
+  token: string
+  expires_at: string
+  created_at: string
+}
+
+export interface FamilyMembership {
+  membership_id: string
+  family_id: string
+  user_id: string
+  role: MembershipRole
+  can_invite: boolean
+  joined_at: string
+}
+
+export interface VaultAccessGrant {
+  grant_id: string
+  family_id: string
+  grantee_user_id: string
+  target_user_id: string
+  access_type: string
+  granted_by_user_id: string
+  granted_at: string
+}
+
+export interface FamilyCircle {
+  family: Family | null
+  managed_profiles: FamilyMember[]
+  memberships: FamilyMembership[]
+  pending_invitations_sent: FamilyInvitation[]
+  pending_invitations_received: FamilyInvitation[]
+}
+
+export interface InviteTokenInfo {
+  invitation_id: string
+  family_id: string
+  invited_by_name: string
+  relationship: string
+  status: InvitationStatus
+  expires_at: string
+}
+
+// Notification types
+export type NotificationType =
+  | 'FAMILY_INVITE'
+  | 'INVITE_ACCEPTED'
+  | 'INVITE_DECLINED'
+  | 'VAULT_ACCESS_GRANTED'
+  | 'VAULT_ACCESS_REVOKED'
+  | 'PROCESSING_COMPLETE'
+  | 'EXTRACTION_FAILED'
+
+export interface Notification {
+  notification_id: string
+  user_id: string
+  type: NotificationType
+  title: string
+  body: string
+  is_read: boolean
+  action_url: string | null
+  metadata: Record<string, unknown> | null
+  created_at: string
+}
+
+export interface PaginatedNotifications {
+  items: Notification[]
+  total: number
+  page: number
+  limit: number
+}

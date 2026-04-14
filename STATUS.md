@@ -17,7 +17,7 @@
 
 | Person | Agent Role | Currently Working On | Task ID | Branch | Last Updated |
 |---|---|---|---|---|---|
-| Developer Agent | Developer | MV-058 — Make Health Passport the default landing page | MV-058 | feature/MV-058-passport-as-home | 2026-04-13 |
+| Developer Agent | Developer | Family Circle redesign — MV-125 through MV-140 | MV-125–MV-140 | feature/MV-125-140-family-circle-redesign | 2026-04-14 |
 
 ---
 
@@ -182,6 +182,41 @@
 | MV-123 | Playwright E2E tests (critical user journeys UF-001 through UF-009) | P1 | Done | Developer Agent | MV-052, MV-061, MV-084 | feature/MV-123-playwright-e2e-tests |
 | MV-124 | PDF extraction accuracy benchmarking (≥95% text fidelity target) | P2 | Done | Developer Agent | MV-032 | feature/MV-124-pdf-benchmarking |
 
+### EPIC: Family Circle Redesign (DECISION-007)
+
+> **2-Way Door decision** made 2026-04-11. Full spec in srs.md §3.9–§3.10, architecture.md, user-flows.md UF-009 + UF-014–UF-019, decision-framework.md DECISION-007.
+
+#### Sub-Epic: Backend — DB + Core APIs
+
+| Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
+|---|---|---|---|---|---|---|
+| MV-125 | Alembic migration: families, family_invitations, family_memberships, vault_access_grants, notifications tables | P0 | Done (Pending Merge) | Developer Agent | — | feature/MV-125-140-family-circle-redesign |
+| MV-126 | Family Circle API — GET /family/circle (returns memberships + managed profiles + pending invites) | P1 | Done (Pending Merge) | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
+| MV-127 | Family Invitations API — POST /family/invitations, GET /family/invitations, DELETE invitation, POST resend | P1 | Done (Pending Merge) | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
+| MV-128 | Invite acceptance flow — GET /invite/:token, POST accept, POST decline (handles new + existing users) | P1 | Done (Pending Merge) | Developer Agent | MV-127 | feature/MV-125-140-family-circle-redesign |
+| MV-129 | Vault Access Grants API — GET /family/access, POST grant, DELETE revoke, PATCH can-invite | P1 | Done (Pending Merge) | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
+| MV-130 | Cross-vault access middleware — check vault_access_grants before serving profile/documents/charts for non-owner | P0 | Done (Pending Merge) | Developer Agent | MV-129 | feature/MV-125-140-family-circle-redesign |
+| MV-131 | Notifications API — GET /notifications, GET unread-count, PATCH read, POST read-all, DELETE | P2 | Done (Pending Merge) | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
+| MV-132 | Notification dispatch service — emit in-app notifications for family invite events + processing events | P2 | Done (Pending Merge) | Developer Agent | MV-131, MV-127 | feature/MV-125-140-family-circle-redesign |
+
+#### Sub-Epic: Frontend — Family Circle UI
+
+| Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
+|---|---|---|---|---|---|---|
+| MV-133 | Update app shell nav: add Family tab (5-tab bottom nav), move Settings to avatar menu | P1 | Done (Pending Merge) | Developer Agent | — | feature/MV-125-140-family-circle-redesign |
+| MV-134 | Family Circle page — visual family tree (parents / spouse / children layout), node cards, pending badges, Add button | P1 | Done (Pending Merge) | Developer Agent | MV-126, MV-133 | feature/MV-125-140-family-circle-redesign |
+| MV-135 | Invite flow UI — email input, relationship selector, confirmation; handles existing user + new user paths | P1 | Done (Pending Merge) | Developer Agent | MV-127, MV-134 | feature/MV-125-140-family-circle-redesign |
+| MV-136 | Invitation acceptance page — /invite/:token route, accept/decline UI, post-accept redirect | P1 | Done (Pending Merge) | Developer Agent | MV-128 | feature/MV-125-140-family-circle-redesign |
+| MV-137 | Vault access permissions UI — per-member access toggle panel (grant/revoke READ access, toggle can-invite) | P2 | Done (Pending Merge) | Developer Agent | MV-129, MV-134 | feature/MV-125-140-family-circle-redesign |
+| MV-138 | In-app notification bell + notification centre (unread badge, list, mark read, action deep-links) | P2 | Done (Pending Merge) | Developer Agent | MV-131, MV-133 | feature/MV-125-140-family-circle-redesign |
+
+#### Sub-Epic: Backend Tests
+
+| Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
+|---|---|---|---|---|---|---|
+| MV-139 | Unit + integration tests for invite flow, acceptance, family membership, access grants | P1 | Done (Pending Merge) | Developer Agent | MV-128, MV-129 | feature/MV-125-140-family-circle-redesign |
+| MV-140 | Cross-vault isolation tests (grantee can read, non-grantee gets 403, revoke works) | P0 | Done (Pending Merge) | Developer Agent | MV-130 | feature/MV-125-140-family-circle-redesign |
+
 ---
 
 ## Activity Log
@@ -290,3 +325,17 @@
 | 2026-04-13 | Rishabh | Decision: Health Passport replaces Dashboard as default landing page — Dashboard (Health Profile) moves to /health; Passport at / | MV-058 | [1.5-Way Door] |
 | 2026-04-13 | Developer Agent | Updated specs for MV-058: srs.md §3.5 + §7.2 + §7.3, user-flows.md UF-001 + UF-002, architecture.md frontend routing; added MV-058 to task board | MV-058 | — |
 | 2026-04-13 | Developer Agent | Started MV-058 — Passport as default landing page | MV-058 | feature/MV-058-passport-as-home |
+| 2026-04-11 | Rishabh | [2-Way Door — DECISION-007] Family Circle redesigned: invitation-based linked accounts + managed profiles; visual family tree; explicit vault access grants; in-app notifications; 5-tab nav (Family added, Settings moved to avatar menu) | — | Full spec in srs.md §3.9-§3.10, architecture.md, user-flows.md UF-009/UF-014-UF-019, decision-framework.md DECISION-007 |
+| 2026-04-11 | Developer Agent | Completed spec changes for DECISION-007 — updated srs.md §7.3; updated user-flows.md actors table + UF-009 (managed profiles) + UF-014–UF-019 (family tree, invite existing user, invite new user, accept invite, manage access grants, view delegated vault); added 5 new DB tables + 25 new API endpoints to architecture.md; added DECISION-007 to decision-framework.md; added MV-125–MV-140 to task board | MV-125 through MV-140 | No branch cut yet — spec-only changes |
+| 2026-04-14 | Developer Agent | Started MV-125 through MV-140 — Family Circle redesign full implementation | MV-125–MV-140 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Completed MV-125 — Alembic migration 0006: families, family_invitations, family_memberships, vault_access_grants, notifications tables with all indexes and constraints | MV-125 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Completed MV-126–MV-129 — family_circle API: 12 endpoints (GET /family/circle, POST/GET/DELETE /family/invitations, resend, GET/POST/DELETE /family/access, PATCH can-invite, GET/POST /invite/:token accept/decline); ORM models Family/FamilyInvitation/FamilyMembership/VaultAccessGrant/Notification; schemas; notification dispatch service | MV-126, MV-127, MV-128, MV-129, MV-132 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Completed MV-130 — require_vault_access dependency in dependencies.py; owner always allowed; grantee with vault_access_grants row allowed; all others 403 | MV-130 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Completed MV-131 — notifications API: GET /notifications (paginated), GET /notifications/unread-count, PATCH read, POST read-all, DELETE; registered in router.py | MV-131 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Completed MV-133 — AppShell: 5-tab nav (Passport/Records/Insights/Health/Family), Settings moved to gear icon in TopNav right section | MV-133 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Completed MV-134/MV-135 — FamilyCirclePage: visual family tree (parents/owner+spouse/children rows, CSS flexbox), managed profile nodes, pending invitation dashed nodes, inline InviteModal (email + relationship pills), cancel invitation; useFamilyCircle hook; /family route added to App.tsx | MV-134, MV-135 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Completed MV-136 — InviteAcceptancePage: public /invite/:token page, skeleton loading, status-aware states (invalid/expired/revoked/accepted), auth gate redirects to login, accept/decline mutations | MV-136 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Completed MV-137 — VaultAccessPanel: slide-up modal with grant/revoke toggles per member, can-invite toggle, admin-only guard | MV-137 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Completed MV-138 — NotificationCentre: dropdown panel from bell icon, 30s poll unread count, red badge, notification list with mark-read, mark-all-read, action URL navigation, outside-click dismiss | MV-138 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Completed MV-139 — 31 unit tests (test_family_circle.py): notification dispatch, invite send, cancel, accept, decline, access grants, require_vault_access | MV-139 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Completed MV-140 — 16 cross-vault isolation tests (test_family_vault_isolation.py): owner access, grantee access, non-grantee 403, revoke works, expired/double-accept invite, non-member grant attempt | MV-140 | feature/MV-125-140-family-circle-redesign |

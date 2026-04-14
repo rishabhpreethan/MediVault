@@ -453,6 +453,88 @@ The Health Passport is a read-only, shareable snapshot of the patient's critical
 
 ---
 
+### 3.9 Family Circle — Invite-Based Family Network
+
+#### 3.9.1 Description
+
+The Family Circle is a visual, interactive family tree that shows all members of a user's family network. It supports two distinct member types:
+
+- **Managed Profiles** — people without their own MediVault account (e.g., young children, elderly parents). Created directly by the account owner. Health data is owned and managed entirely by the owner.
+- **Linked Accounts** — other MediVault users who have been invited to and accepted membership in the family. Each person's vault remains their own; access is explicitly granted by the family admin.
+
+The family admin (creator) can invite any email address. If the invitee already has an account, they receive an in-app notification and email. If they do not, they receive an email to create an account and then join the family.
+
+#### 3.9.2 Family Tree Visual
+
+The Family Circle page displays a visual family tree:
+- The account owner (SELF) is the root node
+- Nodes are arranged by relationship: parents above, spouse at same level, children below, siblings at same level
+- Each node shows: name, avatar/initials, relationship badge, membership type (managed vs linked account)
+- Pending invitations shown as dashed-border nodes
+- "+" buttons on each relationship level to invite or add a member
+
+#### 3.9.3 Permission Model
+
+| Permission | Default | Who can grant it |
+|---|---|---|
+| View family member list | Yes (all members) | N/A |
+| View another member's vault | No | Family admin only |
+| Invite new members | No | Family admin only |
+| Manage permissions | No | Family admin only |
+
+Accepting an invitation does **not** automatically grant vault access. The admin must explicitly grant vault visibility per member.
+
+#### 3.9.4 Functional Requirements
+
+| ID | Requirement | Priority | Phase |
+|---|---|---|---|
+| FR-FAM-001 | System shall auto-create a family for each new user on first login | **High** | V1-MVP |
+| FR-FAM-002 | Family admin shall be able to invite any email address to join the family | **High** | V1-MVP |
+| FR-FAM-003 | System shall send an invitation email with a one-time token link | **High** | V1-MVP |
+| FR-FAM-004 | If invitee has a MediVault account, system shall also deliver an in-app notification | **High** | V1-MVP |
+| FR-FAM-005 | If invitee has no MediVault account, invitation email shall include a signup link with token pre-filled | **High** | V1-MVP |
+| FR-FAM-006 | Invitations shall expire after 7 days if not accepted | **Medium** | V1 |
+| FR-FAM-007 | Invitee shall be able to accept or decline an invitation | **High** | V1-MVP |
+| FR-FAM-008 | Family admin shall be able to revoke a pending invitation at any time | **Medium** | V1 |
+| FR-FAM-009 | Family admin shall be able to remove a member from the family at any time | **Medium** | V1 |
+| FR-FAM-010 | Family admin shall be able to grant vault read access to any member for any other member's vault | **High** | V1-MVP |
+| FR-FAM-011 | Family admin shall be able to revoke vault access at any time | **High** | V1-MVP |
+| FR-FAM-012 | Family admin shall be able to grant a member the "can invite" permission | **Medium** | V1 |
+| FR-FAM-013 | Each user may create and manage their own family circle independently | **High** | V1-MVP |
+| FR-FAM-014 | Managed profiles (no MediVault account) shall remain supported alongside linked accounts | **High** | V1-MVP |
+| FR-FAM-015 | Family tree shall be displayed as a visual tree with relationship-based layout | **Medium** | V1 |
+
+---
+
+### 3.10 Notifications
+
+#### 3.10.1 Description
+
+MediVault delivers notifications through two channels: **in-app** (bell icon in top nav, notification centre page) and **email** (via SendGrid). Notifications are non-blocking — they do not prevent the user from using the app.
+
+#### 3.10.2 Notification Types (V1)
+
+| Type | In-App | Email | Trigger |
+|---|---|---|---|
+| `FAMILY_INVITATION_RECEIVED` | ✓ | ✓ | Invited user receives a family invitation |
+| `FAMILY_INVITATION_ACCEPTED` | ✓ | ✓ | Admin is notified that an invitee accepted |
+| `FAMILY_INVITATION_DECLINED` | ✓ | — | Admin is notified that an invitee declined |
+| `VAULT_ACCESS_GRANTED` | ✓ | — | User is told they can now see a specific vault |
+| `DOCUMENT_PROCESSED` | ✓ | ✓ | Document extraction complete |
+| `DOCUMENT_FAILED` | ✓ | ✓ | Document extraction failed |
+
+#### 3.10.3 Functional Requirements
+
+| ID | Requirement | Priority | Phase |
+|---|---|---|---|
+| FR-NOTIF-001 | System shall persist in-app notifications in the database | **High** | V1-MVP |
+| FR-NOTIF-002 | User shall be able to view all notifications in a notification centre | **High** | V1-MVP |
+| FR-NOTIF-003 | Bell icon in top nav shall show an unread count badge | **High** | V1-MVP |
+| FR-NOTIF-004 | User shall be able to mark individual notifications or all as read | **Medium** | V1 |
+| FR-NOTIF-005 | Notifications shall include a deep link to the relevant in-app page | **Medium** | V1 |
+
+---
+
 ## 4. Non-Functional Requirements
 
 ### 4.1 Performance
@@ -704,7 +786,8 @@ The V1 pipeline remains unchanged. OCR is an additive layer, not a replacement.
 
 ### 7.3 Mobile-Specific Requirements
 
-- Bottom navigation bar for primary sections (Passport, Records, Insights, Health)
+- Bottom navigation bar for primary sections (Passport, Records, Insights, Health, Family)
+- Settings accessible from avatar/profile menu (top nav on desktop; top-right icon on mobile) — not a bottom nav tab
 - Swipe gestures for timeline navigation
 - PDF file picker from device storage
 - Offline state handled gracefully with clear messaging

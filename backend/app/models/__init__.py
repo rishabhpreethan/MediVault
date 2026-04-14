@@ -12,6 +12,8 @@ from app.models.procedure import Procedure
 from app.models.passport import SharedPassport, PassportAccessLog
 from app.models.correction_audit import CorrectionAudit
 from app.models.auth_audit import AuthAuditLog
+from app.models.family_circle import Family, FamilyInvitation, FamilyMembership, VaultAccessGrant
+from app.models.notification import Notification
 
 __all__ = [
     "User",
@@ -28,4 +30,9 @@ __all__ = [
     "PassportAccessLog",
     "CorrectionAudit",
     "AuthAuditLog",
+    "Family",
+    "FamilyInvitation",
+    "FamilyMembership",
+    "VaultAccessGrant",
+    "Notification",
 ]

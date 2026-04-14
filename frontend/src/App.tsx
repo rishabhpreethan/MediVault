@@ -19,6 +19,8 @@ import { PublicPassportPage } from './pages/passport/PublicPassportPage'
 import { LoginPage } from './pages/auth/LoginPage'
 import { CallbackPage } from './pages/auth/CallbackPage'
 import { AccountSettingsPage } from './pages/settings/AccountSettingsPage'
+import { FamilyCirclePage } from './pages/family/FamilyCirclePage'
+import { InviteAcceptancePage } from './pages/family/InviteAcceptancePage'
 
 export default function App() {
   return (
@@ -30,6 +32,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/callback" element={<CallbackPage />} />
             <Route path="/passport/:uuid" element={<PublicPassportPage />} />
+            <Route path="/invite/:token" element={<InviteAcceptancePage />} />
 
             {/* Protected routes */}
             <Route element={<AuthGuard />}>
@@ -42,6 +45,7 @@ export default function App() {
                 <Route path="/passport/add-member" element={<AddFamilyMemberPage />} />
                 <Route path="/passport/manage" element={<PassportManagePage />} />
                 <Route path="/settings" element={<AccountSettingsPage />} />
+                <Route path="/family" element={<FamilyCirclePage />} />
               </Route>
             </Route>
           </Routes>

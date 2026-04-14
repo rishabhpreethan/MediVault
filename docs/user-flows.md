@@ -10,7 +10,8 @@ All actors, their goals, and their complete journeys through the system.
 |---|---|---|
 | **Account Owner** | Primary user who creates the account and manages the family | Yes |
 | **Family Member (Self)** | The account owner's own health profile (first member auto-created) | Via owner |
-| **Family Member (Other)** | Dependent added by the owner (child, parent, spouse) | Via owner |
+| **Managed Profile** | Dependent without their own account (child, elderly parent) — managed entirely by the account owner | Via owner |
+| **Linked Account** | Another MediVault user who has accepted a family invitation — has their own account and vault | Yes (own account) |
 | **Clinician** | Doctor/nurse who views a shared Health Passport via link/QR | No |
 | **System** | Background processing (extraction pipeline, notifications) | N/A |
 
@@ -268,31 +269,35 @@ MANUAL ADD FLOW:
 
 ---
 
-## UF-009 — Manage Family Members
+## UF-009 — Manage Managed Profiles (Dependents Without Accounts)
 
 **Actor:** Account Owner
-**Goal:** Add and manage health profiles for family members
+**Goal:** Create and manage health profiles for dependents who do not have their own MediVault account (e.g., young children, elderly parents)
 
 ```
-ADD MEMBER:
-1. User clicks "Add Family Member" (accessible from profile member selector or a Family settings screen)
-2. Enters: Full name, relationship (Spouse / Parent / Child / Other), date of birth, blood group (optional)
-3. Clicks "Add"
-4. New member appears in the member selector
-5. Member starts with an empty health profile
-6. User can now upload documents for this member and manage their profile separately
+ADD MANAGED PROFILE:
+1. User navigates to Family Circle tab → clicks "Add Member" on the family tree
+2. Selects "This person doesn't have a MediVault account" (Managed Profile)
+3. Enters: Full name, relationship (Spouse / Parent / Child / Other), date of birth, blood group (optional)
+4. Clicks "Create Profile"
+5. New managed profile node appears on the family tree
+6. Profile starts with an empty health history
+7. Owner can now upload documents, view records, and manage the passport for this profile
 
-VIEW/SWITCH MEMBER:
-1. On any screen (Profile, Timeline, Charts, Documents, Passport), user sees member selector at top
-2. Clicks a member name → all data on screen switches to that member's records
-3. Document uploads, passports, edits all apply to the currently selected member
+VIEW/SWITCH TO MANAGED PROFILE:
+1. From Family Circle tab, owner clicks a managed profile node on the tree
+2. "Viewing [Name]'s vault" banner appears at top of screen
+3. All health screens (Records, Insights, Health, Passport) switch context to this profile
+4. Banner shows "Switch back to my vault" button to return to own vault
 
-EDIT/REMOVE MEMBER:
-1. User goes to Family settings
-2. Clicks on a member → Edit (update name/DOB/blood group) or Remove
-3. Remove: confirmation dialog → "This will delete all records for [name]. This cannot be undone."
-4. On confirm: all documents, extracted data, passports for that member are deleted
+EDIT/REMOVE MANAGED PROFILE:
+1. User opens managed profile from the family tree → taps edit icon
+2. Edit: update name / DOB / blood group → save
+3. Remove: confirmation dialog → "This will permanently delete all records for [name]. This cannot be undone."
+4. On confirm: all documents, extracted data, and passports for this profile are deleted
 ```
+
+**Note:** Managed profiles are distinct from Linked Accounts (see UF-015, UF-016). Both types appear on the family tree. Managed profiles show a "Managed by you" badge; Linked Accounts show the member's own avatar.
 
 ---
 
@@ -390,3 +395,193 @@ EDIT/REMOVE MEMBER:
 8. Notification Service sends "Processing complete" email/notification to user
 9. Document status updated to COMPLETE
 ```
+
+---
+
+## UF-014 — View Family Circle (Family Tree)
+
+**Actor:** Account Owner
+**Goal:** See the full family and navigate to any member's vault
+
+```
+1. User taps the "Family" tab in the bottom nav (or top nav on desktop)
+2. Family Circle page loads, showing:
+   - A visual family tree centred on the account owner's node
+   - Parents shown above the owner's node
+   - Spouse shown at the same level to the left/right
+   - Children shown below the owner's node
+   - Each node shows: avatar/initials, name, relationship label, member type badge
+     (green "You", blue "Account" for linked users, grey "Managed" for managed profiles)
+   - Pending invitations shown as dashed-border nodes with "Pending" badge
+3. User can:
+   a. Tap any active node → opens that member's vault (see UF-009 or UF-019)
+   b. Tap any "Pending" node → sees invitation status and option to resend/cancel
+   c. Tap the "+" Add to tree button → starts invite flow (UF-015)
+   d. Long-press a node → context menu (View vault / Edit / Remove)
+```
+
+**Happy path:** Owner with 3 members sees tree → taps child node → switches vault context in < 2 seconds
+
+---
+
+## UF-015 — Invite an Existing MediVault User to the Family
+
+**Actor:** Account Owner
+**Goal:** Invite another MediVault user (who already has an account) to join the family circle
+
+```
+1. On Family Circle page, owner taps "+ Add to tree"
+2. Selects "Invite via email"
+3. Enters the invitee's email address
+4. Selects relationship: Parent / Spouse / Child / Sibling / Other
+5. Optionally positions the node on the tree (parent level / same level / child level)
+6. Taps "Send Invitation"
+7. System:
+   a. Looks up the email → finds an existing MediVault account
+   b. Creates a family_invitation record (status=PENDING, token=UUID, expires 7 days)
+   c. Sends an in-app notification to the invitee (type=FAMILY_INVITE)
+   d. Sends an invitation email to the invitee's registered address
+   e. Returns confirmation to the owner
+8. A dashed-border "Pending" node appears on the family tree at the chosen position
+9. Owner sees: "Invitation sent to [email]. Waiting for them to accept."
+```
+
+**Error paths:**
+- Email not found in MediVault → system routes to UF-016 (new user invite) automatically
+- Invitation already pending for this email → "You've already invited [email]. Resend?"
+- Invitee has already declined → "This person declined your last invitation. Send a new one?"
+
+---
+
+## UF-016 — Invite a New User (No MediVault Account Yet)
+
+**Actor:** Account Owner
+**Goal:** Invite someone who does not yet have a MediVault account
+
+```
+1. Owner enters an email that is not found in the MediVault user database (during UF-015 step 3)
+2. System detects: email not registered
+3. Owner sees: "[email] doesn't have a MediVault account yet. Send them an invitation to join?"
+4. Owner taps "Send Invitation Anyway"
+5. System:
+   a. Creates a family_invitation record (invited_user_id = NULL, status=PENDING, token=UUID, expires 7 days)
+   b. Sends an invitation email to that address:
+      "You've been invited by [Owner Name] to join their family on MediVault.
+       Click here to create your account and accept the invitation."
+   c. The invite link contains the invitation token: /invite/:token
+6. "Pending" node appears on the family tree
+7. When the recipient creates a MediVault account and visits /invite/:token:
+   a. Invitation is matched to their new user_id
+   b. They are shown the acceptance screen (UF-017)
+```
+
+**Error paths:**
+- Invitee creates account but token is expired (>7 days) → "This invitation has expired. Ask [Owner Name] to resend it."
+- Invitee tries to use token after already accepting → "You're already part of this family."
+
+---
+
+## UF-017 — Accept a Family Invitation (Invitee Flow)
+
+**Actor:** Linked Account (invitee — existing or newly registered MediVault user)
+**Goal:** Accept the family invitation and join the family circle
+
+```
+EXISTING USER — IN-APP NOTIFICATION:
+1. Invitee logs into MediVault
+2. Sees a notification badge on the bell icon
+3. Opens notification centre → sees "Family invitation from [Owner Name]"
+   - Notification body: "[Owner Name] has invited you to join their family as [Relationship]."
+   - Two action buttons: "Accept" and "Decline"
+4. Taps "Accept":
+   a. family_memberships record created (role=MEMBER, can_invite=FALSE)
+   b. invitation status → ACCEPTED
+   c. Invitee appears as a solid node on the owner's family tree
+   d. In-app notification sent to the owner: "[Invitee Name] accepted your family invitation"
+   e. Invitee's own family tree now shows the owner's node as well
+
+EXISTING USER — EMAIL LINK:
+1. Invitee clicks the link in the invitation email
+2. Redirected to /invite/:token → prompted to log in if not already
+3. After login, sees the acceptance screen (same as notification flow above from step 4)
+
+NEW USER — AFTER ACCOUNT CREATION:
+1. Invitee visits /invite/:token → prompted to create an account
+2. Creates account → completes onboarding
+3. Immediately shown the acceptance screen:
+   "[Owner Name] has invited you to join their family as [Relationship]. Accept?"
+4. Accepts → same as step 4a–4e above
+
+DECLINE FLOW:
+1. Invitee taps "Decline"
+2. Invitation status → DECLINED
+3. In-app notification sent to owner: "[Invitee Name] declined your family invitation"
+4. Owner sees a prompt on the family tree node: "Declined — resend invitation?"
+```
+
+**Key rule:** Accepting an invitation does NOT automatically share any vault data.
+Vault sharing requires an explicit vault access grant (see UF-018).
+
+---
+
+## UF-018 — Manage Vault Access Permissions
+
+**Actor:** Account Owner (the family creator / family admin)
+**Goal:** Grant or revoke access to a family member's vault
+
+```
+GRANT ACCESS:
+1. Owner opens Family Circle → taps a linked account member's node
+2. Taps "Manage Access"
+3. Sees two permission panels:
+   a. "Access to [Member]'s vault" — toggle: can this person view [Member]'s records?
+   b. "[Member]'s access to others" — toggle per member: can [Member] view [other]'s records?
+4. Owner enables "Can view [Target Member]'s vault" for the grantee
+5. System creates a vault_access_grant record:
+   (grantee_user_id=[member], target_user_id=[target], access_type=READ)
+6. Grantee immediately sees the target member's node on their family tree as accessible
+7. Email/in-app notification sent to the grantee:
+   "[Owner Name] has shared [Target Name]'s health records with you."
+
+GRANT INVITE PERMISSION:
+1. Owner enables "Can invite others to the family" for a member
+2. family_memberships.can_invite → TRUE for that member
+3. That member can now send invitations on behalf of the family
+
+REVOKE ACCESS:
+1. Owner disables a previously enabled toggle
+2. vault_access_grant record deleted
+3. Grantee can no longer access the target vault
+4. If grantee is currently viewing the target vault → banner shows "Access has been revoked"
+   and they are redirected to their own vault
+5. In-app notification sent to grantee: "Your access to [Target Name]'s records has been removed."
+```
+
+**Access model summary:**
+- Only the family creator (owner) can manage access by default
+- Any member with `can_invite=TRUE` can also send invitations
+- Access grants are explicitly set — no implicit sharing on family join
+
+---
+
+## UF-019 — View a Delegated Vault (Linked Account Accessing Another Member's Vault)
+
+**Actor:** Linked Account (with a vault access grant)
+**Goal:** View health records of a family member whose vault has been shared with them
+
+```
+1. Linked account user opens Family Circle tab
+2. Sees the family tree with nodes they have access to highlighted (accessible = solid, no-access = greyed with lock icon)
+3. Taps an accessible node (e.g., parent's node)
+4. "Viewing [Parent Name]'s vault" banner appears (teal) at top of screen
+5. All health screens (Records, Insights, Health, Passport) switch context to the parent's records
+6. This user can view records but cannot:
+   - Upload documents on behalf of the parent
+   - Edit extracted data
+   - Create/revoke passports
+   - Manage other members' access
+7. To return: taps "Switch back to my vault" in the banner
+```
+
+**Read-only rule:** Vault access grants are READ access only in V1. Write access is out of scope.
+**Error path:** If access grant has been revoked since last session → user sees "You no longer have access to [Name]'s vault." and is redirected to their own vault.
