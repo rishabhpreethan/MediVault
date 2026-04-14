@@ -173,8 +173,17 @@ async def delete_member(
     current_user: CurrentUser,
     db: DbSession,
 ) -> None:
-    """Delete a family member and cascade all associated data (ownership verified)."""
+    """Delete a managed family member and cascade all associated data (ownership verified).
+
+    The user's own self-member (is_self=True) cannot be deleted.
+    """
     member = await _load_member_or_404(db, member_id, current_user)
+
+    if member.is_self:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"error": "CANNOT_DELETE_SELF", "message": "Your own profile cannot be deleted"},
+        )
 
     await db.delete(member)
     await db.commit()

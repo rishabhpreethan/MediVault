@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { FormEvent } from 'react'
 import type {
   FamilyMember,
@@ -11,6 +11,8 @@ import {
   useSendInvitation,
   useCancelInvitation,
   useResendInvitation,
+  useCreateManagedMember,
+  useDeleteManagedMember,
 } from '../../hooks/useFamilyCircle'
 import { VaultAccessPanel } from './VaultAccessPanel'
 
@@ -164,183 +166,332 @@ function AddMemberButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-// ── Connector line between rows ────────────────────────────────────────────
+// ── Family tree (SVG layout + foreignObject HTML nodes) ────────────────────
 
-function Connector() {
+const CW = 140   // card width
+const CH = 116   // card height
+const HG = 20    // horizontal gap between cards
+const VG = 80    // vertical gap between levels
+const PX = 48    // horizontal padding inside SVG
+const PY = 32    // vertical padding inside SVG
+
+function curve(x1: number, y1: number, x2: number, y2: number) {
+  const my = (y1 + y2) / 2
+  return `M ${x1} ${y1} C ${x1} ${my} ${x2} ${my} ${x2} ${y2}`
+}
+
+// Each node descriptor used for layout
+interface NodeDesc {
+  id: string
+  type: 'self' | 'member' | 'pending' | 'add'
+  name: string
+  sublabel: string
+  onClick?: () => void
+  onDelete?: () => void
+}
+
+// Rendered HTML card inside foreignObject
+function NodeCard({ desc, w, h }: { desc: NodeDesc; w: number; h: number }) {
+  function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation()
+    const msg = desc.type === 'pending'
+      ? `Cancel the invitation to ${desc.name}?`
+      : `Remove ${desc.name} from your family circle? This will also delete all their documents.`
+    if (window.confirm(msg)) {
+      desc.onDelete?.()
+    }
+  }
+  const initials = desc.name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0].toUpperCase())
+    .join('')
+
+  if (desc.type === 'add') {
+    return (
+      <div
+        onClick={desc.onClick}
+        style={{ width: w, height: h, boxSizing: 'border-box' }}
+        className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-teal-300 bg-teal-50 cursor-pointer hover:bg-teal-100 hover:border-teal-400 transition-colors select-none"
+      >
+        <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0f766e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </div>
+        <span className="text-[11px] font-semibold text-teal-700 leading-tight text-center px-2">
+          Add member
+        </span>
+      </div>
+    )
+  }
+
+  if (desc.type === 'pending') {
+    const [rel, ...rest] = desc.sublabel.split(' · ')
+    const status = rest.join(' · ')
+    return (
+      <div
+        style={{ width: w, height: h, boxSizing: 'border-box', position: 'relative' }}
+        className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-amber-300 bg-white shadow-sm select-none px-2"
+      >
+        {desc.onDelete && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            title="Cancel invitation"
+            style={{ position: 'absolute', top: 6, right: 6 }}
+            className="w-5 h-5 rounded-full bg-slate-100 hover:bg-red-100 flex items-center justify-center transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-slate-400 hover:text-red-500">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+        <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center">
+          <span className="text-slate-400 text-base font-bold leading-none">?</span>
+        </div>
+        <p className="text-[11px] font-medium text-slate-600 text-center leading-tight truncate w-full text-center">
+          {desc.name.length > 15 ? desc.name.slice(0, 14) + '…' : desc.name}
+        </p>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-[9px] font-semibold text-slate-500">{rel}</span>
+          {status && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] font-semibold">
+              {status}
+            </span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (desc.type === 'self') {
+    return (
+      <div
+        style={{ width: w, height: h, boxSizing: 'border-box' }}
+        className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-teal-600 bg-white shadow-md shadow-teal-100 select-none px-2"
+      >
+        <div className="w-11 h-11 rounded-full bg-teal-600 flex items-center justify-center ring-4 ring-teal-100">
+          <span className="text-white text-sm font-bold leading-none">{initials}</span>
+        </div>
+        <p className="text-[12px] font-bold text-slate-900 text-center leading-tight truncate w-full text-center">
+          {desc.name.length > 15 ? desc.name.slice(0, 14) + '…' : desc.name}
+        </p>
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 text-[10px] font-semibold">
+          You
+        </span>
+      </div>
+    )
+  }
+
+  // type === 'member'
   return (
-    <div className="flex justify-center">
-      <div className="w-px h-8 bg-slate-200" aria-hidden="true" />
+    <div
+      onClick={desc.onClick}
+      style={{ width: w, height: h, boxSizing: 'border-box', position: 'relative' }}
+      className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white shadow-sm select-none px-2 ${desc.onClick ? 'cursor-pointer hover:border-teal-300 hover:shadow-md transition-all' : ''}`}
+    >
+      {desc.onDelete && (
+        <button
+          type="button"
+          onClick={handleDelete}
+          title="Remove member"
+          style={{ position: 'absolute', top: 6, right: 6 }}
+          className="w-5 h-5 rounded-full bg-slate-100 hover:bg-red-100 flex items-center justify-center transition-colors"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-slate-400 hover:text-red-500">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14H6L5 6" />
+            <path d="M10 11v6M14 11v6" />
+            <path d="M9 6V4h6v2" />
+          </svg>
+        </button>
+      )}
+      <div className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center">
+        <span className="text-slate-600 text-sm font-semibold leading-none">{initials}</span>
+      </div>
+      <p className="text-[12px] font-semibold text-slate-900 text-center leading-tight truncate w-full text-center">
+        {desc.name.length > 15 ? desc.name.slice(0, 14) + '…' : desc.name}
+      </p>
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="text-[10px] text-slate-500 font-medium">{desc.sublabel}</span>
+        {desc.onClick && (
+          <span className="text-[9px] font-semibold text-teal-600">Manage →</span>
+        )}
+      </div>
     </div>
   )
 }
-
-// ── Family tree visual ─────────────────────────────────────────────────────
 
 interface FamilyTreeProps {
   circle: FamilyCircle
   selfMember: FamilyMember | undefined
   onInvite: () => void
   onManageAccess: (member: FamilyMember | FamilyMembership) => void
+  onDeleteMember: (memberId: string) => void
+  onCancelInvitation: (invitationId: string) => void
 }
 
-function FamilyTree({ circle, selfMember, onInvite, onManageAccess }: FamilyTreeProps) {
+function FamilyTree({ circle, selfMember, onInvite, onManageAccess, onDeleteMember, onCancelInvitation }: FamilyTreeProps) {
   const managed = circle.managed_profiles
-
-  const parents = managed.filter((m) => m.relationship?.toUpperCase() === 'PARENT')
-  const spouses = managed.filter((m) => m.relationship?.toUpperCase() === 'SPOUSE')
+  const parents  = managed.filter((m) => m.relationship?.toUpperCase() === 'PARENT')
+  const spouses  = managed.filter((m) => m.relationship?.toUpperCase() === 'SPOUSE')
   const children = managed.filter((m) => m.relationship?.toUpperCase() === 'CHILD')
-  const others = managed.filter(
-    (m) =>
-      !['SELF', 'PARENT', 'SPOUSE', 'CHILD'].includes(m.relationship?.toUpperCase() ?? ''),
+  const others   = managed.filter(
+    (m) => !['SELF', 'PARENT', 'SPOUSE', 'CHILD'].includes(m.relationship?.toUpperCase() ?? ''),
   )
+  const pending = circle.pending_invitations_sent
+  const linked  = circle.memberships
 
-  const pendingInvitations = circle.pending_invitations_sent
-  const linkedMembers = circle.memberships
+  // Build level arrays of NodeDesc
+  const parentRow: NodeDesc[] = parents.map((p) => ({
+    id: p.member_id, type: 'member', name: p.full_name, sublabel: 'Parent',
+    onClick: () => onManageAccess(p),
+    onDelete: () => onDeleteMember(p.member_id),
+  }))
+
+  const middleRow: NodeDesc[] = [
+    ...spouses.map((s) => ({
+      id: s.member_id, type: 'member' as const, name: s.full_name, sublabel: 'Spouse',
+      onClick: () => onManageAccess(s),
+      onDelete: () => onDeleteMember(s.member_id),
+    })),
+    { id: '__self', type: 'self' as const, name: selfMember?.full_name ?? 'Me', sublabel: 'You' },
+    { id: '__add', type: 'add' as const, name: '', sublabel: '', onClick: onInvite },
+  ]
+
+  const childRow: NodeDesc[] = children.map((c) => ({
+    id: c.member_id, type: 'member', name: c.full_name, sublabel: 'Child',
+    onClick: () => onManageAccess(c),
+    onDelete: () => onDeleteMember(c.member_id),
+  }))
+
+  const bottomRow: NodeDesc[] = [
+    ...others.map((o) => ({
+      id: o.member_id, type: 'member' as const,
+      name: o.full_name, sublabel: RELATIONSHIP_LABELS[o.relationship] ?? 'Other',
+      onClick: () => onManageAccess(o),
+      onDelete: () => onDeleteMember(o.member_id),
+    })),
+    ...linked.map((ms) => ({
+      id: ms.membership_id, type: 'member' as const,
+      name: ms.user_id.slice(0, 10), sublabel: ms.role,
+      onClick: () => onManageAccess(ms),
+    })),
+    ...pending.map((inv) => ({
+      id: inv.invitation_id, type: 'pending' as const,
+      name: inv.invited_email.split('@')[0],
+      sublabel: `${RELATIONSHIP_LABELS[inv.relationship] ?? inv.relationship} · Pending`,
+      onDelete: () => onCancelInvitation(inv.invitation_id),
+    })),
+  ]
+
+  const levels: NodeDesc[][] = [
+    ...(parentRow.length  > 0 ? [parentRow]  : []),
+    middleRow,
+    ...(childRow.length   > 0 ? [childRow]   : []),
+    ...(bottomRow.length  > 0 ? [bottomRow]  : []),
+  ]
+
+  // SVG dimensions
+  const maxCount    = Math.max(...levels.map((l) => l.length))
+  const svgW        = Math.max(360, PX * 2 + maxCount * CW + (maxCount - 1) * HG)
+  const svgH        = PY * 2 + levels.length * CH + (levels.length - 1) * VG
+
+  function rowX(count: number, idx: number): number {
+    const rowW   = count * CW + (count - 1) * HG
+    const startX = (svgW - rowW) / 2
+    return startX + idx * (CW + HG)
+  }
+  function rowY(li: number): number {
+    return PY + li * (CH + VG)
+  }
+
+  // Self position (always in middleRow)
+  const selfLi  = parentRow.length > 0 ? 1 : 0
+  const selfNi  = middleRow.findIndex((n) => n.id === '__self')
+  const selfCx  = rowX(middleRow.length, selfNi) + CW / 2
+  const selfTopY = rowY(selfLi)
+  const selfBotY = rowY(selfLi) + CH
+
+  // Child level index (for edges)
+  const childLi = selfLi + (childRow.length > 0 ? 1 : 0)
+  const bottomLi = selfLi + (childRow.length > 0 ? 2 : 1)
 
   return (
-    <div className="space-y-0">
-      {/* Parents row */}
-      {parents.length > 0 && (
-        <>
-          <div className="flex flex-wrap justify-center gap-6 py-4">
-            {parents.map((p) => (
-              <MemberCard
-                key={p.member_id}
-                name={p.full_name}
-                relationship={p.relationship}
-                onManageAccess={() => onManageAccess(p)}
-              />
-            ))}
-          </div>
-          <Connector />
-        </>
-      )}
+    <div className="overflow-x-auto py-2">
+      <svg
+        width={svgW}
+        height={svgH}
+        style={{ display: 'block', margin: '0 auto', overflow: 'visible' }}
+        aria-label="Family tree"
+      >
+        {/* ── Edges ── */}
 
-      {/* Owner + Spouse row */}
-      <div className="flex flex-wrap justify-center items-center gap-6 py-4">
-        {spouses.filter((_, i) => i === 0).map((s) => (
-          <MemberCard
-            key={s.member_id}
-            name={s.full_name}
-            relationship={s.relationship}
-            onManageAccess={() => onManageAccess(s)}
+        {/* Parents → Self */}
+        {parentRow.map((_, pi) => (
+          <path
+            key={`ep${pi}`}
+            d={curve(rowX(parentRow.length, pi) + CW / 2, rowY(0) + CH, selfCx, selfTopY)}
+            fill="none" stroke="#cbd5e1" strokeWidth={1.5}
           />
         ))}
 
-        {/* SELF node */}
-        {selfMember ? (
-          <MemberCard
-            name={selfMember.full_name}
-            relationship="SELF"
-            isSelf
-          />
-        ) : (
-          <div className="w-14 h-14 rounded-full bg-teal-600 ring-4 ring-teal-200 flex items-center justify-center text-white font-bold">
-            Me
-          </div>
-        )}
-
-        {spouses.filter((_, i) => i > 0).map((s) => (
-          <MemberCard
-            key={s.member_id}
-            name={s.full_name}
-            relationship={s.relationship}
-            onManageAccess={() => onManageAccess(s)}
+        {/* Self → Children */}
+        {childRow.map((_, ci) => (
+          <path
+            key={`ec${ci}`}
+            d={curve(selfCx, selfBotY, rowX(childRow.length, ci) + CW / 2, rowY(childLi))}
+            fill="none" stroke="#cbd5e1" strokeWidth={1.5}
           />
         ))}
 
-        {/* Add member button next to owner */}
-        <AddMemberButton onClick={onInvite} />
-      </div>
+        {/* Self → Bottom row (pending / linked / others) — dashed */}
+        {bottomRow.map((_, bi) => (
+          <path
+            key={`eb${bi}`}
+            d={curve(selfCx, selfBotY, rowX(bottomRow.length, bi) + CW / 2, rowY(bottomLi))}
+            fill="none" stroke="#e2e8f0" strokeWidth={1} strokeDasharray="5 3"
+          />
+        ))}
 
-      {/* Children row */}
-      {children.length > 0 && (
-        <>
-          <Connector />
-          <div className="flex flex-wrap justify-center gap-6 py-4">
-            {children.map((c) => (
-              <MemberCard
-                key={c.member_id}
-                name={c.full_name}
-                relationship={c.relationship}
-                onManageAccess={() => onManageAccess(c)}
-              />
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* Other managed profiles */}
-      {others.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-slate-100">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 text-center">
-            Other members
-          </h3>
-          <div className="flex flex-wrap justify-center gap-6">
-            {others.map((m) => (
-              <MemberCard
-                key={m.member_id}
-                name={m.full_name}
-                relationship={m.relationship}
-                isManaged
-                onManageAccess={() => onManageAccess(m)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Linked (invited) members */}
-      {linkedMembers.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-slate-100">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 text-center">
-            Linked accounts
-          </h3>
-          <div className="flex flex-wrap justify-center gap-6">
-            {linkedMembers.map((ms) => (
-              <div key={ms.membership_id} className="flex flex-col items-center gap-1.5 w-24">
-                <div className="w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center text-base font-bold text-indigo-600">
-                  {ms.user_id.slice(0, 2).toUpperCase()}
-                </div>
-                <p className="text-xs font-semibold text-slate-800 text-center truncate w-full">
-                  {ms.user_id.slice(0, 10)}…
-                </p>
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600">
-                  {ms.role}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onManageAccess(ms)}
-                  className="text-[10px] text-teal-600 hover:text-teal-800 font-medium transition-colors min-h-[44px] px-2 flex items-center"
-                >
-                  Manage
-                </button>
+        {/* ── Nodes (foreignObject so we can use HTML/Tailwind) ── */}
+        {levels.map((row, li) =>
+          row.map((desc, ni) => (
+            <foreignObject
+              key={desc.id}
+              x={rowX(row.length, ni)}
+              y={rowY(li)}
+              width={CW}
+              height={CH}
+            >
+              {/* @ts-expect-error xmlns required for foreignObject children */}
+              <div xmlns="http://www.w3.org/1999/xhtml">
+                <NodeCard desc={desc} w={CW} h={CH} />
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Pending invitations */}
-      {pendingInvitations.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-slate-100">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 text-center">
-            Pending invitations
-          </h3>
-          <div className="flex flex-wrap justify-center gap-6">
-            {pendingInvitations.map((inv) => (
-              <PendingCard key={inv.invitation_id} invitation={inv} />
-            ))}
-          </div>
-        </div>
-      )}
+            </foreignObject>
+          ))
+        )}
+      </svg>
     </div>
   )
 }
 
-// ── Invite modal ───────────────────────────────────────────────────────────
+// ── Invite / add member modal ──────────────────────────────────────────────
 
 const RELATIONSHIPS: Relationship[] = ['PARENT', 'SPOUSE', 'CHILD', 'SIBLING', 'OTHER']
+
+function ageFromDob(dob: string): number | null {
+  if (!dob) return null
+  const birth = new Date(dob)
+  if (isNaN(birth.getTime())) return null
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
 
 interface InviteModalProps {
   onClose: () => void
@@ -348,38 +499,52 @@ interface InviteModalProps {
 
 function InviteModal({ onClose }: InviteModalProps) {
   const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const [relationship, setRelationship] = useState<Relationship>('CHILD')
-  const [sent, setSent] = useState(false)
+  const [dob, setDob] = useState('')
+  const [done, setDone] = useState(false)
+  const [doneMode, setDoneMode] = useState<'invite' | 'managed'>('invite')
+
   const sendInvitation = useSendInvitation()
+  const createManaged = useCreateManagedMember()
+
+  const isChild = relationship === 'CHILD'
+  const age = isChild && dob ? ageFromDob(dob) : null
+  const isMinorChild = isChild && age !== null && age < 12
+
+  const isPending = sendInvitation.isPending || createManaged.isPending
+  const apiError = (sendInvitation.error ?? createManaged.error) as (Error & { response?: { status?: number } }) | null
+  const isConflict = apiError?.response?.status === 409
+  const isSelfInvite = apiError?.response?.status === 400
+
+  const canSubmit = isMinorChild
+    ? name.trim().length > 0 && dob.length > 0
+    : email.trim().length > 0
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!email.trim()) return
+    if (!canSubmit) return
     try {
-      await sendInvitation.mutateAsync({ email: email.trim(), relationship })
-      setSent(true)
+      if (isMinorChild) {
+        await createManaged.mutateAsync({ name: name.trim(), relationship, date_of_birth: dob || null })
+        setDoneMode('managed')
+      } else {
+        await sendInvitation.mutateAsync({ email: email.trim(), relationship })
+        setDoneMode('invite')
+      }
+      setDone(true)
     } catch {
       // error shown below
     }
   }
 
-  const apiError = sendInvitation.error as (Error & { response?: { status?: number } }) | null
-  const isConflict = apiError?.response?.status === 409
-  const isSelfInvite = apiError?.response?.status === 400
-
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
-      {/* Modal */}
       <div className="relative w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="text-base font-semibold text-slate-900">Invite a family member</h2>
+          <h2 className="text-base font-semibold text-slate-900">Add a family member</h2>
           <button
             type="button"
             onClick={onClose}
@@ -393,17 +558,28 @@ function InviteModal({ onClose }: InviteModalProps) {
         </div>
 
         <div className="px-5 py-5">
-          {sent ? (
+          {done ? (
             <div className="text-center py-6 space-y-3">
               <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center mx-auto">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-teal-600" aria-hidden="true">
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               </div>
-              <p className="text-sm font-semibold text-slate-900">Invitation sent!</p>
-              <p className="text-xs text-slate-500">
-                We sent an invite to <strong>{email}</strong>. They'll receive it shortly.
-              </p>
+              {doneMode === 'managed' ? (
+                <>
+                  <p className="text-sm font-semibold text-slate-900">Child profile created!</p>
+                  <p className="text-xs text-slate-500">
+                    <strong>{name}</strong>'s health vault has been created and you have full access.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-slate-900">Invitation sent!</p>
+                  <p className="text-xs text-slate-500">
+                    We emailed an invite to <strong>{email}</strong>. They'll receive it shortly.
+                  </p>
+                </>
+              )}
               <button
                 type="button"
                 onClick={onClose}
@@ -414,23 +590,7 @@ function InviteModal({ onClose }: InviteModalProps) {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email */}
-              <div>
-                <label htmlFor="invite-email" className="block text-xs font-semibold text-slate-600 mb-1.5">
-                  Email address
-                </label>
-                <input
-                  id="invite-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="family@example.com"
-                  required
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 min-h-[44px]"
-                />
-              </div>
-
-              {/* Relationship */}
+              {/* Relationship first */}
               <div>
                 <p className="block text-xs font-semibold text-slate-600 mb-2">Relationship</p>
                 <div className="flex flex-wrap gap-2">
@@ -438,7 +598,7 @@ function InviteModal({ onClose }: InviteModalProps) {
                     <button
                       key={rel}
                       type="button"
-                      onClick={() => setRelationship(rel)}
+                      onClick={() => { setRelationship(rel); setDob('') }}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors min-h-[44px] ${
                         relationship === rel
                           ? 'bg-teal-600 text-white border-teal-600'
@@ -450,6 +610,71 @@ function InviteModal({ onClose }: InviteModalProps) {
                   ))}
                 </div>
               </div>
+
+              {/* Date of birth — only shown for CHILD */}
+              {isChild && (
+                <div>
+                  <label htmlFor="invite-dob" className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Child's date of birth
+                  </label>
+                  <input
+                    id="invite-dob"
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 min-h-[44px]"
+                  />
+                </div>
+              )}
+
+              {/* Minor child notice */}
+              {isMinorChild && (
+                <div className="flex gap-2.5 bg-teal-50 border border-teal-100 rounded-xl px-3 py-3">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
+                  </svg>
+                  <p className="text-xs text-teal-700">
+                    Children under 12 are managed directly — no email needed. You'll have full access to their vault.
+                  </p>
+                </div>
+              )}
+
+              {/* Name — shown for minor children */}
+              {isMinorChild && (
+                <div>
+                  <label htmlFor="invite-name" className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Child's name
+                  </label>
+                  <input
+                    id="invite-name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Full name"
+                    required
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 min-h-[44px]"
+                  />
+                </div>
+              )}
+
+              {/* Email — shown for non-minor */}
+              {!isMinorChild && (
+                <div>
+                  <label htmlFor="invite-email" className="block text-xs font-semibold text-slate-600 mb-1.5">
+                    Email address
+                  </label>
+                  <input
+                    id="invite-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="family@example.com"
+                    required
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 min-h-[44px]"
+                  />
+                </div>
+              )}
 
               {/* Errors */}
               {isConflict && (
@@ -470,16 +695,18 @@ function InviteModal({ onClose }: InviteModalProps) {
 
               <button
                 type="submit"
-                disabled={sendInvitation.isPending || !email.trim()}
+                disabled={isPending || !canSubmit}
                 className="w-full py-2.5 bg-teal-600 text-white rounded-xl font-semibold text-sm hover:bg-teal-700 transition-colors min-h-[44px] disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {sendInvitation.isPending ? (
+                {isPending ? (
                   <>
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Sending…
+                    {isMinorChild ? 'Creating…' : 'Sending…'}
                   </>
+                ) : isMinorChild ? (
+                  'Create child profile'
                 ) : (
-                  'Send Invitation'
+                  'Send invitation'
                 )}
               </button>
             </form>
@@ -518,6 +745,8 @@ export function FamilyCirclePage() {
   const [inviteOpen, setInviteOpen] = useState(false)
   const [accessTarget, setAccessTarget] = useState<FamilyMember | FamilyMembership | null>(null)
   const { data: circle, isLoading, isError } = useFamilyCircle()
+  const deleteMember = useDeleteManagedMember()
+  const cancelInvitation = useCancelInvitation()
 
   if (isLoading) return <PageSkeleton />
 
@@ -536,7 +765,7 @@ export function FamilyCirclePage() {
     )
   }
 
-  const selfMember = circle?.managed_profiles.find((m) => m.is_self)
+  const selfMember = circle?.self_member ?? undefined
   const hasAnyMember =
     (circle?.managed_profiles.length ?? 0) > 1 ||
     (circle?.memberships.length ?? 0) > 0 ||
@@ -596,6 +825,8 @@ export function FamilyCirclePage() {
                 selfMember={selfMember}
                 onInvite={() => setInviteOpen(true)}
                 onManageAccess={(m) => setAccessTarget(m)}
+                onDeleteMember={(id) => deleteMember.mutate(id)}
+                onCancelInvitation={(id) => cancelInvitation.mutate(id)}
               />
             )
           )}

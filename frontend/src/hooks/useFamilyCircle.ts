@@ -19,6 +19,40 @@ export function useFamilyCircle() {
   })
 }
 
+// ── Managed member (direct profile, no invite) ────────────────────────────
+
+interface CreateManagedMemberPayload {
+  name: string
+  relationship: string
+  date_of_birth?: string | null
+}
+
+export function useCreateManagedMember() {
+  const qc = useQueryClient()
+  return useMutation<void, Error, CreateManagedMemberPayload>({
+    mutationFn: async (payload) => {
+      await api.post('/family/members', payload)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['family-circle'] })
+      qc.invalidateQueries({ queryKey: ['family-members'] })
+    },
+  })
+}
+
+export function useDeleteManagedMember() {
+  const qc = useQueryClient()
+  return useMutation<void, Error, string>({
+    mutationFn: async (memberId) => {
+      await api.delete(`/family/members/${memberId}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['family-circle'] })
+      qc.invalidateQueries({ queryKey: ['family-members'] })
+    },
+  })
+}
+
 // ── Invitation mutations ───────────────────────────────────────────────────
 
 interface SendInvitationPayload {

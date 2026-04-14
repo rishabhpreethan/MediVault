@@ -37,8 +37,7 @@ scispacy==0.6.2
 # Encryption
 cryptography==43.0.3
 
-# Notifications
-sendgrid==6.11.0
+# Notifications (SMTP via stdlib smtplib — no extra dependency needed)
 
 # Rate limiting
 slowapi==0.1.9

@@ -59,6 +59,7 @@ class VaultAccessGrantResponse(BaseModel):
 
 class FamilyCircleResponse(BaseModel):
     family: Optional[FamilyResponse] = None
+    self_member: Optional[FamilyMemberResponse] = None
     managed_profiles: list[FamilyMemberResponse]
     memberships: list[FamilyMembershipResponse]
     pending_invitations_sent: list[FamilyInvitationResponse]

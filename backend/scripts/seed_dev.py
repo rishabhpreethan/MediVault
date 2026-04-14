@@ -462,7 +462,7 @@ async def seed():
             print("· Doctors already seeded")
 
         await db.commit()
-        print("\n✅ Seed complete. Log in with dev token: dev-superuser-token-medivault-2026")
+        print("\n✅ Seed complete.")
 
 
 if __name__ == "__main__":

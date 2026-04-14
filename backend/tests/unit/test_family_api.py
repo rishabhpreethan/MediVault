@@ -377,6 +377,22 @@ class TestDeleteMember:
         assert exc_info.value.status_code == 404
         db.delete.assert_not_called()
 
+    @pytest.mark.asyncio
+    async def test_delete_raises_409_when_is_self(self):
+        """MV-146: the user's own self-member cannot be deleted."""
+        user = _make_user()
+        member = _make_member(user_id=user.user_id)
+        member.is_self = True  # mark as self-member
+        db = _mock_db()
+        db.execute = AsyncMock(return_value=_db_result(member))
+
+        with pytest.raises(HTTPException) as exc_info:
+            await delete_member(member_id=member.member_id, current_user=user, db=db)
+
+        assert exc_info.value.status_code == 409
+        assert exc_info.value.detail["error"] == "CANNOT_DELETE_SELF"
+        db.delete.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # Tests: _member_to_response

@@ -219,7 +219,7 @@ class TestDispatchNotification:
         assert result.title == "You have been invited"
         assert result.body == "Someone invited you."
         assert result.action_url == "/invite/abc"
-        assert result.metadata == {"invitation_id": "abc"}
+        assert result.extra_data == {"invitation_id": "abc"}
 
     @pytest.mark.asyncio
     async def test_dispatch_notification_calls_db_add(self):
@@ -279,7 +279,7 @@ class TestDispatchNotification:
         )
 
         assert notif.action_url is None
-        assert notif.metadata is None
+        assert notif.extra_data is None
 
 
 # ---------------------------------------------------------------------------
