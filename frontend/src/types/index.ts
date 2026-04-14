@@ -160,6 +160,7 @@ export interface VaultAccessGrant {
 
 export interface FamilyCircle {
   family: Family | null
+  self_member: FamilyMember | null
   managed_profiles: FamilyMember[]
   memberships: FamilyMembership[]
   pending_invitations_sent: FamilyInvitation[]

@@ -1,6 +1,6 @@
 # MediVault — Project Status
 
-**Last Updated:** 2026-04-11
+**Last Updated:** 2026-04-14
 **SRS Version:** 1.2
 **Active Phase:** V1 MVP
 
@@ -17,7 +17,7 @@
 
 | Person | Agent Role | Currently Working On | Task ID | Branch | Last Updated |
 |---|---|---|---|---|---|
-| Developer Agent | Developer | Family Circle redesign — MV-125 through MV-140 | MV-125–MV-140 | feature/MV-125-140-family-circle-redesign | 2026-04-14 |
+| — | — | — | — | — | — |
 
 ---
 
@@ -217,6 +217,18 @@
 | MV-139 | Unit + integration tests for invite flow, acceptance, family membership, access grants | P1 | Done (Pending Merge) | Developer Agent | MV-128, MV-129 | feature/MV-125-140-family-circle-redesign |
 | MV-140 | Cross-vault isolation tests (grantee can read, non-grantee gets 403, revoke works) | P0 | Done (Pending Merge) | Developer Agent | MV-130 | feature/MV-125-140-family-circle-redesign |
 
+### EPIC: Passport & Family Enhancements (Phase 2)
+
+| Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
+|---|---|---|---|---|---|---|
+| MV-141 | Fix passport landing page — route `/` renders PassportManagePage (Health Passport), retire redundant PassportPage (content now covered by FamilyCirclePage) | P1 | Done | Developer Agent | MV-084 | feature/MV-142-144-family-enhancements |
+| MV-142 | Family invite email — SMTP via smtplib (replaced SendGrid); template with accept link; graceful no-op if SMTP not configured; .env.example updated | P1 | Done | Developer Agent | MV-127 | feature/MV-142-144-family-enhancements |
+| MV-143 | Child-under-12 invite UX — date-of-birth field in InviteModal when CHILD selected; if age <12 hide email, skip invite flow, create managed FamilyMember directly | P2 | Done | Developer Agent | MV-135 | feature/MV-142-144-family-enhancements |
+| MV-144 | SVG family tree graph — foreignObject+HTML NodeCard, bezier edges, hierarchical layout; self_member from dedicated backend field (fixed is_self exclusion bug) | P2 | Done | Developer Agent | MV-134 | feature/MV-142-144-family-enhancements |
+| MV-145 | Bug fix — provision_user creates self FamilyMember on first login + backfills existing users; 4 unit tests added covering new/existing/idempotent/name-derivation paths | P0 | Done | Developer Agent | — | feature/MV-142-144-family-enhancements |
+| MV-146 | FR-FAM-009 — Delete managed member (409 guard on is_self); cancel-invitation ✕ on pending nodes; unit test for 409 guard; useDeleteManagedMember + onCancelInvitation wired | P1 | Done | Developer Agent | — | feature/MV-142-144-family-enhancements |
+| MV-147 | Tech debt — encrypt full_name in FamilyMember writes (pre-existing gap in POST /family/members and provision_user self-member creation; flagged by Reviewer §1.1) | P1 | Not Started | — | — | — |
+
 ---
 
 ## Activity Log
@@ -339,3 +351,17 @@
 | 2026-04-14 | Developer Agent | Completed MV-138 — NotificationCentre: dropdown panel from bell icon, 30s poll unread count, red badge, notification list with mark-read, mark-all-read, action URL navigation, outside-click dismiss | MV-138 | feature/MV-125-140-family-circle-redesign |
 | 2026-04-14 | Developer Agent | Completed MV-139 — 31 unit tests (test_family_circle.py): notification dispatch, invite send, cancel, accept, decline, access grants, require_vault_access | MV-139 | feature/MV-125-140-family-circle-redesign |
 | 2026-04-14 | Developer Agent | Completed MV-140 — 16 cross-vault isolation tests (test_family_vault_isolation.py): owner access, grantee access, non-grantee 403, revoke works, expired/double-accept invite, non-member grant attempt | MV-140 | feature/MV-125-140-family-circle-redesign |
+| 2026-04-14 | Developer Agent | Added MV-141–MV-144 to task board (Passport & Family Enhancements Phase 2): passport route fix, invite email, child-under-12 UX, SVG tree graph | MV-141, MV-142, MV-143, MV-144 | — |
+| 2026-04-14 | Developer Agent | Started MV-141 — fix passport landing page (route / → PassportManagePage) | MV-141 | feature/MV-141-passport-page-fix |
+| 2026-04-14 | Developer Agent | Started MV-142, MV-143, MV-144 — family enhancements: invite email, child-under-12 UX, SVG tree | MV-142, MV-143, MV-144 | feature/MV-142-144-family-enhancements |
+| 2026-04-14 | Developer Agent | Completed MV-141 — App.tsx: route `/` now renders PassportManagePage; removed redundant /passport/manage route and PassportPage import | MV-141 | feature/MV-142-144-family-enhancements |
+| 2026-04-14 | Developer Agent | Completed MV-142 — email_service.py: send_family_invite_email() with branded teal HTML template; hooked into POST /family/invitations and POST /family/invitations/{id}/resend; best-effort (no-op if SendGrid key unset) | MV-142 | feature/MV-142-144-family-enhancements |
+| 2026-04-14 | Developer Agent | Completed MV-143 — InviteModal: DOB field shown for CHILD; if age<12 email hidden, managed profile created via POST /family/members; useCreateManagedMember hook added; distinct success states for invite vs managed | MV-143 | feature/MV-142-144-family-enhancements |
+| 2026-04-14 | Developer Agent | Completed MV-144 — FamilyCirclePage: replaced CSS flexbox tree with SVG node-edge graph; computed hierarchical level positions; bezier curve edges; SvgNode renders initials circle + name + label; pending invites shown as dashed nodes; add-member button integrated into SVG canvas | MV-144 | feature/MV-142-144-family-enhancements |
+| 2026-04-14 | Developer Agent | Completed MV-142 update — switched email service from SendGrid to SMTP (smtplib stdlib); config updated with smtp_host/port/user/password fields; requirements.txt sendgrid removed | MV-142 | feature/MV-142-144-family-enhancements |
+| 2026-04-14 | Developer Agent | Started MV-145 (bug: self FamilyMember not created on provision) and MV-146 (FR-FAM-009: delete managed member) | MV-145, MV-146 | feature/MV-142-144-family-enhancements |
+| 2026-04-14 | Developer Agent | Completed MV-145 — auth.py provision_user now creates is_self FamilyMember on first login (display_name from email prefix); fixes NFR-USE-001 | MV-145 | feature/MV-142-144-family-enhancements |
+| 2026-04-14 | Developer Agent | Completed MV-146 — family.py DELETE /family/members/{id} guards against is_self deletion; useDeleteManagedMember hook; trash icon button on NodeCard in FamilyTree (confirm dialog warns about cascade) | MV-146 | feature/MV-142-144-family-enhancements |
+| 2026-04-14 | Reviewer Agent | Started review of MV-141–MV-146 on feature/MV-142-144-family-enhancements | MV-141–MV-146 | — |
+| 2026-04-14 | Reviewer Agent | CHANGES REQUESTED on MV-141–MV-146 — 5 issues found: (1) §1.1 full_name written unencrypted in auth.py provision_user self-member creation (same pre-existing gap in family.py, flagged for awareness); (2) §5 .env.example still references SENDGRID_API_KEY instead of new SMTP vars — stale after MV-142 SMTP migration; (3) §3 selfMember lookup bug in FamilyCirclePage.tsx line 768 — searches managed_profiles for is_self but backend filters is_self==False, so selfMember is always undefined and the SELF node always displays "Me" regardless of actual user name; (4) §1.1 notification title/body embeds inviter email address (current_user.email) in in-app notification store — email is PII/quasi-PHI; (5) §5 no unit tests added for MV-145 provision_user self-member creation or MV-146 delete guard (alignment-spec §5 requires tests for new backend service logic) | MV-141–MV-146 | feature/MV-142-144-family-enhancements |
+| 2026-04-14 | Developer Agent | Resolved all reviewer blockers: (1) .env.example updated with SMTP vars; (2) selfMember bug fixed — added self_member field to FamilyCircleResponse schema+query, FamilyCircle TS type, and FamilyCirclePage now reads circle.self_member; (3) 4 unit tests added for MV-145 provision paths (test_auth_provision.py); (4) MV-146 is_self 409 guard test added (test_family_api.py); (5) full_name encryption logged as pre-existing gap, new task MV-147 created | MV-141–MV-146 | feature/MV-142-144-family-enhancements |

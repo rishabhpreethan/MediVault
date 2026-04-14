@@ -141,6 +141,95 @@ class TestProvisionLogic:
         assert existing_user.email == "new@example.com"
 
 
+class TestSelfMemberCreation:
+    """MV-145: provision_user must create/backfill a self FamilyMember."""
+
+    @pytest.mark.asyncio
+    async def test_creates_self_member_for_new_user(self):
+        """New user path must add both a User and a self FamilyMember."""
+        db = _mock_db()
+        # First execute call: User lookup → None (new user)
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+
+        with patch("app.api.auth.verify_token", new=AsyncMock(return_value=_VALID_PAYLOAD)):
+            await provision_user(_MOCK_REQUEST, _CREDENTIALS, db)
+
+        from app.models.user import User
+        from app.models.family_member import FamilyMember
+        added_users = [c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], User)]
+        added_members = [c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], FamilyMember)]
+        assert len(added_users) == 1
+        assert len(added_members) == 1
+        assert added_members[0].is_self is True
+        assert added_members[0].relationship == "SELF"
+
+    @pytest.mark.asyncio
+    async def test_backfills_self_member_for_existing_user_without_one(self):
+        """Existing user with no self-member should get one created on login."""
+        existing_user = _mock_user()
+        db = _mock_db()
+
+        # First execute: User lookup → existing user
+        # Second execute: self-member lookup → None (no self-member yet)
+        user_result = MagicMock()
+        user_result.scalar_one_or_none.return_value = existing_user
+        self_result = MagicMock()
+        self_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(side_effect=[user_result, self_result])
+
+        with patch("app.api.auth.verify_token", new=AsyncMock(return_value=_VALID_PAYLOAD)):
+            await provision_user(_MOCK_REQUEST, _CREDENTIALS, db)
+
+        from app.models.family_member import FamilyMember
+        added_members = [c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], FamilyMember)]
+        assert len(added_members) == 1
+        assert added_members[0].is_self is True
+        assert added_members[0].user_id == existing_user.user_id
+
+    @pytest.mark.asyncio
+    async def test_no_duplicate_self_member_on_subsequent_login(self):
+        """Existing user who already has a self-member must not get a second one."""
+        from app.models.family_member import FamilyMember
+        existing_user = _mock_user()
+        existing_self = MagicMock(spec=FamilyMember)
+        existing_self.is_self = True
+        db = _mock_db()
+
+        # First execute: User lookup → existing user
+        # Second execute: self-member lookup → already exists
+        user_result = MagicMock()
+        user_result.scalar_one_or_none.return_value = existing_user
+        self_result = MagicMock()
+        self_result.scalar_one_or_none.return_value = existing_self
+        db.execute = AsyncMock(side_effect=[user_result, self_result])
+
+        with patch("app.api.auth.verify_token", new=AsyncMock(return_value=_VALID_PAYLOAD)):
+            await provision_user(_MOCK_REQUEST, _CREDENTIALS, db)
+
+        added_members = [c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], FamilyMember)]
+        assert len(added_members) == 0, "Must not create duplicate self-member"
+
+    @pytest.mark.asyncio
+    async def test_self_member_name_derived_from_email(self):
+        """Display name should be derived from the email prefix."""
+        db = _mock_db()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+
+        payload = {**_VALID_PAYLOAD, "email": "john.doe@example.com"}
+        with patch("app.api.auth.verify_token", new=AsyncMock(return_value=payload)):
+            await provision_user(_MOCK_REQUEST, _CREDENTIALS, db)
+
+        from app.models.family_member import FamilyMember
+        added_members = [c.args[0] for c in db.add.call_args_list if isinstance(c.args[0], FamilyMember)]
+        assert len(added_members) == 1
+        # "john.doe" → "John Doe" after replace(".", " ").title()
+        assert added_members[0].full_name == "John Doe"
+
+
 class TestUserResponseSchema:
     def test_user_response_fields(self):
         user = _mock_user()

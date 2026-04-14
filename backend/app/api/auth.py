@@ -14,6 +14,7 @@ from app.auth import verify_token
 from app.database import get_db
 from app.dependencies import CurrentUser
 from app.limiter import limiter
+from app.models.family_member import FamilyMember
 from app.models.passport import SharedPassport
 from app.models.user import User
 
@@ -92,6 +93,18 @@ async def provision_user(
         )
         db.add(user)
         await db.flush()
+
+        # Create the self FamilyMember so the user can upload documents immediately
+        # (documents are scoped to a member_id — without this, a fresh user has none).
+        display_name = (email or "").split("@")[0].replace(".", " ").title() or "Me"
+        self_member = FamilyMember(
+            user_id=user.user_id,
+            full_name=display_name,
+            relationship="SELF",
+            is_self=True,
+        )
+        db.add(self_member)
+
         await audit_service.log_auth_event(
             db,
             event_type=audit_service.EVENT_PROVISION,
@@ -103,6 +116,23 @@ async def provision_user(
         user.email = email
         user.email_verified = email_verified
         user.last_login_at = now
+
+        # Backfill self-member for existing users who pre-date this fix.
+        existing_self = await db.execute(
+            select(FamilyMember).where(
+                FamilyMember.user_id == user.user_id,
+                FamilyMember.is_self == True,  # noqa: E712
+            )
+        )
+        if existing_self.scalar_one_or_none() is None:
+            display_name = (email or "").split("@")[0].replace(".", " ").title() or "Me"
+            db.add(FamilyMember(
+                user_id=user.user_id,
+                full_name=display_name,
+                relationship="SELF",
+                is_self=True,
+            ))
+
         await audit_service.log_auth_event(
             db,
             event_type=audit_service.EVENT_LOGIN,

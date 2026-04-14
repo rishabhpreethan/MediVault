@@ -30,9 +30,12 @@ class Settings(BaseSettings):
     # Encryption key (AES-256, base64-encoded 32 bytes)
     encryption_key: str
 
-    # Notifications
-    sendgrid_api_key: Optional[str] = None
-    from_email: str = "noreply@medivault.health"
+    # Notifications (SMTP)
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: Optional[str] = None      # your email address
+    smtp_password: Optional[str] = None  # App Password (Gmail) or account password
+    from_email: str = ""                 # defaults to smtp_user if not set
     notifications_enabled: bool = False  # off by default; set to True in prod
 
     # App
@@ -48,9 +51,6 @@ class Settings(BaseSettings):
                 return json.loads(v)
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
-
-    # Dev-only superuser bypass (only honoured when environment=development)
-    dev_superuser_token: str = ""
 
     # Rate limiting
     rate_limit_auth: int = 10       # requests per minute per IP

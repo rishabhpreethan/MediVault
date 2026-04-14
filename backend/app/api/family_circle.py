@@ -23,6 +23,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import or_, select
 
+from app.config import settings
 from app.dependencies import CurrentUser, DbSession
 from app.models.family_circle import (
     Family,
@@ -183,6 +184,16 @@ async def get_family_circle(
     # Family owned by this user
     family = await _get_family_for_user(db, current_user.user_id)
 
+    # Self member (separate from managed_profiles)
+    self_result = await db.execute(
+        select(FamilyMember).where(
+            FamilyMember.user_id == current_user.user_id,
+            FamilyMember.is_self == True,  # noqa: E712
+        )
+    )
+    self_member_row = self_result.scalar_one_or_none()
+    self_member_resp = _member_to_response(self_member_row) if self_member_row else None
+
     # Managed profiles: non-self FamilyMember rows owned by this user
     fm_result = await db.execute(
         select(FamilyMember).where(
@@ -227,6 +238,7 @@ async def get_family_circle(
 
     return FamilyCircleResponse(
         family=_family_to_response(family) if family else None,
+        self_member=self_member_resp,
         managed_profiles=managed,
         memberships=memberships,
         pending_invitations_sent=sent,
@@ -327,6 +339,21 @@ async def send_invitation(
 
     await db.commit()
     await db.refresh(invitation)
+
+    # Send invite email — best-effort, never blocks the response
+    try:
+        from app.services.email_service import send_family_invite_email  # noqa: PLC0415
+        frontend_url = settings.cors_origins[0] if settings.cors_origins else "http://localhost:5173"
+        inviter_display = current_user.email or str(current_user.user_id)
+        send_family_invite_email(
+            to=body.email.lower(),
+            inviter_name=inviter_display,
+            relationship=body.relationship,
+            accept_url=f"{frontend_url}/invite/{invitation.token}",
+            app_url=frontend_url,
+        )
+    except Exception as exc:
+        logger.warning("invite_email_failed", extra={"error": str(exc)})
 
     logger.info(
         "invitation_sent",
@@ -469,6 +496,21 @@ async def resend_invitation(
 
     await db.commit()
     await db.refresh(inv)
+
+    # Resend email — best-effort
+    try:
+        from app.services.email_service import send_family_invite_email  # noqa: PLC0415
+        frontend_url = settings.cors_origins[0] if settings.cors_origins else "http://localhost:5173"
+        inviter_display = current_user.email or str(current_user.user_id)
+        send_family_invite_email(
+            to=inv.invited_email,
+            inviter_name=inviter_display,
+            relationship=inv.relationship,
+            accept_url=f"{frontend_url}/invite/{inv.token}",
+            app_url=frontend_url,
+        )
+    except Exception as exc:
+        logger.warning("invite_resend_email_failed", extra={"error": str(exc)})
 
     logger.info(
         "invitation_resent",
