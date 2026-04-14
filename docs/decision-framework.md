@@ -148,3 +148,25 @@ High risk. Requires coordinated effort, likely involves data migration, breaking
 - **Why:** The data model supports it without significant added complexity. A parent managing elderly parents' or children's records is a primary use case for the Indian context.
 - **Data model impact:** `family_members` table linked to `users`. All medical records (documents, medications, diagnoses, etc.) are scoped to `family_member_id`, not `user_id` directly. The account owner is also represented as a family member (self).
 - **Approved by:** Rishabh
+
+### [DECISION-007] — Family Circle: invitation-based model + explicit vault access grants
+- **Date:** 2026-04-11
+- **Decided by:** Rishabh
+- **What changed:** The family model is redesigned from direct member creation (owner creates profiles for everyone) to a hybrid model:
+  1. **Managed Profiles** (no account required) remain for true dependents — young children, elderly parents who will never use the app themselves.
+  2. **Linked Accounts** — other MediVault users join via email invitation. Accepting the invitation does NOT automatically share vault data; vault access requires an explicit grant by the family admin.
+  3. **Family Circle UI** becomes a dedicated 5th nav tab with a visual family tree (parents above, spouse same level, children below). Settings moves out of the bottom nav into the avatar/profile menu.
+  4. **Notification system** added: in-app notification inbox (bell icon) + email, covering family invite events and processing events.
+- **Why:** The original model let the owner unilaterally create accounts/profiles for adults (spouse, adult children) — a privacy violation. Adults must consent to being part of a family and must explicitly grant access to their own health records. The visual tree provides a much clearer mental model for multi-generational families.
+- **Alternatives considered:**
+  - Auto-share vault on invitation accept — rejected (privacy: accepting ≠ consenting to share records)
+  - Single-admin-only model — accepted for V1; `can_invite` flag added to allow delegation without full admin rights
+  - Bidirectional automatic vault link — rejected; read-only explicit grants in V1 is simpler and safer
+- **Migration plan:**
+  - New Alembic migration: `families`, `family_invitations`, `family_memberships`, `vault_access_grants`, `notifications` tables
+  - Existing `family_members` rows with `is_self=FALSE` are Managed Profiles — no migration needed; they remain as-is
+  - No existing linked-account data to migrate (feature is new)
+  - Backend: new Family Circle API, Invite API, Access Grants API, Notifications API
+  - Frontend: new Family tab + tree UI, notification bell + centre, updated nav (5 tabs, Settings removed from bottom nav)
+  - Cross-vault access middleware: before serving any profile/document/chart data, check `vault_access_grants` if the requesting user is not the record owner
+- **Approved by:** Rishabh

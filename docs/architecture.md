@@ -409,6 +409,88 @@ CREATE TABLE correction_audit (
 );
 ```
 
+#### `families`
+```sql
+-- One family per account owner. The owner is the sole admin by default.
+CREATE TABLE families (
+    family_id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name                VARCHAR(200),                                -- optional display name, e.g. "The Mehta Family"
+    created_by_user_id  UUID NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### `family_invitations`
+```sql
+-- Tracks every invitation sent by the owner. Supports both existing users and new users.
+CREATE TABLE family_invitations (
+    invitation_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    family_id           UUID NOT NULL REFERENCES families(family_id) ON DELETE CASCADE,
+    invited_by_user_id  UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    invited_email       VARCHAR(320) NOT NULL,
+    invited_user_id     UUID REFERENCES users(user_id) ON DELETE SET NULL,  -- NULL if invitee has no account yet
+    relationship        VARCHAR(50) NOT NULL,        -- PARENT|SPOUSE|CHILD|SIBLING|OTHER
+    status              VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- PENDING|ACCEPTED|DECLINED|EXPIRED|REVOKED
+    token               UUID NOT NULL DEFAULT gen_random_uuid(), -- used in /invite/:token deep link
+    expires_at          TIMESTAMPTZ NOT NULL,                    -- 7 days from creation
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE UNIQUE INDEX idx_family_invitations_token ON family_invitations(token);
+CREATE INDEX idx_family_invitations_family_id ON family_invitations(family_id);
+CREATE INDEX idx_family_invitations_invited_email ON family_invitations(invited_email);
+```
+
+#### `family_memberships`
+```sql
+-- Created when an invitee accepts an invitation. One row per (family, user) pair.
+CREATE TABLE family_memberships (
+    membership_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    family_id           UUID NOT NULL REFERENCES families(family_id) ON DELETE CASCADE,
+    user_id             UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    role                VARCHAR(20) NOT NULL DEFAULT 'MEMBER',  -- ADMIN|MEMBER
+    can_invite          BOOLEAN NOT NULL DEFAULT FALSE,
+    joined_at           TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (family_id, user_id)
+);
+CREATE INDEX idx_family_memberships_user_id ON family_memberships(user_id);
+```
+
+#### `vault_access_grants`
+```sql
+-- Explicit READ grants: grantee can view target's vault.
+-- Accepting a family invitation does NOT auto-create a grant.
+CREATE TABLE vault_access_grants (
+    grant_id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    family_id           UUID NOT NULL REFERENCES families(family_id) ON DELETE CASCADE,
+    grantee_user_id     UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,  -- who can view
+    target_user_id      UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,  -- whose vault
+    access_type         VARCHAR(20) NOT NULL DEFAULT 'READ',    -- READ only in V1
+    granted_by_user_id  UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    granted_at          TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (family_id, grantee_user_id, target_user_id)
+);
+CREATE INDEX idx_vault_access_grants_grantee ON vault_access_grants(grantee_user_id);
+CREATE INDEX idx_vault_access_grants_target ON vault_access_grants(target_user_id);
+```
+
+#### `notifications`
+```sql
+-- In-app notification inbox per user.
+CREATE TABLE notifications (
+    notification_id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    type                VARCHAR(50) NOT NULL,         -- FAMILY_INVITE|INVITE_ACCEPTED|INVITE_DECLINED|VAULT_ACCESS_GRANTED|VAULT_ACCESS_REVOKED|PROCESSING_COMPLETE|EXTRACTION_FAILED
+    title               VARCHAR(200) NOT NULL,
+    body                TEXT NOT NULL,
+    is_read             BOOLEAN NOT NULL DEFAULT FALSE,
+    action_url          VARCHAR(512),                 -- deep link e.g. /family, /invite/:token
+    metadata            JSONB,                        -- e.g. { invitation_id, inviter_name }
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_notifications_is_read ON notifications(user_id, is_read);
+```
+
 ---
 
 ### API Endpoint Catalog
@@ -485,6 +567,37 @@ All endpoints require `Authorization: Bearer <Auth0 JWT>` unless marked `[PUBLIC
 |---|---|---|
 | DELETE | `/account` | Initiate account deletion |
 | POST | `/account/export` | Request data export |
+
+#### Family Circle
+| Method | Path | Description |
+|---|---|---|
+| GET | `/family/circle` | Get the caller's family: memberships + managed profiles + pending invitations |
+| POST | `/family/invitations` | Send a family invitation (email + relationship) |
+| GET | `/family/invitations` | List all invitations sent by the caller |
+| DELETE | `/family/invitations/{invitation_id}` | Cancel / revoke a pending invitation |
+| POST | `/family/invitations/{invitation_id}/resend` | Resend the invitation email |
+| GET | `/invite/{token}` | [PUBLIC] Resolve an invitation token → returns invitation details |
+| POST | `/invite/{token}/accept` | Accept an invitation (caller becomes a family member) |
+| POST | `/invite/{token}/decline` | Decline an invitation |
+| DELETE | `/family/memberships/{membership_id}` | Leave a family (member removes themselves) |
+| DELETE | `/family/members/{user_id}` | Remove a member from the family (admin only) |
+
+#### Vault Access Grants
+| Method | Path | Description |
+|---|---|---|
+| GET | `/family/access` | List all vault access grants in the caller's family |
+| POST | `/family/access` | Create a vault access grant (admin only) |
+| DELETE | `/family/access/{grant_id}` | Revoke a vault access grant (admin only) |
+| PATCH | `/family/memberships/{membership_id}/can-invite` | Toggle can_invite flag for a member (admin only) |
+
+#### Notifications
+| Method | Path | Description |
+|---|---|---|
+| GET | `/notifications` | List notifications for the caller (paginated, newest first) |
+| GET | `/notifications/unread-count` | Return count of unread notifications |
+| PATCH | `/notifications/{notification_id}/read` | Mark a single notification as read |
+| POST | `/notifications/read-all` | Mark all notifications as read |
+| DELETE | `/notifications/{notification_id}` | Delete a notification |
 
 ---
 
