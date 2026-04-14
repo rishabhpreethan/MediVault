@@ -35,7 +35,7 @@ async def dispatch_notification(
         title=title,
         body=body,
         action_url=action_url,
-        metadata=metadata,
+        extra_data=metadata,
     )
     db.add(notification)
     await db.flush()  # write within the caller's transaction; caller commits

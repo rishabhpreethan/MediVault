@@ -29,7 +29,7 @@ def _notification_to_response(n: Notification) -> NotificationResponse:
         body=n.body,
         is_read=n.is_read,
         action_url=n.action_url,
-        metadata=n.metadata,
+        metadata=n.extra_data,
         created_at=n.created_at,
     )
 
