@@ -20,13 +20,36 @@ Read these before starting any task:
 
 ---
 
+## Pre-Task Verification (do this before writing any code)
+
+Before touching code, verify all of the following:
+
+**Blockers**
+- [ ] Check STATUS.md — are all tasks in the "Blocked By" field marked Done?
+- [ ] Are there any in-progress DB migrations by another developer? (check STATUS.md for open migration tasks)
+
+**Understanding**
+- [ ] Have you read the relevant user flow(s) in `docs/user-flows.md`?
+- [ ] For backend work: have you read the relevant API + schema section in `docs/architecture.md`?
+- [ ] For frontend work: have you read `.claude/commands/frontend-design.md`?
+
+**Complexity flags**
+- [ ] Does this task involve family vault access? → Read UF-014–UF-019 and `docs/alignment-spec.md` §1.2 before starting
+- [ ] Does this task involve NLP extraction? → Read "Working with NLP Extractors" section below first
+- [ ] Does this task modify `STATUS.md` or shared migration files? → Coordinate with your teammate before starting
+
+If any item above is unclear, stop and note the blocker in STATUS.md before proceeding.
+
+---
+
 ## Workflow: Starting a Task
 
-1. Open `STATUS.md` — find a task with status `Not Started` that is not blocked and not claimed
-2. Update the task: status → `In Progress`, Assigned To → `Developer Agent ({your-name})`
-3. Log in the Activity Log: `{datetime} | Developer Agent | Started MV-XXX — {task name}`
-4. Cut your branch: `git checkout main && git pull && git checkout -b feature/MV-XXX-slug`
-5. Build
+1. Complete the Pre-Task Verification checklist above
+2. Open `STATUS.md` — find a task with status `Not Started` that is not blocked and not claimed
+3. Update the task: status → `In Progress`, Assigned To → `Developer Agent ({your-name})`
+4. Log in the Activity Log: `{datetime} | Developer Agent | Started MV-XXX — {task name}`
+5. Cut your branch: `git checkout main && git pull && git checkout -b feature/MV-XXX-slug`
+6. Build
 
 ---
 
@@ -143,6 +166,36 @@ Use the decision framework (`docs/decision-framework.md`):
 - **2-Way Door** (change extraction library, switch auth provider): STOP — add a record to `docs/decision-framework.md` and align with the team before proceeding
 
 When in doubt about a decision's classification: treat it as one level higher (more restrictive) than you think.
+
+---
+
+## Working with NLP Extractors
+
+When building or modifying any extraction logic (PDF parsing, spaCy/Med7 entities, deduplication):
+
+**Test fixtures are your ground truth**
+- Fixtures live in `backend/tests/fixtures/`
+- Always run `pytest tests/unit/test_nlp_*.py -v` before marking In Review
+- Run extraction benchmarks: `pytest tests/benchmarks/extraction_accuracy.py -v`
+- Targets: ≥ 95% raw text fidelity (TEST-003), ≥ 90% NLP field extraction on structured PDFs (TEST-004)
+
+**Known extraction gotchas**
+- Med7 entity tagger is ~85% accurate — always attach a `confidence_score` to every extracted entity
+- Medication dosage parsing is error-prone: capture unit + frequency separately (e.g. "2 tablets BID" → unit: tablet, frequency: BID)
+- Lab reference ranges are lab-specific — parse them from the document, never hardcode
+- Diagnosis dates are often implicit ("chronic hypertension" has no date) — set confidence LOW, do not guess
+- "Resolved" or "controlled" status in diagnoses is a meaningful field — capture it
+
+**Confidence scoring is mandatory**
+- HIGH (> 0.85): clear entity boundaries
+- MEDIUM (0.60–0.85): reasonable but borderline
+- LOW (< 0.60): flag for user review
+
+**Deduplication rules**
+- Use `deduplication_service.py` (MV-048)
+- Deduplicate: medications, diagnoses, allergies
+- Do NOT deduplicate: lab results, vitals (these are time-series)
+- Skip manual entries (`is_manual_entry=True`) from deduplication logic
 
 ---
 

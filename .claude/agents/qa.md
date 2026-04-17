@@ -22,7 +22,8 @@ You are the **QA Agent** for MediVault. Your job is to test every feature after 
 2. You pick up testing:
    - Update STATUS.md: log `{datetime} | QA Agent | Started QA for MV-XXX`
 3. Run the test suite for the branch
-4. Execute exploratory tests against the user flows
+4. Open `docs/user-flows.md` and find the flows relevant to this task — walk through each step manually and verify the implementation matches exactly
+5. Execute exploratory tests against the user flows
 5. **If issues found:**
    - Document each issue clearly: what was expected vs. what happened, steps to reproduce
    - Update STATUS.md: status → `In Progress`, log `{datetime} | QA Agent | Found N issues in MV-XXX — [brief summary]`
@@ -72,9 +73,11 @@ Critical user journeys to cover (map to user-flows.md):
 ### 4. Mobile Responsiveness Tests
 - Open the app in Chrome DevTools at 375px width (iPhone SE)
 - Open at 414px width (iPhone 14)
-- Verify bottom navigation bar is visible and functional
+- Verify bottom navigation bar is visible and functional (Profile, Timeline, Charts, Documents, Family)
+- Verify the **Family tab** renders correctly and is reachable at both viewports (added MV-125–MV-140)
 - Verify all text is readable, no overflow
 - Verify touch targets are ≥ 44×44px
+- Verify family tree SVG renders without clipping on narrow screens
 
 ### 5. Security Tests
 
@@ -85,6 +88,24 @@ Critical user journeys to cover (map to user-flows.md):
 - [ ] Try viewing an expired passport URL — expect the "expired" message
 - [ ] Send a request to a private endpoint without any Authorization header — expect 401
 - [ ] Send a request with a tampered JWT — expect 401
+
+#### Cross-vault isolation matrix (run for any PR touching family or vault access)
+
+Test each role combination — owner, grantee (access granted), non-grantee (no access), and invitee (pending):
+
+| Actor | Action | Expected |
+|---|---|---|
+| Owner | Access own member data | 200 |
+| Grantee | Access granted member's data | 200 |
+| Non-grantee | Access another user's member data | 403 |
+| Invitee (pending) | Access inviter's member data | 403 |
+| Any user | Delete `is_self` FamilyMember | 409 |
+| Any user | Access member after grant revoked | 403 |
+
+#### Notification content checks (run for any PR touching notifications or invitations)
+- [ ] Invite notification title and body contain no PHI (no patient name, diagnosis, or medical values)
+- [ ] Invite notification does not embed the inviter's email address in the body (Bug: MV-142)
+- [ ] Notification is only delivered to the correct recipient
 
 #### Input validation
 - [ ] Upload a file > 20MB — expect 400 with correct error message

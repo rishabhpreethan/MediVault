@@ -14,6 +14,41 @@ This file is read by every Claude agent working on this project. Read it fully b
 
 ---
 
+## Quick Start (First 5 Minutes)
+
+Do this in order before touching any code:
+
+1. Read this file completely
+2. Read your role file:
+   - `.claude/agents/developer.md` if you are building
+   - `.claude/agents/reviewer.md` if you are reviewing
+   - `.claude/agents/qa.md` if you are testing
+3. Read these three docs in this order:
+   - `srs.md` §3 (functional requirements for your feature)
+   - `docs/architecture.md` (API contracts + DB schema you will touch)
+   - `docs/user-flows.md` (what the user actually does with your feature)
+4. Check `STATUS.md` — find an unblocked task with no owner and claim it
+5. Start work
+
+---
+
+## Document Quick Reference
+
+| Need to... | Read | Section |
+|---|---|---|
+| Understand the product | `srs.md` | §1–§3 |
+| Check API design rules | `docs/alignment-spec.md` | §2.3 |
+| Verify DB schema | `docs/architecture.md` | Data Model + DB Schema |
+| See a user journey | `docs/user-flows.md` | UF-001 through UF-019 |
+| Navigate architecture.md quickly | `.claude/checklists/architecture-nav.md` | all |
+| Make a non-trivial decision | `docs/decision-framework.md` | all |
+| Coordinate with teammates | `STATUS.md` | Task Board + Activity Log |
+| Check code quality rules | `docs/alignment-spec.md` | §5 |
+| Design or build frontend | `.claude/commands/frontend-design.md` | all |
+| Review PR completeness | `.claude/checklists/pr-completion-checklist.md` | all |
+
+---
+
 ## Your Role
 
 Every agent working on this project has a specific role. Identify yours before starting:

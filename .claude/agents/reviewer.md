@@ -77,13 +77,51 @@ Apply these in order of severity — a FAIL in §1 (Security) is a hard blocker;
 
 ---
 
+## Security Deep-Dive: PHI & Authorization
+
+Run this checklist in addition to alignment-spec.md §1 for every PR. These vectors have caused real bugs in this codebase.
+
+**PHI Transmission (CON-006 — hard blocker)**
+- [ ] Does any code call an external API (email service, webhook, third-party) with user or medical data in the payload?
+- [ ] If using the email/SMTP service: are patient names, diagnoses, or medical values in the email subject or body?
+- [ ] If dispatching notifications: are inviter emails or patient names embedded in the notification title or body? (Bug: MV-142)
+- [ ] Are all log lines free of PHI — only IDs, statuses, and event names?
+
+**Authorization Bypass (family vault access)**
+- [ ] Does every endpoint that accepts `member_id` verify it belongs to the authenticated user via `vault_access_grants`?
+- [ ] Is `member_id` taken from the URL path or JWT — never from the request body?
+- [ ] Does the code check `require_vault_access` dependency on all family data endpoints?
+- [ ] Is there a guard preventing deletion of the `is_self` FamilyMember record? (Bug: MV-146)
+
+**Self-provisioning correctness**
+- [ ] Does new-user provisioning create an `is_self=True` FamilyMember record? (Bug: MV-145)
+- [ ] Does the family tree display correctly when `is_self` member exists?
+
+**If the PR touches any of:** notification dispatch, family access logic, email service, passport sharing → run the security test suite manually before approving.
+
+---
+
 ## Decision Framework Review
 
 For any non-trivial decision the developer made:
 
-1. Identify the door type (1-Way / 1.5-Way / 2-Way) from `docs/decision-framework.md`
+1. Identify the door type using the quick reference below
 2. If **1.5-Way**: verify it's noted in the PR description with rationale
-3. If **2-Way**: verify a decision record was added to `docs/decision-framework.md` and both collaborators aligned. If not — this is a hard blocker.
+3. If **2-Way**: verify a decision record was added to `docs/decision-framework.md` and both collaborators aligned. If not — this is a **hard blocker**.
+
+### Decision Classification Quick Reference
+
+| Door Type | Example in this codebase | Action |
+|---|---|---|
+| **1-Way** | Rename variable, reword error message, refactor internal function | Just review it. No record needed. |
+| **1.5-Way** | Change API response shape, add DB column, new Celery task, swap SMTP provider | Verify it's noted in PR description with rationale. |
+| **2-Way** | Swap extraction library, change auth provider, restructure DB schema, change NLP model | STOP. Require `docs/decision-framework.md` record + team alignment before approving. |
+
+When unsure: treat as one level more restrictive.
+
+**Recent examples from this project:**
+- DECISION-007 (Family Circle redesign): 2-Way Door — required SRS + architecture + user flow updates
+- MV-142 (SMTP swap): 1.5-Way Door — noted in PR description
 
 ---
 
