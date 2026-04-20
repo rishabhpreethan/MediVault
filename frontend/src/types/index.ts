@@ -146,6 +146,9 @@ export interface FamilyMembership {
   role: MembershipRole
   can_invite: boolean
   joined_at: string
+  family_owner_user_id: string | null
+  family_owner_name: string | null
+  relationship: string | null
 }
 
 export interface VaultAccessGrant {
@@ -163,6 +166,7 @@ export interface FamilyCircle {
   self_member: FamilyMember | null
   managed_profiles: FamilyMember[]
   memberships: FamilyMembership[]
+  family_members: FamilyMembership[]
   pending_invitations_sent: FamilyInvitation[]
   pending_invitations_received: FamilyInvitation[]
 }
@@ -170,7 +174,7 @@ export interface FamilyCircle {
 export interface InviteTokenInfo {
   invitation_id: string
   family_id: string
-  invited_by_name: string
+  inviter_name: string | null
   relationship: string
   status: InvitationStatus
   expires_at: string

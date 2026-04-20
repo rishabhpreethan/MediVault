@@ -21,7 +21,9 @@ export function CallbackPage() {
         setAuthToken(token)
         await api.post('/auth/provision')
         if (!cancelled) {
-          navigate('/', { replace: true })
+          const returnTo = sessionStorage.getItem('post_auth_return') ?? '/'
+          sessionStorage.removeItem('post_auth_return')
+          navigate(returnTo, { replace: true })
         }
       } catch (err) {
         if (!cancelled) {

@@ -8,6 +8,7 @@ import type {
 } from '../../types'
 import {
   useFamilyCircle,
+  useFamilyCircleEvents,
   useSendInvitation,
   useCancelInvitation,
   useResendInvitation,
@@ -366,14 +367,38 @@ function FamilyTree({ circle, selfMember, onInvite, onManageAccess, onDeleteMemb
     (m) => !['SELF', 'PARENT', 'SPOUSE', 'CHILD'].includes(m.relationship?.toUpperCase() ?? ''),
   )
   const pending = circle.pending_invitations_sent
-  const linked  = circle.memberships
+  // circle.memberships = families I joined (owner shown above me)
+  const joinedFamilies = circle.memberships
+  // circle.family_members = people who accepted invites into my family (placed by relationship)
+  const acceptedMembers = circle.family_members ?? []
+  const acceptedParents   = acceptedMembers.filter((m) => m.relationship?.toUpperCase() === 'PARENT')
+  const acceptedSpouses   = acceptedMembers.filter((m) => m.relationship?.toUpperCase() === 'SPOUSE')
+  const acceptedChildren  = acceptedMembers.filter((m) => m.relationship?.toUpperCase() === 'CHILD')
+  const acceptedOthers    = acceptedMembers.filter(
+    (m) => !['PARENT', 'SPOUSE', 'CHILD'].includes(m.relationship?.toUpperCase() ?? ''),
+  )
 
   // Build level arrays of NodeDesc
-  const parentRow: NodeDesc[] = parents.map((p) => ({
-    id: p.member_id, type: 'managed' as const, name: p.full_name, sublabel: 'Parent',
-    onClick: () => onManageAccess(p),
-    onDelete: () => onDeleteMember(p.member_id),
-  }))
+  const parentRow: NodeDesc[] = [
+    ...parents.map((p) => ({
+      id: p.member_id, type: 'managed' as const, name: p.full_name, sublabel: 'Parent',
+      onClick: () => onManageAccess(p),
+      onDelete: () => onDeleteMember(p.member_id),
+    })),
+    ...acceptedParents.map((ms) => ({
+      id: ms.membership_id, type: 'linked' as const,
+      name: ms.family_owner_name ?? 'Member',
+      sublabel: RELATIONSHIP_LABELS['PARENT'],
+      onClick: () => onManageAccess(ms),
+    })),
+    // Family circles the current user has joined — owner is always shown above
+    ...joinedFamilies.map((ms) => ({
+      id: ms.membership_id, type: 'linked' as const,
+      name: ms.family_owner_name ?? 'Family Owner',
+      sublabel: RELATIONSHIP_LABELS[ms.relationship ?? ''] ?? (ms.relationship ?? 'Member'),
+      onClick: () => onManageAccess(ms),
+    })),
+  ]
 
   const middleRow: NodeDesc[] = [
     ...spouses.map((s) => ({
@@ -381,15 +406,29 @@ function FamilyTree({ circle, selfMember, onInvite, onManageAccess, onDeleteMemb
       onClick: () => onManageAccess(s),
       onDelete: () => onDeleteMember(s.member_id),
     })),
+    ...acceptedSpouses.map((ms) => ({
+      id: ms.membership_id, type: 'linked' as const,
+      name: ms.family_owner_name ?? 'Member',
+      sublabel: RELATIONSHIP_LABELS['SPOUSE'],
+      onClick: () => onManageAccess(ms),
+    })),
     { id: '__self', type: 'self' as const, name: selfMember?.full_name ?? 'Me', sublabel: 'You' },
     { id: '__add', type: 'add' as const, name: '', sublabel: '', onClick: onInvite },
   ]
 
-  const childRow: NodeDesc[] = children.map((c) => ({
-    id: c.member_id, type: 'managed' as const, name: c.full_name, sublabel: 'Child',
-    onClick: () => onManageAccess(c),
-    onDelete: () => onDeleteMember(c.member_id),
-  }))
+  const childRow: NodeDesc[] = [
+    ...children.map((c) => ({
+      id: c.member_id, type: 'managed' as const, name: c.full_name, sublabel: 'Child',
+      onClick: () => onManageAccess(c),
+      onDelete: () => onDeleteMember(c.member_id),
+    })),
+    ...acceptedChildren.map((ms) => ({
+      id: ms.membership_id, type: 'linked' as const,
+      name: ms.family_owner_name ?? 'Member',
+      sublabel: RELATIONSHIP_LABELS['CHILD'],
+      onClick: () => onManageAccess(ms),
+    })),
+  ]
 
   const bottomRow: NodeDesc[] = [
     ...others.map((o) => ({
@@ -398,9 +437,10 @@ function FamilyTree({ circle, selfMember, onInvite, onManageAccess, onDeleteMemb
       onClick: () => onManageAccess(o),
       onDelete: () => onDeleteMember(o.member_id),
     })),
-    ...linked.map((ms) => ({
+    ...acceptedOthers.map((ms) => ({
       id: ms.membership_id, type: 'linked' as const,
-      name: ms.user_id.slice(0, 10), sublabel: ms.role,
+      name: ms.family_owner_name ?? 'Member',
+      sublabel: RELATIONSHIP_LABELS[ms.relationship ?? ''] ?? (ms.relationship ?? 'Member'),
       onClick: () => onManageAccess(ms),
     })),
     ...pending.map((inv) => ({
@@ -769,6 +809,7 @@ export function FamilyCirclePage() {
   const [inviteOpen, setInviteOpen] = useState(false)
   const [accessTarget, setAccessTarget] = useState<FamilyMember | FamilyMembership | null>(null)
   const { data: circle, isLoading, isError } = useFamilyCircle()
+  useFamilyCircleEvents()
   const deleteMember = useDeleteManagedMember()
   const cancelInvitation = useCancelInvitation()
 
@@ -791,8 +832,9 @@ export function FamilyCirclePage() {
 
   const selfMember = circle?.self_member ?? undefined
   const hasAnyMember =
-    (circle?.managed_profiles.length ?? 0) > 1 ||
+    (circle?.managed_profiles.length ?? 0) > 0 ||
     (circle?.memberships.length ?? 0) > 0 ||
+    (circle?.family_members?.length ?? 0) > 0 ||
     (circle?.pending_invitations_sent.length ?? 0) > 0
 
   return (
