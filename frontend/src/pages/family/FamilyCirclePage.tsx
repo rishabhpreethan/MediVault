@@ -183,7 +183,7 @@ function curve(x1: number, y1: number, x2: number, y2: number) {
 // Each node descriptor used for layout
 interface NodeDesc {
   id: string
-  type: 'self' | 'member' | 'pending' | 'add'
+  type: 'self' | 'managed' | 'linked' | 'pending' | 'add'
   name: string
   sublabel: string
   onClick?: () => void
@@ -285,7 +285,31 @@ function NodeCard({ desc, w, h }: { desc: NodeDesc; w: number; h: number }) {
     )
   }
 
-  // type === 'member'
+  // type === 'linked' — accepted linked account (solid teal accent)
+  if (desc.type === 'linked') {
+    return (
+      <div
+        onClick={desc.onClick}
+        style={{ width: w, height: h, boxSizing: 'border-box', position: 'relative' }}
+        className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-teal-200 bg-white shadow-sm select-none px-2 ${desc.onClick ? 'cursor-pointer hover:border-teal-400 hover:shadow-md transition-all' : ''}`}
+      >
+        <div className="w-11 h-11 rounded-full bg-teal-50 flex items-center justify-center ring-2 ring-teal-200">
+          <span className="text-teal-700 text-sm font-semibold leading-none">{initials}</span>
+        </div>
+        <p className="text-[12px] font-semibold text-slate-900 text-center leading-tight truncate w-full text-center">
+          {desc.name.length > 15 ? desc.name.slice(0, 14) + '…' : desc.name}
+        </p>
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-[10px] text-slate-500 font-medium">{desc.sublabel}</span>
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700 text-[9px] font-semibold">
+            Linked Account
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // type === 'managed' — managed profile (slate, "Managed" badge)
   return (
     <div
       onClick={desc.onClick}
@@ -316,9 +340,9 @@ function NodeCard({ desc, w, h }: { desc: NodeDesc; w: number; h: number }) {
       </p>
       <div className="flex flex-col items-center gap-0.5">
         <span className="text-[10px] text-slate-500 font-medium">{desc.sublabel}</span>
-        {desc.onClick && (
-          <span className="text-[9px] font-semibold text-teal-600">Manage →</span>
-        )}
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[9px] font-semibold">
+          Managed
+        </span>
       </div>
     </div>
   )
@@ -346,14 +370,14 @@ function FamilyTree({ circle, selfMember, onInvite, onManageAccess, onDeleteMemb
 
   // Build level arrays of NodeDesc
   const parentRow: NodeDesc[] = parents.map((p) => ({
-    id: p.member_id, type: 'member', name: p.full_name, sublabel: 'Parent',
+    id: p.member_id, type: 'managed' as const, name: p.full_name, sublabel: 'Parent',
     onClick: () => onManageAccess(p),
     onDelete: () => onDeleteMember(p.member_id),
   }))
 
   const middleRow: NodeDesc[] = [
     ...spouses.map((s) => ({
-      id: s.member_id, type: 'member' as const, name: s.full_name, sublabel: 'Spouse',
+      id: s.member_id, type: 'managed' as const, name: s.full_name, sublabel: 'Spouse',
       onClick: () => onManageAccess(s),
       onDelete: () => onDeleteMember(s.member_id),
     })),
@@ -362,20 +386,20 @@ function FamilyTree({ circle, selfMember, onInvite, onManageAccess, onDeleteMemb
   ]
 
   const childRow: NodeDesc[] = children.map((c) => ({
-    id: c.member_id, type: 'member', name: c.full_name, sublabel: 'Child',
+    id: c.member_id, type: 'managed' as const, name: c.full_name, sublabel: 'Child',
     onClick: () => onManageAccess(c),
     onDelete: () => onDeleteMember(c.member_id),
   }))
 
   const bottomRow: NodeDesc[] = [
     ...others.map((o) => ({
-      id: o.member_id, type: 'member' as const,
+      id: o.member_id, type: 'managed' as const,
       name: o.full_name, sublabel: RELATIONSHIP_LABELS[o.relationship] ?? 'Other',
       onClick: () => onManageAccess(o),
       onDelete: () => onDeleteMember(o.member_id),
     })),
     ...linked.map((ms) => ({
-      id: ms.membership_id, type: 'member' as const,
+      id: ms.membership_id, type: 'linked' as const,
       name: ms.user_id.slice(0, 10), sublabel: ms.role,
       onClick: () => onManageAccess(ms),
     })),

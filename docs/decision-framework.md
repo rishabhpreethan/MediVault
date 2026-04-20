@@ -170,3 +170,43 @@ High risk. Requires coordinated effort, likely involves data migration, breaking
   - Frontend: new Family tab + tree UI, notification bell + centre, updated nav (5 tabs, Settings removed from bottom nav)
   - Cross-vault access middleware: before serving any profile/document/chart data, check `vault_access_grants` if the requesting user is not the record owner
 - **Approved by:** Rishabh
+
+### [DECISION-008] — User Onboarding + Role System (Patient vs Provider)
+- **Date:** 2026-04-20
+- **Decided by:** neerajmenon4
+- **What changed:** A mandatory post-login onboarding flow is introduced. The system gains a `role` field on users (PATIENT | PROVIDER). Providers must supply an Indian medical licence number which is verified against the NMC (National Medical Commission) public registry. New DB: `role` + `onboarding_completed` on `users`; `height_cm` + `weight_kg` on `family_members`; new `provider_profiles` table.
+- **Why:** V1 has two meaningfully different user types with different data needs and different feature access. Collecting a health baseline at onboarding (DOB already captured, add height/weight/blood group/allergies) allows the Health Passport to show useful summary data immediately without requiring a document upload. Provider verification is required before giving a provider access to the patient-lookup flow — unverified accounts must not be able to look up patient data.
+- **Alternatives considered:**
+  - Defer provider role to V2 — rejected: the doctor-facing passport lookup (DECISION-009) is in-scope for this release; the role system is a prerequisite.
+  - Store height/weight as vitals entities (existing table) — rejected for onboarding baseline: vitals table is extraction-sourced and NLP-gated; we need a lightweight user-provided baseline not tied to document uploads.
+  - Skip licence verification and use self-declaration — rejected: unverified providers could abuse the patient-lookup API to access health data without consent.
+- **Migration plan:**
+  - Alembic migration 0007: add `role VARCHAR(20) DEFAULT 'PATIENT'`, `onboarding_completed BOOLEAN DEFAULT FALSE` to `users`; add `height_cm FLOAT`, `weight_kg FLOAT` to `family_members`; create `provider_profiles(profile_id UUID PK, user_id UUID FK, licence_number VARCHAR(50), registration_council VARCHAR(100), licence_verified BOOLEAN DEFAULT FALSE, verification_status VARCHAR(20) DEFAULT 'PENDING', verified_at TIMESTAMPTZ, created_at TIMESTAMPTZ)`.
+  - Backfill: existing users set `role='PATIENT'`, `onboarding_completed=FALSE` (prompted on next login).
+  - NMC verification: best-effort async; providers can use the app with `PENDING` status but cannot access patient-lookup until `VERIFIED`.
+- **Approved by:** neerajmenon4
+
+### [DECISION-009] — Provider / Doctor Workflow with Passport-Based Patient Lookup
+- **Date:** 2026-04-20
+- **Decided by:** neerajmenon4
+- **What changed:** Authenticated PROVIDER-role users can enter a patient's Health Passport UUID on their MediVault instance to look up that patient's data (gated by a valid, non-expired, non-revoked passport). The provider gets a read-only clinical view (health profile, timeline, lab trend chart, treatment pathway graph) plus a medical encounter logging form. Encounters are persisted to a new `medical_encounters` table and are visible to both the provider (their own encounters) and to the patient on their own profile. This decision moves "doctor-facing workflows" (previously out-of-scope in SRS v1.2 §1.2) into scope for this release.
+- **Why:** The core value proposition of the Health Passport is enabling the patient to share their history at a doctor's visit without carrying paper. The current public passport view (no auth required) is too lightweight for clinical use. A structured encounter log closes the loop: the patient gets a record of what the doctor noted. Requiring an active passport (patient-controlled) preserves patient consent.
+- **Alternatives considered:**
+  - Public (unauthenticated) doctor view — rejected: no audit trail, no encounter logging, no provider verification.
+  - QR-code scan flow only — retained as secondary path; provider can scan QR or type the UUID manually.
+  - Provider writes directly to patient's medications/diagnoses tables — rejected for V1: encounters stored in a separate `medical_encounters` table and surfaced to the patient as read-only encounter feed.
+  - Immediate access on valid passport + provider auth — rejected: patient must explicitly consent to each provider access session; the passport UUID alone is not sufficient consent (it could be leaked or guessed).
+- **Access consent model:** Passport lookup is a **two-step consent flow**:
+  1. Provider enters passport UUID → system validates passport is active/non-expired → creates a `provider_access_requests` record with status `PENDING` and TTL of 15 minutes.
+  2. Patient receives an in-app notification: *"Dr. [provider display name] is requesting to view your health profile. Accept or Decline?"* The notification contains deep-link action buttons.
+  3. Patient accepts → request status → `ACCEPTED`; provider's polling/waiting screen transitions to the clinical view; access session is valid for the duration of the encounter (same day, or until provider logs out of the lookup).
+  4. Patient declines → request status → `DECLINED`; provider sees "Patient declined the request" screen.
+  5. If the patient does not respond within 15 minutes → request expires (`EXPIRED`); provider must re-initiate.
+  6. The patient can see all past provider access requests (accepted/declined/expired) in their notification history, giving full auditability.
+- **Migration plan:**
+  - Alembic migration 0008: create `provider_access_requests(request_id UUID PK, provider_user_id UUID FK users, patient_member_id UUID FK family_members, passport_id_used UUID FK health_passports, status VARCHAR(20) DEFAULT 'PENDING', requested_at TIMESTAMPTZ, responded_at TIMESTAMPTZ, expires_at TIMESTAMPTZ, notification_id UUID FK notifications)`.
+  - Alembic migration 0009: create `medical_encounters(encounter_id UUID PK, provider_user_id UUID FK users, patient_member_id UUID FK family_members, access_request_id UUID FK provider_access_requests, encounter_date DATE NOT NULL, chief_complaint TEXT, diagnosis_notes TEXT, prescriptions_note TEXT, follow_up_date DATE, created_at TIMESTAMPTZ)`.
+  - New API prefix `/provider/` — all routes gated by `require_provider_role` dependency (checks `users.role = 'PROVIDER'` AND `provider_profiles.licence_verified = TRUE`).
+  - Notification dispatch: reuse existing `NotificationDispatchService`; add `PROVIDER_ACCESS_REQUEST` and `PROVIDER_ACCESS_ACCEPTED/DECLINED` notification types.
+  - Treatment pathway graph component: based on stitch design at `stitch_health_passport/treatment_pathway/DESIGN.md`. Renders a chronological narrative of diagnoses + encounters + medications with the "Clinical Curator" aesthetic.
+- **Approved by:** neerajmenon4

@@ -48,6 +48,10 @@ MediVault is a Progressive Web Application (PWA) accessible via modern desktop a
 - Visual health timeline (chronological)
 - Diagnostic and medication trend charts
 - Shareable read-only health summary
+- User onboarding flow (health baseline, role selection, provider licence verification)
+- Provider / doctor workflow: passport-based patient lookup with patient consent gate, clinical view, encounter logging, treatment pathway graph
+
+> **V1 Feature Gate — Document Extraction UI:** The PDF upload + NLP extraction pipeline code is complete and tested. For the V1.0 launch the upload UI entry point shows a "Coming Soon" state; the backend pipeline remains in place and will be enabled in a subsequent release without code changes.
 
 **Out of scope for Version 1.0:**
 
@@ -55,7 +59,6 @@ MediVault is a Progressive Web Application (PWA) accessible via modern desktop a
 - Handwritten prescription parsing — deferred to V2
 - Cloud OCR for scanned or image-based PDFs — deferred to V2
 - Real-time wearable or IoT data ingestion
-- Teleconsultation or doctor-facing workflows
 - Integration with hospital EMR/EHR systems
 - Insurance claim processing
 - Backend hosted on cloud infrastructure (AWS / GCP)
@@ -138,14 +141,24 @@ MediVault does not interface with cloud OCR APIs, hospital software, payment sys
 | **Upload Frequency** | Episodic — after each doctor visit or lab test (not daily) |
 | **Pain Point** | Cannot recall medications, past diagnoses, or test values under pressure |
 
-#### 2.3.2 Secondary User — Attending Clinician (Read-Only)
+#### 2.3.2 Secondary User — Healthcare Provider (Doctor / Clinician)
+
+| Attribute | Detail |
+|---|---|
+| **Interaction Type** | Active — registers a MediVault account with PROVIDER role; verifies medical licence at onboarding |
+| **Action** | Enters patient's Health Passport UUID to request a consent-gated clinical view; logs medical encounters |
+| **Motivation** | Access structured patient history instantly at the point of care; create a digital record of the visit |
+| **Constraint** | Must have a verified Indian medical licence (NMC registry) before using patient-lookup features |
+| **Device** | Desktop primary (clinic setting); mobile secondary |
+
+#### 2.3.2b Legacy Secondary User — Attending Clinician (Public Passport, Read-Only)
 
 | Attribute | Detail |
 |---|---|
 | **Interaction Type** | Passive — receives a shared link or QR from the patient |
-| **Action** | Views read-only health passport; no account or login required |
-| **Motivation** | Quickly see patient history without waiting for paper files |
-| **Constraint** | Zero onboarding or adoption required from this user |
+| **Action** | Views read-only public health passport; no account or login required |
+| **Motivation** | Quick glance at patient history without needing a MediVault account |
+| **Constraint** | Zero onboarding required; sees limited summary only (no timeline, no encounter logging) |
 
 #### 2.3.3 System Administrator
 
@@ -532,6 +545,102 @@ MediVault delivers notifications through two channels: **in-app** (bell icon in 
 | FR-NOTIF-003 | Bell icon in top nav shall show an unread count badge | **High** | V1-MVP |
 | FR-NOTIF-004 | User shall be able to mark individual notifications or all as read | **Medium** | V1 |
 | FR-NOTIF-005 | Notifications shall include a deep link to the relevant in-app page | **Medium** | V1 |
+| FR-NOTIF-006 | Patient shall receive an in-app notification when a provider requests access via passport lookup, with Accept and Decline action buttons | **High** | V1 |
+| FR-NOTIF-007 | Provider shall receive an in-app notification when the patient accepts or declines their access request | **High** | V1 |
+
+---
+
+### 3.11 User Onboarding
+
+#### 3.11.1 Description
+
+On first login, every user is directed through a mandatory multi-step onboarding flow before accessing the main application. The flow collects a health baseline (DOB, approximate height and weight, blood group, known allergies) and establishes the user's role (PATIENT or PROVIDER). Providers must supply an Indian medical licence number for verification against the NMC (National Medical Commission) public registry before they can use provider-only features.
+
+#### 3.11.2 Onboarding Steps
+
+| Step | Shown To | Fields |
+|---|---|---|
+| 1 — Personal Info | All | Date of birth (pre-fills age dynamically), approximate height (cm), approximate weight (kg) |
+| 2 — Blood Group | All | Blood group selector (A+/A-/B+/B-/O+/O-/AB+/AB-/Unknown) |
+| 3 — Known Allergies | All | Free-text allergy input with add/remove chips; creates allergy entities on the self member |
+| 4 — Role Selection | All | PATIENT (default) or PROVIDER (healthcare professional) |
+| 5 — Licence Verification | PROVIDER only | Medical licence number, registration council (state or NMC); async verification against NMC registry |
+| 6 — Complete | All | Summary screen; provider shown verification status (Pending/Verified) |
+
+#### 3.11.3 Functional Requirements
+
+| ID | Requirement | Priority | Phase |
+|---|---|---|---|
+| FR-ONB-001 | System shall redirect unauthenticated-onboarding users to /onboarding immediately after first login | **High** | V1 |
+| FR-ONB-002 | Onboarding page shall be full-screen and not render the main AppShell nav until complete | **High** | V1 |
+| FR-ONB-003 | System shall persist DOB to the self FamilyMember record; height_cm and weight_kg to the family_members row | **High** | V1 |
+| FR-ONB-004 | Blood group entered at onboarding shall update the self FamilyMember blood_group field | **High** | V1 |
+| FR-ONB-005 | Allergies entered at onboarding shall be created as is_manual_entry allergy entities on the self member | **High** | V1 |
+| FR-ONB-006 | System shall store user role (PATIENT | PROVIDER) on the users table | **High** | V1 |
+| FR-ONB-007 | PROVIDER users shall supply a medical licence number and registration council at onboarding | **High** | V1 |
+| FR-ONB-008 | System shall verify the licence number against the NMC public registry asynchronously | **High** | V1 |
+| FR-ONB-009 | Provider may proceed to use patient features while verification is PENDING; provider-only features (patient lookup) require VERIFIED status | **High** | V1 |
+| FR-ONB-010 | Displayed age shall be computed dynamically from DOB (changes automatically on birthday) | **Medium** | V1 |
+| FR-ONB-011 | System shall mark onboarding_completed = TRUE on the users record upon completion | **High** | V1 |
+| FR-ONB-012 | Users who skip or close mid-onboarding shall be returned to onboarding on the next login | **Medium** | V1 |
+
+---
+
+### 3.12 Provider / Doctor Workflow
+
+#### 3.12.1 Description
+
+Authenticated PROVIDER-role users (licence verified) can initiate a patient session by entering the patient's Health Passport UUID. This triggers a consent request to the patient. Once the patient accepts, the provider sees a read-only clinical view of that patient's data and can log the medical encounter. Both the consent request and the encounter record are visible to the patient in their notification history and encounter feed.
+
+#### 3.12.2 Provider Access Flow
+
+```
+Provider enters passport UUID
+       ↓
+System validates: passport active + non-expired + non-revoked
+       ↓
+System creates provider_access_requests record (status=PENDING, TTL=15 min)
+       ↓
+Patient receives in-app notification: "Dr. [Name] is requesting to view your profile — Accept / Decline"
+       ↓
+  Patient ACCEPTS → request status=ACCEPTED
+       ↓                    ↓
+  Provider sees    Patient DECLINES → request status=DECLINED
+  clinical view    → Provider sees "Patient declined" screen
+       ↓
+Provider views: health profile (read-only) + timeline + lab trends + treatment pathway graph
+       ↓
+Provider logs encounter (chief complaint, diagnosis notes, prescriptions, follow-up date)
+       ↓
+Encounter saved; patient receives notification with encounter summary
+```
+
+#### 3.12.3 Provider Patient View — Panels
+
+| Panel | Content |
+|---|---|
+| Identity & Baseline | Name (from self member), age, blood group, height/weight (from onboarding), known allergies |
+| Health Timeline | Chronological event feed (diagnoses, encounters, documents) |
+| Lab Trend Chart | Recharts line chart for selected lab parameter; reference range band; same as Insights tab |
+| Treatment Pathway Graph | "Clinical Curator" visual (see stitch_health_passport/treatment_pathway/DESIGN.md) — chronological narrative of diagnoses + encounters + medications on a vertical timeline |
+| Log Encounter (form) | Encounter date (default today), chief complaint, diagnosis notes, prescriptions note, follow-up date; Submit button |
+
+#### 3.12.4 Functional Requirements
+
+| ID | Requirement | Priority | Phase |
+|---|---|---|---|
+| FR-PROV-001 | Only users with role=PROVIDER and licence_verified=TRUE shall access provider-only routes | **High** | V1 |
+| FR-PROV-002 | Provider shall be able to enter a Health Passport UUID to initiate a patient access request | **High** | V1 |
+| FR-PROV-003 | System shall validate the passport is active, non-expired, and non-revoked before creating an access request | **High** | V1 |
+| FR-PROV-004 | Patient shall receive an in-app notification with Accept / Decline actions within 5 seconds of the provider's request | **High** | V1 |
+| FR-PROV-005 | Access request shall expire after 15 minutes if the patient does not respond | **High** | V1 |
+| FR-PROV-006 | Provider shall see a real-time waiting state while the request is PENDING, and an error state if DECLINED or EXPIRED | **High** | V1 |
+| FR-PROV-007 | Provider clinical view shall be read-only; no writes to patient's core health profile are permitted | **High** | V1 |
+| FR-PROV-008 | Provider shall be able to log a medical encounter (date, complaint, diagnosis notes, prescriptions note, follow-up date) | **High** | V1 |
+| FR-PROV-009 | Logged encounter shall be visible to the patient in their encounter history feed | **High** | V1 |
+| FR-PROV-010 | Treatment pathway graph shall display diagnoses, encounters, and medications as a chronological narrative | **Medium** | V1 |
+| FR-PROV-011 | All provider access sessions shall be logged in provider_access_requests for the patient to review | **High** | V1 |
+| FR-PROV-012 | Patient shall be able to view their full provider access request history (accepted/declined/expired) in their notification centre | **Medium** | V1 |
 
 ---
 
