@@ -5,7 +5,38 @@ import { api } from '../../lib/api'
 import { useResolvedMemberId } from '../../hooks/useFamily'
 import type { Document, ProcessingStatus } from '../../types'
 import { TimelineTab } from './TimelineTab'
-import { UploadModal } from '../../components/upload/UploadModal'
+
+function ComingSoonModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-2xl shadow-teal-900/10 max-w-sm w-full p-8 flex flex-col items-center text-center gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0f766e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+            <path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z" />
+            <path d="M12 6v6l4 2" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-extrabold text-on-surface tracking-tight">Document Upload Coming Soon</h2>
+        <p className="text-sm text-on-surface-variant leading-relaxed">
+          We're putting the finishing touches on automatic PDF extraction and NLP analysis. This feature will be available in the next release.
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-2 w-full bg-primary text-white font-semibold rounded-full py-2.5 hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 min-h-[44px]"
+        >
+          Got it
+        </button>
+      </div>
+    </div>
+  )
+}
 
 type RecordsTab = 'archive' | 'timeline'
 
@@ -235,7 +266,7 @@ export function RecordsPage() {
 
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<RecordsTab>('archive')
-  const [uploadOpen, setUploadOpen] = useState(false)
+  const [comingSoonOpen, setComingSoonOpen] = useState(false)
 
   const { data, isLoading, isError } = useQuery<DocumentsResponse>({
     queryKey: ['documents', memberId],
@@ -263,11 +294,7 @@ export function RecordsPage() {
 
   return (
     <div className="space-y-6">
-      <UploadModal
-        isOpen={uploadOpen}
-        onClose={() => setUploadOpen(false)}
-        memberId={resolvedMemberId}
-      />
+      {comingSoonOpen && <ComingSoonModal onClose={() => setComingSoonOpen(false)} />}
 
       {/* ── Page header ───────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -283,7 +310,7 @@ export function RecordsPage() {
         </div>
         <button
           type="button"
-          onClick={() => setUploadOpen(true)}
+          onClick={() => setComingSoonOpen(true)}
           className="bg-primary text-white font-semibold rounded-full px-5 py-2.5 hover:bg-primary/90 transition-colors shadow-sm shadow-teal-900/10 min-h-[44px] flex items-center gap-2 self-start whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-primary/40"
           aria-label="Import a new medical record"
         >
@@ -484,7 +511,7 @@ export function RecordsPage() {
               {!search.trim() && (
                 <button
                   type="button"
-                  onClick={() => setUploadOpen(true)}
+                  onClick={() => setComingSoonOpen(true)}
                   className="mt-5 bg-primary text-white font-semibold rounded-full px-5 py-2.5 hover:bg-primary/90 transition-colors shadow-sm shadow-teal-900/10 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary/40"
                 >
                   Import Record
