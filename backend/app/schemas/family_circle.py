@@ -41,6 +41,9 @@ class FamilyMembershipResponse(BaseModel):
     role: str
     can_invite: bool
     joined_at: datetime
+    family_owner_user_id: Optional[uuid.UUID] = None
+    family_owner_name: Optional[str] = None
+    relationship: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -62,6 +65,7 @@ class FamilyCircleResponse(BaseModel):
     self_member: Optional[FamilyMemberResponse] = None
     managed_profiles: list[FamilyMemberResponse]
     memberships: list[FamilyMembershipResponse]
+    family_members: list[FamilyMembershipResponse]
     pending_invitations_sent: list[FamilyInvitationResponse]
     pending_invitations_received: list[FamilyInvitationResponse]
 

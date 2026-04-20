@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useAuth0 } from '@auth0/auth0-react'
 import { api } from '../lib/api'
 import type {
   FamilyCircle,
@@ -17,6 +19,53 @@ export function useFamilyCircle() {
       return data
     },
   })
+}
+
+// ── SSE hook — real-time family circle updates ─────────────────────────────
+
+export function useFamilyCircleEvents() {
+  const queryClient = useQueryClient()
+  const { getAccessTokenSilently } = useAuth0()
+
+  useEffect(() => {
+    const controller = new AbortController()
+    let reconnectTimer: ReturnType<typeof setTimeout>
+
+    async function connect() {
+      try {
+        const token = await getAccessTokenSilently()
+        const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1'
+        const res = await fetch(`${baseUrl}/family/circle/events`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        })
+        if (!res.ok || !res.body) return
+
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const text = decoder.decode(value, { stream: true })
+          if (text.includes('family-updated')) {
+            void queryClient.invalidateQueries({ queryKey: ['family-circle'] })
+          }
+        }
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return
+        // Reconnect after 5 s on network error
+        reconnectTimer = setTimeout(() => { void connect() }, 5_000)
+      }
+    }
+
+    void connect()
+
+    return () => {
+      controller.abort()
+      clearTimeout(reconnectTimer)
+    }
+  }, [getAccessTokenSilently, queryClient])
 }
 
 // ── Managed member (direct profile, no invite) ────────────────────────────

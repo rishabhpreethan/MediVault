@@ -241,6 +241,15 @@
 | MV-153 | Onboarding UI — full-screen 6-step wizard: (1) DOB + height + weight, (2) blood group pill selector, (3) allergy chips input, (4) role selector PATIENT/PROVIDER, (5) licence number + council if PROVIDER, (6) completion summary; no AppShell nav visible during onboarding | P0 | Not Started | — | MV-151 | — |
 | MV-154 | Post-login guard — frontend route guard redirects to /onboarding if onboarding_completed=False; guard runs after Auth0 callback before rendering any authenticated route | P0 | Not Started | — | MV-153 | — |
 
+### EPIC: Real-Time Family Circle Updates (DECISION-010)
+
+> **1.5-Way Door decision** made 2026-04-20. Replace polling on family-circle query with SSE + Redis pub/sub: zero DB hits when nothing changes, scales horizontally via Redis fan-out, one-directional server→client push is sufficient.
+
+| Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
+|---|---|---|---|---|---|---|
+| MV-164 | Backend SSE — `services/pubsub.py` (async Redis pub/sub wrapper); `GET /family/circle/events` SSE endpoint streams `family-updated` event to authenticated user; publish on invite accept, invite decline, membership create/delete, vault grant/revoke | P1 | Done | Developer Agent | — | feature/MV-164-165-sse-family-updates |
+| MV-165 | Frontend SSE hook — `useFamilyCircleEvents` hook using native `EventSource`; on `family-updated` event calls `invalidateQueries(['family-circle'])`; hook mounted inside FamilyCirclePage; remove `refetchInterval` from `useFamilyCircle` | P1 | Done | Developer Agent | MV-164 | feature/MV-164-165-sse-family-updates |
+
 ### EPIC: Provider / Doctor Workflow (DECISION-009)
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
@@ -397,5 +406,8 @@
 | 2026-04-20 | Developer Agent | Completed MV-153 — OnboardingPage: full-screen 6-step wizard (personal info / blood group / allergies / role / provider licence / complete); StepDots progress indicator; PROVIDER licence step conditional; POST /auth/onboarding on complete; TypeScript clean | MV-153 | feature/MV-150-154-onboarding |
 | 2026-04-20 | Developer Agent | Completed MV-154 — RequireOnboarding guard in App.tsx: queries /auth/onboarding/status, redirects to /onboarding if incomplete; /onboarding route inside AuthGuard but outside AppShell | MV-154 | feature/MV-150-154-onboarding |
 | 2026-04-20 | neerajmenon4 | Product decisions: (1) family tree connected-member state (MV-148); (2) document upload Coming Soon gate (MV-149); (3) user onboarding + role system DECISION-008 (MV-150–MV-154); (4) provider/doctor workflow with patient consent gate DECISION-009 (MV-155–MV-163); srs.md §1.2 + §2.3 + §3.11 + §3.12 + §3.10 updated; decision-framework.md DECISION-008 + DECISION-009 recorded | MV-148–MV-163 | — |
+| 2026-04-20 | neerajmenon4 | Architecture decision: replace family-circle polling with SSE + Redis pub/sub (DECISION-010, MV-164–MV-165); zero DB hits when idle, Redis fan-out scales horizontally | MV-164, MV-165 | — |
+| 2026-04-20 | Developer Agent | Completed MV-164 — services/pubsub.py: async Redis pub/sub wrapper (publish_family_updated, subscribe_family_updates); GET /family/circle/events SSE endpoint in family_circle.py; publish calls added after accept_invite, decline_invite, create_access_grant, revoke_access_grant | MV-164 | feature/MV-164-165-sse-family-updates |
+| 2026-04-20 | Developer Agent | Completed MV-165 — useFamilyCircleEvents hook (fetch + ReadableStream, auth header, 5s reconnect); mounted in FamilyCirclePage; refetchInterval removed from useFamilyCircle | MV-165 | feature/MV-164-165-sse-family-updates |
 | 2026-04-20 | Developer Agent | Completed MV-149 — RecordsPage: UploadModal replaced with ComingSoonModal (clock icon, explanatory copy, teal CTA); both Import Record triggers wired to Coming Soon state; backend pipeline untouched | MV-149 | feature/MV-148-149-quick-wins |
 | 2026-04-20 | Developer Agent | Completed MV-148 — FamilyCirclePage: NodeDesc type split into 'managed' | 'linked' | 'pending' | 'self' | 'add'; managed profiles render slate badge "Managed"; linked accounts render teal-accent ring + "Linked Account" badge; TypeScript clean | MV-148 | feature/MV-148-149-quick-wins |

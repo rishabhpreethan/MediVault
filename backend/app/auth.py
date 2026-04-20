@@ -1,11 +1,15 @@
 """Auth0 JWT verification (MV-011)."""
 from __future__ import annotations
 
+import logging
+
 import httpx
 from jose import JWTError, jwt
 from jose.exceptions import ExpiredSignatureError
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 _jwks_cache: dict | None = None
 
@@ -80,3 +84,23 @@ async def verify_token(token: str) -> dict:
         raise
 
     return payload
+
+
+async def get_userinfo(access_token: str) -> dict:
+    """Fetch user profile from Auth0 /userinfo endpoint.
+
+    Returns profile claims (email, email_verified, name, etc.) not present in
+    the access token JWT when Auth0 Actions haven't been configured to include
+    them as custom claims.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(
+                f"https://{settings.auth0_domain}/userinfo",
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except Exception as exc:
+        logger.warning("userinfo_fetch_failed", extra={"error": str(exc)})
+        return {}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -10,6 +10,7 @@ type Role = 'PATIENT' | 'PROVIDER'
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-', 'Unknown'] as const
 
 interface OnboardingData {
+  full_name: string
   date_of_birth: string
   height_cm: string
   weight_kg: string
@@ -49,7 +50,7 @@ function StepPersonalInfo({
   onNext,
   onSkip,
 }: {
-  data: Pick<OnboardingData, 'date_of_birth' | 'height_cm' | 'weight_kg'>
+  data: Pick<OnboardingData, 'full_name' | 'date_of_birth' | 'height_cm' | 'weight_kg'>
   onChange: (field: keyof OnboardingData, value: string) => void
   onNext: () => void
   onSkip: () => void
@@ -62,6 +63,17 @@ function StepPersonalInfo({
       </div>
 
       <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-semibold text-on-surface mb-1.5">Full name <span className="text-tertiary">*</span></label>
+          <input
+            type="text"
+            placeholder="e.g. Neeraj Menon"
+            value={data.full_name}
+            onChange={(e) => onChange('full_name', e.target.value)}
+            className="w-full rounded-xl border border-outline-variant bg-surface px-4 py-3 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
+          />
+        </div>
+
         <div>
           <label className="block text-sm font-semibold text-on-surface mb-1.5">Date of birth</label>
           <input
@@ -430,6 +442,12 @@ function StepComplete({
       </div>
 
       <div className="bg-surface-container-low rounded-2xl p-4 space-y-3">
+        {data.full_name && (
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-on-surface-variant">Name</span>
+            <span className="text-sm font-bold text-on-surface">{data.full_name}</span>
+          </div>
+        )}
         <div className="flex justify-between items-center">
           <span className="text-sm text-on-surface-variant">Role</span>
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${data.role === 'PROVIDER' ? 'bg-primary/10 text-primary' : 'bg-secondary-container text-secondary'}`}>
@@ -479,9 +497,11 @@ function StepComplete({
 
 export function OnboardingPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const [step, setStep] = useState(0)
   const [data, setData] = useState<OnboardingData>({
+    full_name: '',
     date_of_birth: '',
     height_cm: '',
     weight_kg: '',
@@ -504,6 +524,7 @@ export function OnboardingPage() {
         role: data.role,
         allergies: data.allergies,
       }
+      if (data.full_name.trim()) payload.full_name = data.full_name.trim()
       if (data.date_of_birth) payload.date_of_birth = data.date_of_birth
       if (data.height_cm) payload.height_cm = parseFloat(data.height_cm)
       if (data.weight_kg) payload.weight_kg = parseFloat(data.weight_kg)
@@ -514,7 +535,10 @@ export function OnboardingPage() {
       }
       await api.post('/auth/onboarding', payload)
     },
-    onSuccess: () => navigate('/'),
+    onSuccess: () => {
+      queryClient.setQueryData(['onboarding-status'], { onboarding_completed: true, role: data.role })
+      navigate('/')
+    },
   })
 
   const errorMessage = error
@@ -561,7 +585,7 @@ export function OnboardingPage() {
 
           {step === 0 && (
             <StepPersonalInfo
-              data={data}
+              data={{ full_name: data.full_name, date_of_birth: data.date_of_birth, height_cm: data.height_cm, weight_kg: data.weight_kg }}
               onChange={setField}
               onNext={nextStep}
               onSkip={nextStep}

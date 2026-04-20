@@ -7,6 +7,7 @@ from pydantic import BaseModel, field_validator
 
 
 class OnboardingRequest(BaseModel):
+    full_name: Optional[str] = None
     date_of_birth: Optional[date] = None
     height_cm: Optional[float] = None
     weight_kg: Optional[float] = None

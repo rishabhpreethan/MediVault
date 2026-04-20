@@ -72,6 +72,8 @@ async def complete_onboarding(
         )
 
     # 2. Update self member fields
+    if body.full_name is not None and body.full_name.strip():
+        self_member.full_name = body.full_name.strip()
     if body.date_of_birth is not None:
         self_member.date_of_birth = body.date_of_birth
     if body.height_cm is not None:

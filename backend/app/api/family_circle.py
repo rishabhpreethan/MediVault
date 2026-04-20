@@ -21,6 +21,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import or_, select
 
 from app.config import settings
@@ -46,6 +47,7 @@ from app.schemas.family_circle import (
     VaultAccessGrantResponse,
 )
 from app.services.notification_service import dispatch_notification
+from app.services.pubsub import publish_family_updated, subscribe_family_updates
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +86,12 @@ def _invitation_to_response(inv: FamilyInvitation) -> FamilyInvitationResponse:
     )
 
 
-def _membership_to_response(m: FamilyMembership) -> FamilyMembershipResponse:
+def _membership_to_response(
+    m: FamilyMembership,
+    family_owner_user_id: uuid.UUID | None = None,
+    family_owner_name: str | None = None,
+    relationship: str | None = None,
+) -> FamilyMembershipResponse:
     return FamilyMembershipResponse(
         membership_id=m.membership_id,
         family_id=m.family_id,
@@ -92,6 +99,9 @@ def _membership_to_response(m: FamilyMembership) -> FamilyMembershipResponse:
         role=m.role,
         can_invite=m.can_invite,
         joined_at=m.joined_at,
+        family_owner_user_id=family_owner_user_id,
+        family_owner_name=family_owner_name,
+        relationship=relationship,
     )
 
 
@@ -209,7 +219,78 @@ async def get_family_circle(
             FamilyMembership.user_id == current_user.user_id
         )
     )
-    memberships = [_membership_to_response(m) for m in mem_result.scalars().all()]
+    membership_rows = mem_result.scalars().all()
+
+    # Batch-enrich memberships with family owner name and invitation relationship
+    memberships: list[FamilyMembershipResponse] = []
+    if membership_rows:
+        family_ids = [m.family_id for m in membership_rows]
+
+        families_result = await db.execute(
+            select(Family).where(Family.family_id.in_(family_ids))
+        )
+        families_by_id = {f.family_id: f for f in families_result.scalars().all()}
+
+        owner_user_ids = list({f.created_by_user_id for f in families_by_id.values()})
+        owners_result = await db.execute(
+            select(FamilyMember).where(
+                FamilyMember.user_id.in_(owner_user_ids),
+                FamilyMember.is_self == True,  # noqa: E712
+            )
+        )
+        owners_by_user_id = {om.user_id: om for om in owners_result.scalars().all()}
+
+        invitations_result = await db.execute(
+            select(FamilyInvitation).where(
+                FamilyInvitation.family_id.in_(family_ids),
+                FamilyInvitation.invited_user_id == current_user.user_id,
+                FamilyInvitation.status == "ACCEPTED",
+            )
+        )
+        invitations_by_family_id = {i.family_id: i for i in invitations_result.scalars().all()}
+
+        for m in membership_rows:
+            fam = families_by_id.get(m.family_id)
+            owner_uid = fam.created_by_user_id if fam else None
+            owner_name = owners_by_user_id[owner_uid].full_name if owner_uid and owner_uid in owners_by_user_id else None
+            inv = invitations_by_family_id.get(m.family_id)
+            rel = inv.relationship if inv else None
+            memberships.append(_membership_to_response(m, owner_uid, owner_name, rel))
+
+    # Members who have accepted an invitation into this user's family
+    family_members: list[FamilyMembershipResponse] = []
+    if family:
+        fm_rows_result = await db.execute(
+            select(FamilyMembership).where(
+                FamilyMembership.family_id == family.family_id,
+            )
+        )
+        fm_rows = fm_rows_result.scalars().all()
+        if fm_rows:
+            fm_user_ids = [m.user_id for m in fm_rows]
+
+            fm_names_result = await db.execute(
+                select(FamilyMember).where(
+                    FamilyMember.user_id.in_(fm_user_ids),
+                    FamilyMember.is_self == True,  # noqa: E712
+                )
+            )
+            fm_names_by_user_id = {mm.user_id: mm.full_name for mm in fm_names_result.scalars().all()}
+
+            fm_inv_result = await db.execute(
+                select(FamilyInvitation).where(
+                    FamilyInvitation.family_id == family.family_id,
+                    FamilyInvitation.invited_user_id.in_(fm_user_ids),
+                    FamilyInvitation.status == "ACCEPTED",
+                )
+            )
+            fm_inv_by_user = {i.invited_user_id: i for i in fm_inv_result.scalars().all()}
+
+            for m in fm_rows:
+                name = fm_names_by_user_id.get(m.user_id)
+                inv = fm_inv_by_user.get(m.user_id)
+                rel = inv.relationship if inv else None
+                family_members.append(_membership_to_response(m, current_user.user_id, name, rel))
 
     # Pending invitations sent by this user
     if family:
@@ -241,8 +322,36 @@ async def get_family_circle(
         self_member=self_member_resp,
         managed_profiles=managed,
         memberships=memberships,
+        family_members=family_members,
         pending_invitations_sent=sent,
         pending_invitations_received=received,
+    )
+
+
+# ---------------------------------------------------------------------------
+# MV-164: GET /family/circle/events  — SSE stream for real-time updates
+# ---------------------------------------------------------------------------
+
+
+@router.get("/family/circle/events")
+async def family_circle_events(current_user: CurrentUser) -> StreamingResponse:
+    """Server-Sent Events stream — pushes 'family-updated' when the caller's
+    family circle changes (invite accepted/declined, access granted/revoked).
+    The client should call invalidateQueries(['family-circle']) on receipt."""
+    user_id = str(current_user.user_id)
+
+    async def event_stream():
+        async for chunk in subscribe_family_updates(user_id):
+            yield chunk
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
     )
 
 
@@ -600,7 +709,20 @@ async def accept_invite(
         and inv.invited_email.lower() == current_user.email.lower()
     )
     user_id_match = inv.invited_user_id == current_user.user_id
-    if not (email_match or user_id_match):
+    # When the invite was sent before the user existed AND email isn't in the
+    # access token (social auth without Auth0 Action), trust the invite token UUID.
+    token_trust = inv.invited_user_id is None and current_user.email is None
+    if not (email_match or user_id_match or token_trust):
+        logger.warning(
+            "invite_accept_forbidden",
+            extra={
+                "invitation_id": str(inv.invitation_id),
+                "invited_email": inv.invited_email,
+                "current_user_email": current_user.email,
+                "invited_user_id": str(inv.invited_user_id),
+                "current_user_id": str(current_user.user_id),
+            },
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"error": "FORBIDDEN", "message": "This invitation was not sent to you"},
@@ -649,6 +771,9 @@ async def accept_invite(
 
     await db.commit()
     await db.refresh(membership)
+
+    # Push real-time update to the inviter's SSE stream
+    await publish_family_updated(str(inv.invited_by_user_id))
 
     logger.info(
         "invitation_accepted",
@@ -708,6 +833,10 @@ async def decline_invite(
     )
 
     await db.commit()
+
+    # Push real-time update to the inviter's SSE stream
+    await publish_family_updated(str(inv.invited_by_user_id))
+
     logger.info(
         "invitation_declined",
         extra={
@@ -812,6 +941,9 @@ async def create_access_grant(
     await db.commit()
     await db.refresh(grant)
 
+    # Notify the grantee their access changed
+    await publish_family_updated(str(body.grantee_user_id))
+
     logger.info(
         "vault_access_grant_created",
         extra={
@@ -861,8 +993,13 @@ async def revoke_access_grant(
         )
     await _require_admin(db, family, current_user)
 
+    grantee_user_id = grant.grantee_user_id
     await db.delete(grant)
     await db.commit()
+
+    # Notify the grantee their access was revoked
+    await publish_family_updated(str(grantee_user_id))
+
     logger.info(
         "vault_access_grant_revoked",
         extra={"grant_id": str(grant_id), "user_id": str(current_user.user_id)},

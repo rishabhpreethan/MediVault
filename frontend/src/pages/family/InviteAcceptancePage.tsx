@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth0 } from '@auth0/auth0-react'
 import { api } from '../../lib/api'
+import { useAuthToken } from '../../hooks/useAuthToken'
 import type { InviteTokenInfo } from '../../types'
 import { useAcceptInvitation, useDeclineInvitation } from '../../hooks/useFamilyCircle'
 import { AxiosError } from 'axios'
@@ -108,8 +109,10 @@ export function InviteAcceptancePage() {
   const { token } = useParams<{ token: string }>()
   const { isAuthenticated, isLoading: authLoading, loginWithRedirect } = useAuth0()
   const navigate = useNavigate()
+  useAuthToken()
 
   const [outcome, setOutcome] = useState<'accepted' | 'declined' | null>(null)
+  const autoTriggered = useRef(false)
 
   const accept = useAcceptInvitation(token ?? '')
   const decline = useDeclineInvitation(token ?? '')
@@ -132,25 +135,43 @@ export function InviteAcceptancePage() {
     retry: false,
   })
 
-  // Redirect to login with return URL if unauthenticated and user tries to act
-  function requireAuth() {
+  // Store action intent and redirect to OAuth when not authenticated
+  function requireAuth(action: 'accept' | 'decline') {
+    sessionStorage.setItem('pending_invite_action', action)
+    sessionStorage.setItem('post_auth_return', `/invite/${token}`)
     loginWithRedirect({
       appState: { returnTo: `/invite/${token}` },
     }).catch(console.error)
   }
 
+  // Auto-trigger stored action after OAuth return (avoids double-click)
+  useEffect(() => {
+    if (autoTriggered.current) return
+    if (!isAuthenticated || !inviteInfo || inviteInfo.status !== 'PENDING' || outcome !== null) return
+    const pendingAction = sessionStorage.getItem('pending_invite_action')
+    if (!pendingAction) return
+    autoTriggered.current = true
+    sessionStorage.removeItem('pending_invite_action')
+    if (pendingAction === 'accept') {
+      accept.mutate(undefined, { onSuccess: () => void navigate('/') })
+    } else if (pendingAction === 'decline') {
+      decline.mutate(undefined, { onSuccess: () => setOutcome('declined') })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, inviteInfo, outcome])
+
   async function handleAccept() {
-    if (!isAuthenticated) { requireAuth(); return }
+    if (!isAuthenticated) { requireAuth('accept'); return }
     try {
       await accept.mutateAsync()
-      setOutcome('accepted')
+      navigate('/')
     } catch {
       // error shown via accept.isError
     }
   }
 
   async function handleDecline() {
-    if (!isAuthenticated) { requireAuth(); return }
+    if (!isAuthenticated) { requireAuth('decline'); return }
     try {
       await decline.mutateAsync()
       setOutcome('declined')
@@ -160,7 +181,9 @@ export function InviteAcceptancePage() {
   }
 
   const isPageLoading = authLoading || inviteLoading
-  const notFoundError = (error as AxiosError)?.response?.status === 404
+  const errorStatus = (error as AxiosError)?.response?.status
+  const notFoundError = errorStatus === 404
+  const inactiveError = errorStatus === 410
 
   const relLabel = inviteInfo
     ? (inviteInfo.relationship.charAt(0).toUpperCase() +
@@ -181,31 +204,21 @@ export function InviteAcceptancePage() {
         />
       )}
 
-      {!isPageLoading && isError && !notFoundError && (
+      {!isPageLoading && isError && inactiveError && (
+        <OutcomeCard
+          icon="info"
+          title="Invitation no longer active"
+          message="This invitation has already been accepted, declined, or expired."
+          linkTo="/"
+          linkLabel="Go to MediVault"
+        />
+      )}
+
+      {!isPageLoading && isError && !notFoundError && !inactiveError && (
         <OutcomeCard
           icon="error"
           title="Something went wrong"
           message="We couldn't load this invitation. Please try again later."
-          linkTo="/"
-          linkLabel="Go to MediVault"
-        />
-      )}
-
-      {!isPageLoading && inviteInfo && inviteInfo.status === 'EXPIRED' && (
-        <OutcomeCard
-          icon="info"
-          title="Invitation expired"
-          message="This invitation has expired. Ask the sender to resend it."
-          linkTo="/"
-          linkLabel="Go to MediVault"
-        />
-      )}
-
-      {!isPageLoading && inviteInfo && ['ACCEPTED', 'DECLINED', 'REVOKED'].includes(inviteInfo.status) && (
-        <OutcomeCard
-          icon="info"
-          title="Invitation no longer active"
-          message="This invitation is no longer active."
           linkTo="/"
           linkLabel="Go to MediVault"
         />
@@ -243,7 +256,7 @@ export function InviteAcceptancePage() {
           {/* Invitation card */}
           <div className="rounded-2xl bg-white shadow-sm border border-slate-100 p-8 space-y-5">
             <p className="text-sm text-slate-700 text-center leading-relaxed">
-              <strong className="text-teal-700">{inviteInfo.invited_by_name}</strong> has invited
+              <strong className="text-teal-700">{inviteInfo.inviter_name}</strong> has invited
               you to join their MediVault family as{' '}
               <strong className="text-slate-900">{relLabel}</strong>.
             </p>

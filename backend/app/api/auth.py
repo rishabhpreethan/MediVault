@@ -10,10 +10,11 @@ from pydantic import BaseModel
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import verify_token
+from app.auth import get_userinfo, verify_token
 from app.database import get_db
 from app.dependencies import CurrentUser
 from app.limiter import limiter
+from app.models.family_circle import FamilyInvitation
 from app.models.family_member import FamilyMember
 from app.models.passport import SharedPassport
 from app.models.user import User
@@ -75,6 +76,12 @@ async def provision_user(
 
     email: Optional[str] = payload.get("email")
     email_verified: bool = bool(payload.get("email_verified", False))
+
+    # Auth0 access tokens don't include email by default — fall back to /userinfo
+    if not email:
+        userinfo = await get_userinfo(credentials.credentials)
+        email = userinfo.get("email") or None
+        email_verified = bool(userinfo.get("email_verified", email_verified))
 
     result = await db.execute(select(User).where(User.auth0_sub == sub))
     user = result.scalar_one_or_none()
@@ -139,6 +146,18 @@ async def provision_user(
             user_id=user.user_id,
             ip_address=ip_address,
             user_agent=user_agent_header,
+        )
+
+    # Backfill invited_user_id on any pending invitations for this email
+    if email:
+        await db.execute(
+            update(FamilyInvitation)
+            .where(
+                FamilyInvitation.invited_email == email.lower(),
+                FamilyInvitation.status == "PENDING",
+                FamilyInvitation.invited_user_id.is_(None),
+            )
+            .values(invited_user_id=user.user_id)
         )
 
     await db.commit()
