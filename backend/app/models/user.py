@@ -29,6 +29,8 @@ class User(Base):
     deletion_requested_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    role: Mapped[str] = mapped_column(String(20), nullable=False, server_default="PATIENT")
+    onboarding_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
 
     family_members: Mapped[list] = relationship(
         "FamilyMember", back_populates="user", cascade="all, delete-orphan"

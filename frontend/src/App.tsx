@@ -1,9 +1,11 @@
 import { Auth0Provider } from '@auth0/auth0-react'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth0 } from '@auth0/auth0-react'
 
 import { auth0Config } from './lib/auth'
 import { queryClient } from './lib/query-client'
+import { api } from './lib/api'
 import { AuthGuard } from './components/common/AuthGuard'
 import { AppShell } from './components/layout/AppShell'
 
@@ -20,6 +22,37 @@ import { CallbackPage } from './pages/auth/CallbackPage'
 import { AccountSettingsPage } from './pages/settings/AccountSettingsPage'
 import { FamilyCirclePage } from './pages/family/FamilyCirclePage'
 import { InviteAcceptancePage } from './pages/family/InviteAcceptancePage'
+import { OnboardingPage } from './pages/onboarding/OnboardingPage'
+
+// ── Onboarding guard ───────────────────────────────────────────────────────
+
+function RequireOnboarding({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth0()
+
+  const { data, isLoading } = useQuery<{ onboarding_completed: boolean; role: string }>({
+    queryKey: ['onboarding-status'],
+    queryFn: async () => {
+      const { data } = await api.get('/auth/onboarding/status')
+      return data
+    },
+    enabled: isAuthenticated && !authLoading,
+    staleTime: 60_000,
+  })
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
+  if (data && !data.onboarding_completed) {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  return <>{children}</>
+}
 
 export default function App() {
   return (
@@ -33,9 +66,20 @@ export default function App() {
             <Route path="/passport/:uuid" element={<PublicPassportPage />} />
             <Route path="/invite/:token" element={<InviteAcceptancePage />} />
 
-            {/* Protected routes */}
+            {/* Onboarding — authenticated but outside AppShell */}
             <Route element={<AuthGuard />}>
-              <Route element={<AppShell />}>
+              <Route path="/onboarding" element={<OnboardingPage />} />
+            </Route>
+
+            {/* Protected routes — gated behind onboarding completion */}
+            <Route element={<AuthGuard />}>
+              <Route
+                element={
+                  <RequireOnboarding>
+                    <AppShell />
+                  </RequireOnboarding>
+                }
+              >
                 <Route path="/" element={<PassportManagePage />} />
                 <Route path="/health" element={<DashboardPage />} />
                 <Route path="/records" element={<RecordsPage />} />
