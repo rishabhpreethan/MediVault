@@ -57,6 +57,12 @@ function formatDate(dateStr: string): string {
 
 // ── Log Encounter Form ─────────────────────────────────────────────────────
 
+interface DiagnosisEntry { condition_name: string; status: string }
+interface MedicationEntry { drug_name: string; dosage: string; frequency: string; is_active: boolean }
+
+const emptyDx = (): DiagnosisEntry => ({ condition_name: '', status: 'ACTIVE' })
+const emptyMed = (): MedicationEntry => ({ drug_name: '', dosage: '', frequency: '', is_active: true })
+
 interface LogFormProps {
   requestId: string
   onSuccess: () => void
@@ -71,10 +77,11 @@ function LogEncounterForm({ requestId, onSuccess }: LogFormProps) {
     prescriptions_note: '',
     follow_up_date: '',
   })
+  const [diagnoses, setDiagnoses] = useState<DiagnosisEntry[]>([])
+  const [medications, setMedications] = useState<MedicationEntry[]>([])
 
   const mutation = useMutation({
-    mutationFn: (body: typeof form & { request_id: string }) =>
-      api.post('/provider/encounters', body),
+    mutationFn: (body: object) => api.post('/provider/encounters', body),
     onSuccess: () => {
       setOpen(false)
       setForm({
@@ -84,6 +91,8 @@ function LogEncounterForm({ requestId, onSuccess }: LogFormProps) {
         prescriptions_note: '',
         follow_up_date: '',
       })
+      setDiagnoses([])
+      setMedications([])
       onSuccess()
     },
   })
@@ -94,7 +103,21 @@ function LogEncounterForm({ requestId, onSuccess }: LogFormProps) {
       ...form,
       request_id: requestId,
       follow_up_date: form.follow_up_date || undefined,
-    } as typeof form & { request_id: string })
+      diagnoses: diagnoses.filter((d) => d.condition_name.trim()),
+      medications: medications.filter((m) => m.drug_name.trim()).map((m) => ({
+        ...m,
+        dosage: m.dosage || undefined,
+        frequency: m.frequency || undefined,
+      })),
+    })
+  }
+
+  function updateDx(i: number, patch: Partial<DiagnosisEntry>) {
+    setDiagnoses((prev) => prev.map((d, idx) => (idx === i ? { ...d, ...patch } : d)))
+  }
+
+  function updateMed(i: number, patch: Partial<MedicationEntry>) {
+    setMedications((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...patch } : m)))
   }
 
   if (!open) {
@@ -112,8 +135,8 @@ function LogEncounterForm({ requestId, onSuccess }: LogFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-teal-100 p-6 space-y-4">
-      <h3 className="font-semibold text-slate-800 font-manrope">New Encounter</h3>
+    <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-teal-100 p-6 space-y-5">
+      <h3 className="font-semibold text-slate-800">New Encounter</h3>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
@@ -148,25 +171,80 @@ function LogEncounterForm({ requestId, onSuccess }: LogFormProps) {
         />
       </div>
 
+      {/* Diagnoses */}
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Diagnosis Notes</label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-medium text-slate-600">Diagnoses</label>
+          <button type="button" onClick={() => setDiagnoses((p) => [...p, emptyDx()])}
+            className="text-xs text-primary hover:underline">+ Add</button>
+        </div>
+        {diagnoses.map((d, i) => (
+          <div key={i} className="flex gap-2 mb-2">
+            <input
+              value={d.condition_name}
+              onChange={(e) => updateDx(i, { condition_name: e.target.value })}
+              placeholder="Condition name"
+              className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <select
+              value={d.status}
+              onChange={(e) => updateDx(i, { status: e.target.value })}
+              className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="CHRONIC">Chronic</option>
+              <option value="RESOLVED">Resolved</option>
+            </select>
+            <button type="button" onClick={() => setDiagnoses((p) => p.filter((_, j) => j !== i))}
+              className="text-slate-400 hover:text-red-400 text-lg leading-none">×</button>
+          </div>
+        ))}
         <textarea
           value={form.diagnosis_notes}
           onChange={(e) => setForm({ ...form, diagnosis_notes: e.target.value })}
-          rows={3}
-          placeholder="Clinical findings, differential diagnoses…"
-          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+          rows={2}
+          placeholder="Additional clinical notes (optional)"
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none mt-1"
         />
       </div>
 
+      {/* Medications */}
       <div>
-        <label className="block text-xs font-medium text-slate-600 mb-1">Prescriptions Note</label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-medium text-slate-600">Medications Prescribed</label>
+          <button type="button" onClick={() => setMedications((p) => [...p, emptyMed()])}
+            className="text-xs text-primary hover:underline">+ Add</button>
+        </div>
+        {medications.map((m, i) => (
+          <div key={i} className="flex gap-2 mb-2 flex-wrap">
+            <input
+              value={m.drug_name}
+              onChange={(e) => updateMed(i, { drug_name: e.target.value })}
+              placeholder="Drug name"
+              className="flex-1 min-w-[120px] border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <input
+              value={m.dosage}
+              onChange={(e) => updateMed(i, { dosage: e.target.value })}
+              placeholder="Dosage"
+              className="w-24 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <input
+              value={m.frequency}
+              onChange={(e) => updateMed(i, { frequency: e.target.value })}
+              placeholder="Frequency"
+              className="w-28 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <button type="button" onClick={() => setMedications((p) => p.filter((_, j) => j !== i))}
+              className="text-slate-400 hover:text-red-400 text-lg leading-none">×</button>
+          </div>
+        ))}
         <textarea
           value={form.prescriptions_note}
           onChange={(e) => setForm({ ...form, prescriptions_note: e.target.value })}
           rows={2}
-          placeholder="Medications prescribed, dosage, duration…"
-          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+          placeholder="Additional prescription notes (optional)"
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none mt-1"
         />
       </div>
 

@@ -16,6 +16,7 @@ from app.models.diagnosis import Diagnosis
 from app.models.document import Document
 from app.models.family_member import FamilyMember
 from app.models.lab_result import LabResult
+from app.models.medical_encounter import MedicalEncounter
 from app.models.medication import Medication
 from app.models.vital import Vital
 from app.schemas.timeline import TimelineEvent, TimelineResponse
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-_VALID_EVENT_TYPES = {"MEDICATION", "LAB_RESULT", "DIAGNOSIS", "ALLERGY", "VITAL", "DOCUMENT"}
+_VALID_EVENT_TYPES = {"MEDICATION", "LAB_RESULT", "DIAGNOSIS", "ALLERGY", "VITAL", "DOCUMENT", "VISIT"}
 
 
 # ---------------------------------------------------------------------------
@@ -230,6 +231,37 @@ async def _fetch_documents(
     return events
 
 
+async def _fetch_encounters(
+    db: AsyncSession,
+    member_id: uuid.UUID,
+    date_from: Optional[date],
+    date_to: Optional[date],
+) -> List[TimelineEvent]:
+    """Fetch MedicalEncounter rows (provider-logged visits) and convert to TimelineEvent list."""
+    stmt = select(MedicalEncounter).where(MedicalEncounter.patient_member_id == member_id)
+    if date_from is not None:
+        stmt = stmt.where(MedicalEncounter.encounter_date >= date_from)
+    if date_to is not None:
+        stmt = stmt.where(MedicalEncounter.encounter_date <= date_to)
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+    events = []
+    for row in rows:
+        subtitle = row.diagnosis_notes[:80] if row.diagnosis_notes else None
+        events.append(
+            TimelineEvent(
+                event_id=f"encounter:{row.encounter_id}",
+                event_type="VISIT",
+                event_date=row.encounter_date,
+                title=row.chief_complaint or "Medical Encounter",
+                subtitle=subtitle,
+                source_document_id=None,
+                confidence_score=None,
+            )
+        )
+    return events
+
+
 def _sort_events_desc(events: List[TimelineEvent]) -> List[TimelineEvent]:
     """Sort events by event_date descending; events with None date go last."""
     with_date = [e for e in events if e.event_date is not None]
@@ -298,6 +330,11 @@ async def get_timeline(
     if event_type is None or event_type == "DOCUMENT":
         all_events.extend(
             await _fetch_documents(db, member.member_id, parsed_date_from, parsed_date_to)
+        )
+
+    if event_type is None or event_type == "VISIT":
+        all_events.extend(
+            await _fetch_encounters(db, member.member_id, parsed_date_from, parsed_date_to)
         )
 
     # Sort merged list (newest first, None dates last)

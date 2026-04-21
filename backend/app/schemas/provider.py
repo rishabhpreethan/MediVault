@@ -72,6 +72,18 @@ class EncounterResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class EncounterDiagnosis(BaseModel):
+    condition_name: str
+    status: str = "ACTIVE"  # ACTIVE | RESOLVED | CHRONIC | UNKNOWN
+
+
+class EncounterMedication(BaseModel):
+    drug_name: str
+    dosage: Optional[str] = None
+    frequency: Optional[str] = None
+    is_active: bool = True
+
+
 class LogEncounterRequest(BaseModel):
     request_id: UUID
     encounter_date: date
@@ -79,6 +91,8 @@ class LogEncounterRequest(BaseModel):
     diagnosis_notes: Optional[str] = None
     prescriptions_note: Optional[str] = None
     follow_up_date: Optional[date] = None
+    diagnoses: list[EncounterDiagnosis] = []
+    medications: list[EncounterMedication] = []
 
 
 class PatientDataResponse(BaseModel):

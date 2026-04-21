@@ -18,8 +18,10 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
 from app.dependencies import CurrentUser, DbSession
+from app.models.diagnosis import Diagnosis
 from app.models.family_member import FamilyMember
 from app.models.medical_encounter import MedicalEncounter
+from app.models.medication import Medication
 from app.models.notification import Notification
 from app.models.passport import SharedPassport
 from app.models.provider_access_request import ProviderAccessRequest
@@ -379,6 +381,31 @@ async def log_encounter(
         follow_up_date=body.follow_up_date,
     )
     db.add(encounter)
+
+    for d in body.diagnoses:
+        db.add(Diagnosis(
+            diagnosis_id=uuid.uuid4(),
+            member_id=access_request.patient_member_id,
+            condition_name=d.condition_name,
+            status=d.status,
+            diagnosed_date=body.encounter_date,
+            is_manual_entry=True,
+            confidence_score="HIGH",
+        ))
+
+    for m in body.medications:
+        db.add(Medication(
+            medication_id=uuid.uuid4(),
+            member_id=access_request.patient_member_id,
+            drug_name=m.drug_name,
+            dosage=m.dosage,
+            frequency=m.frequency,
+            is_active=m.is_active,
+            start_date=body.encounter_date,
+            is_manual_entry=True,
+            confidence_score="HIGH",
+        ))
+
     await db.commit()
     await db.refresh(encounter)
 
