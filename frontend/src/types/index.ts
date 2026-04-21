@@ -189,6 +189,7 @@ export type NotificationType =
   | 'VAULT_ACCESS_REVOKED'
   | 'PROCESSING_COMPLETE'
   | 'EXTRACTION_FAILED'
+  | 'PROVIDER_ACCESS_REQUEST'
 
 export interface Notification {
   notification_id: string

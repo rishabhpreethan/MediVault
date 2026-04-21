@@ -1,6 +1,6 @@
 # MediVault — Project Status
 
-**Last Updated:** 2026-04-14
+**Last Updated:** 2026-04-21
 **SRS Version:** 1.2
 **Active Phase:** V1 MVP
 
@@ -119,7 +119,7 @@
 | MV-055 | Production bugfixes — Auth0 redirect flow, Celery event loop isolation, scispaCy NLP pipeline (replaces Med7), entity UUID serialization, document entity joins | P0 | Done | Developer Agent | — | feature/MV-055-056-057-fixes-and-polish |
 | MV-056 | Dashboard UI polish — remove Pulse Rate card + Sparkline, fix BP empty state, fix Blood Type badges, replace Upcoming Consult with Known Conditions (live diagnoses) | P1 | Done | Developer Agent | MV-052 | feature/MV-055-056-057-fixes-and-polish |
 | MV-057 | Records UI corrections — DISCHARGE→DISCHARGE_SUMMARY enum fix, add doctor_name to document cards | P1 | Done | Developer Agent | MV-024 | feature/MV-055-056-057-fixes-and-polish |
-| MV-058 | Make Health Passport the default landing page — route `/` → PassportPage, move Health Profile to `/health`, update nav order and labels | P1 | In Progress | Developer Agent | MV-084 | feature/MV-058-passport-as-home |
+| MV-058 | Make Health Passport the default landing page — route `/` → PassportPage, move Health Profile to `/health`, update nav order and labels | P1 | Done | Developer Agent | MV-084 | feature/MV-058-passport-as-home |
 
 ### EPIC: Health Timeline
 
@@ -235,11 +235,11 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-150 | Alembic migration 0007 — add `role VARCHAR(20) DEFAULT 'PATIENT'` + `onboarding_completed BOOLEAN DEFAULT FALSE` to users; add `height_cm FLOAT` + `weight_kg FLOAT` to family_members; create provider_profiles table (profile_id, user_id, licence_number, registration_council, licence_verified, verification_status, verified_at) | P0 | Not Started | — | — | — |
-| MV-151 | Onboarding API — POST /auth/onboarding (save DOB/height/weight/blood_group/role/allergies/licence_number, mark onboarding_completed); GET /auth/onboarding/status; POST /auth/onboarding/verify-licence (triggers async NMC check) | P0 | Not Started | — | MV-150 | — |
-| MV-152 | NMC licence verification service — query NMC public registry; async task sets verification_status to VERIFIED/FAILED; provider_profiles updated; notification sent to provider on status change | P1 | Not Started | — | MV-151 | — |
-| MV-153 | Onboarding UI — full-screen 6-step wizard: (1) DOB + height + weight, (2) blood group pill selector, (3) allergy chips input, (4) role selector PATIENT/PROVIDER, (5) licence number + council if PROVIDER, (6) completion summary; no AppShell nav visible during onboarding | P0 | Not Started | — | MV-151 | — |
-| MV-154 | Post-login guard — frontend route guard redirects to /onboarding if onboarding_completed=False; guard runs after Auth0 callback before rendering any authenticated route | P0 | Not Started | — | MV-153 | — |
+| MV-150 | Alembic migration 0007 — add `role VARCHAR(20) DEFAULT 'PATIENT'` + `onboarding_completed BOOLEAN DEFAULT FALSE` to users; add `height_cm FLOAT` + `weight_kg FLOAT` to family_members; create provider_profiles table (profile_id, user_id, licence_number, registration_council, licence_verified, verification_status, verified_at) | P0 | Done | Developer Agent | — | feature/MV-150-154-onboarding |
+| MV-151 | Onboarding API — POST /auth/onboarding (save DOB/height/weight/blood_group/role/allergies/licence_number, mark onboarding_completed); GET /auth/onboarding/status; POST /auth/onboarding/verify-licence (triggers async NMC check) | P0 | Done | Developer Agent | MV-150 | feature/MV-150-154-onboarding |
+| MV-152 | NMC licence verification service — query NMC public registry; async task sets verification_status to VERIFIED/FAILED; provider_profiles updated; notification sent to provider on status change | P1 | Done | Developer Agent | MV-151 | feature/MV-150-154-onboarding |
+| MV-153 | Onboarding UI — full-screen 6-step wizard: (1) DOB + height + weight, (2) blood group pill selector, (3) allergy chips input, (4) role selector PATIENT/PROVIDER, (5) licence number + council if PROVIDER, (6) completion summary; no AppShell nav visible during onboarding | P0 | Done | Developer Agent | MV-151 | feature/MV-150-154-onboarding |
+| MV-154 | Post-login guard — frontend route guard redirects to /onboarding if onboarding_completed=False; guard runs after Auth0 callback before rendering any authenticated route | P0 | Done | Developer Agent | MV-153 | feature/MV-150-154-onboarding |
 
 ### EPIC: Real-Time Family Circle Updates (DECISION-010)
 
@@ -254,15 +254,15 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-155 | Alembic migration 0008+0009 — create provider_access_requests (request_id, provider_user_id, patient_member_id, passport_id_used, status PENDING/ACCEPTED/DECLINED/EXPIRED, requested_at, responded_at, expires_at, notification_id); create medical_encounters (encounter_id, provider_user_id, patient_member_id, access_request_id, encounter_date, chief_complaint, diagnosis_notes, prescriptions_note, follow_up_date) | P0 | Not Started | — | MV-150 | — |
-| MV-156 | Provider access request API — POST /provider/patient-lookup (validates passport, creates access request, dispatches patient notification); GET /provider/access-request/:requestId/status (polling endpoint for provider waiting screen); POST /provider/access-request/:requestId/respond (patient accepts/declines); background task expires PENDING requests after 15 min | P0 | Not Started | — | MV-155, MV-151 | — |
-| MV-157 | Provider patient data API — GET /provider/patient/:requestId (returns patient profile, timeline, lab trend data, encounters; only accessible when request status=ACCEPTED); POST /provider/encounters (log encounter against accepted request_id); GET /provider/patient/:requestId/encounters | P0 | Not Started | — | MV-156 | — |
-| MV-158 | Provider patient view UI — /provider/patient/:requestId route (PROVIDER role guard); panels: Identity & Baseline, Health Timeline, Lab Trend Chart (reuse InsightsPage chart component), Treatment Pathway Graph, Log Encounter form; read-only for all patient data panels | P1 | Not Started | — | MV-157, MV-160 | — |
-| MV-159 | Provider dashboard UI — /provider route; passport UUID entry field (or QR scan button placeholder); pending/waiting screen with real-time poll of access request status; declined/expired error states with retry; route added to App.tsx with require_provider_role frontend guard | P1 | Not Started | — | MV-156 | — |
+| MV-155 | Alembic migration 0008+0009 — create provider_access_requests (request_id, provider_user_id, patient_member_id, passport_id_used, status PENDING/ACCEPTED/DECLINED/EXPIRED, requested_at, responded_at, expires_at, notification_id); create medical_encounters (encounter_id, provider_user_id, patient_member_id, access_request_id, encounter_date, chief_complaint, diagnosis_notes, prescriptions_note, follow_up_date) | P0 | Done | Developer Agent | MV-150 | feature/MV-155-163-provider-workflow |
+| MV-156 | Provider access request API — POST /provider/patient-lookup (validates passport, creates access request, dispatches patient notification); GET /provider/access-request/:requestId/status (polling endpoint for provider waiting screen); POST /provider/access-request/:requestId/respond (patient accepts/declines); background task expires PENDING requests after 15 min | P0 | Done | Developer Agent | MV-155, MV-151 | feature/MV-155-163-provider-workflow |
+| MV-157 | Provider patient data API — GET /provider/patient/:requestId (returns patient profile, timeline, lab trend data, encounters; only accessible when request status=ACCEPTED); POST /provider/encounters (log encounter against accepted request_id); GET /provider/patient/:requestId/encounters | P0 | Done | Developer Agent | MV-156 | feature/MV-155-163-provider-workflow |
+| MV-158 | Provider patient view UI — /provider/patient/:requestId route (PROVIDER role guard); panels: Identity & Baseline, Health Timeline, Lab Trend Chart (reuse InsightsPage chart component), Treatment Pathway Graph, Log Encounter form; read-only for all patient data panels | P1 | Done | Developer Agent | MV-157, MV-160 | feature/MV-155-163-provider-workflow |
+| MV-159 | Provider dashboard UI — /provider route; passport UUID entry field (or QR scan button placeholder); pending/waiting screen with real-time poll of access request status; declined/expired error states with retry; route added to App.tsx with require_provider_role frontend guard | P1 | Done | Developer Agent | MV-156 | feature/MV-155-163-provider-workflow |
 | MV-160 | Treatment pathway / pathology graph component — chronological vertical narrative: diagnoses + encounters + medications rendered as labelled nodes on a timeline spine; "Clinical Curator" aesthetic per stitch_health_passport/treatment_pathway/DESIGN.md (Manrope headlines, teal primary, no-border surface nesting, ambient shadows); used on provider patient view and optionally on patient's own passport page | P2 | Not Started | — | MV-157 | — |
 | MV-161 | Patient passport onboarding data panel — update PassportManagePage and public passport view to show health baseline card: computed age (from DOB), height/weight (if provided), blood group, allergy list; data sourced from onboarding fields; blocked until MV-153 complete | P2 | Not Started | — | MV-153 | — |
 | MV-162 | Patient encounter history feed — patient-facing view of all provider encounters logged for them; accessible from Health Profile or Notifications; shows encounter date, provider name, diagnosis notes, prescriptions note, follow-up date | P2 | Not Started | — | MV-157 | — |
-| MV-163 | Provider access request notification actions — extend notification centre to render Accept/Decline action buttons inline on PROVIDER_ACCESS_REQUEST notifications; POST /provider/access-request/:id/respond on tap; notification updates to show responded state | P0 | Not Started | — | MV-156, MV-138 | — |
+| MV-163 | Provider access request notification actions — extend notification centre to render Accept/Decline action buttons inline on PROVIDER_ACCESS_REQUEST notifications; POST /provider/access-request/:id/respond on tap; notification updates to show responded state | P0 | Done | Developer Agent | MV-156, MV-138 | feature/MV-155-163-provider-workflow |
 
 ---
 
@@ -411,3 +411,13 @@
 | 2026-04-20 | Developer Agent | Completed MV-165 — useFamilyCircleEvents hook (fetch + ReadableStream, auth header, 5s reconnect); mounted in FamilyCirclePage; refetchInterval removed from useFamilyCircle | MV-165 | feature/MV-164-165-sse-family-updates |
 | 2026-04-20 | Developer Agent | Completed MV-149 — RecordsPage: UploadModal replaced with ComingSoonModal (clock icon, explanatory copy, teal CTA); both Import Record triggers wired to Coming Soon state; backend pipeline untouched | MV-149 | feature/MV-148-149-quick-wins |
 | 2026-04-20 | Developer Agent | Completed MV-148 — FamilyCirclePage: NodeDesc type split into 'managed' | 'linked' | 'pending' | 'self' | 'add'; managed profiles render slate badge "Managed"; linked accounts render teal-accent ring + "Linked Account" badge; TypeScript clean | MV-148 | feature/MV-148-149-quick-wins |
+| 2026-04-20 | Rishabh | Merged PR #59 (MV-150–MV-154) — User Onboarding epic | MV-150, MV-151, MV-152, MV-153, MV-154 | — |
+| 2026-04-21 | neerajmenon4 | Bug fix on main (commit 1a0d593): family circle tree hierarchy, inviter visibility, and onboarding full name display | — | — |
+| 2026-04-21 | neerajmenon4 | STATUS.md reconciled — MV-058 and MV-150–MV-154 marked Done to reflect merged PRs | MV-058, MV-150, MV-151, MV-152, MV-153, MV-154 | — |
+| 2026-04-21 | Developer Agent | Completed MV-155 — Alembic migration 0008: provider_access_requests + medical_encounters tables; SQLAlchemy ORM models created; added to models/__init__.py | MV-155 | feature/MV-155-163-provider-workflow |
+| 2026-04-21 | Developer Agent | Completed MV-156 — POST /provider/patient-lookup (validates passport, creates PENDING request, dispatches PROVIDER_ACCESS_REQUEST notification); GET /provider/access-requests/:id/status (polling + auto-expire); POST /provider/access-requests/:id/respond (patient accept/decline) | MV-156 | feature/MV-155-163-provider-workflow |
+| 2026-04-21 | Developer Agent | Completed MV-157 — GET /provider/patient/:requestId (patient summary + encounters; ACCEPTED guard); POST /provider/encounters (log encounter); GET /provider/patient/:requestId/encounters | MV-157 | feature/MV-155-163-provider-workflow |
+| 2026-04-21 | Developer Agent | Completed MV-158 — ProviderPatientPage: Identity & Baseline stats grid, encounter history feed with expand/collapse, LogEncounterForm modal; route /provider/patient/:requestId with RequireProvider guard | MV-158 | feature/MV-155-163-provider-workflow |
+| 2026-04-21 | Developer Agent | Completed MV-159 — ProviderDashboardPage: passport UUID entry form, 3s poll waiting screen, declined/expired/error states; route /provider; RequireProvider guard; Provider nav link in AppShell (visible only for PROVIDER role) | MV-159 | feature/MV-155-163-provider-workflow |
+| 2026-04-21 | Developer Agent | Completed MV-163 — NotificationCentre: ProviderAccessRow renders Accept/Decline buttons inline for PROVIDER_ACCESS_REQUEST notifications; responds via POST /provider/access-requests/:id/respond; shows responded state; PROVIDER_ACCESS_REQUEST type added to types/index.ts | MV-163 | feature/MV-155-163-provider-workflow |
+| 2026-04-21 | Developer Agent | Created scripts/seed_doctor.py — promotes existing user to PROVIDER by email (--email flag) or creates dev|doctor test user (--create-dev flag); idempotent | — | — |

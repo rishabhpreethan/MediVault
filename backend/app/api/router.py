@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.health import router as health_router
 from app.api.auth import router as auth_router
 from app.api.onboarding import router as onboarding_router
+from app.api.provider import router as provider_router
 from app.api.charts import router as charts_router
 from app.api.corrections import router as corrections_router
 from app.api.documents import router as documents_router
@@ -30,4 +31,5 @@ api_router.include_router(family_circle_router, tags=["family-circle"])
 api_router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(passport_router, prefix="/passport", tags=["passport"])
 api_router.include_router(profile_router, prefix="/profile", tags=["profile"])
+api_router.include_router(provider_router, prefix="/provider", tags=["provider"])
 api_router.include_router(timeline_router, prefix="/timeline", tags=["timeline"])

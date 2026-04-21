@@ -14,6 +14,9 @@ from app.models.correction_audit import CorrectionAudit
 from app.models.auth_audit import AuthAuditLog
 from app.models.family_circle import Family, FamilyInvitation, FamilyMembership, VaultAccessGrant
 from app.models.notification import Notification
+from app.models.provider_profile import ProviderProfile
+from app.models.provider_access_request import ProviderAccessRequest
+from app.models.medical_encounter import MedicalEncounter
 
 __all__ = [
     "User",
@@ -35,4 +38,7 @@ __all__ = [
     "FamilyMembership",
     "VaultAccessGrant",
     "Notification",
+    "ProviderProfile",
+    "ProviderAccessRequest",
+    "MedicalEncounter",
 ]

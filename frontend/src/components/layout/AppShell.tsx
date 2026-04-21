@@ -1,9 +1,23 @@
 import { useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useActiveMemberDetails, useSetActiveMember } from '../../hooks/useFamily'
 import { useUnreadCount } from '../../hooks/useNotifications'
 import { SessionManager } from '../common/SessionManager'
 import { NotificationCentre } from '../common/NotificationCentre'
+import { api } from '../../lib/api'
+
+function useIsProvider(): boolean {
+  const { data } = useQuery<{ onboarding_completed: boolean; role: string }>({
+    queryKey: ['onboarding-status'],
+    queryFn: async () => {
+      const { data } = await api.get('/auth/onboarding/status')
+      return data
+    },
+    staleTime: 60_000,
+  })
+  return data?.role === 'PROVIDER'
+}
 
 // ── Inline SVG icons ───────────────────────────────────────────────────────
 
@@ -82,6 +96,24 @@ function IconFamily() {
   )
 }
 
+function IconProvider() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-5 h-5"
+      aria-hidden="true"
+    >
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+    </svg>
+  )
+}
+
 function IconSettings() {
   return (
     <svg
@@ -144,6 +176,11 @@ function TopNav() {
   const [notifOpen, setNotifOpen] = useState(false)
   const { data: unreadData } = useUnreadCount()
   const unreadCount = unreadData?.count ?? 0
+  const isProvider = useIsProvider()
+
+  const visibleNavItems = isProvider
+    ? [...navItems, { to: '/provider', label: 'Provider', Icon: IconProvider }]
+    : navItems
 
   return (
     <header
@@ -157,7 +194,7 @@ function TopNav() {
 
       {/* Nav links */}
       <nav className="flex items-center gap-8" aria-label="Primary navigation">
-        {navItems.map(({ to, label, end }) => (
+        {visibleNavItems.map(({ to, label, end }) => (
           <NavLink
             key={to}
             to={to}
@@ -222,13 +259,18 @@ function TopNav() {
 
 export function BottomNav() {
   const location = useLocation()
+  const isProvider = useIsProvider()
+
+  const visibleNavItems = isProvider
+    ? [...navItems, { to: '/provider', label: 'Provider', Icon: IconProvider }]
+    : navItems
 
   return (
     <nav
       className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-slate-100 px-4 py-3 flex justify-around items-center z-50 md:hidden"
       aria-label="Bottom navigation"
     >
-      {navItems.map(({ to, label, Icon, end }) => {
+      {visibleNavItems.map(({ to, label, Icon, end }) => {
         const isActive = end
           ? location.pathname === to
           : location.pathname.startsWith(to)

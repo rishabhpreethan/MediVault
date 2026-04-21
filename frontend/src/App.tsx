@@ -23,6 +23,35 @@ import { AccountSettingsPage } from './pages/settings/AccountSettingsPage'
 import { FamilyCirclePage } from './pages/family/FamilyCirclePage'
 import { InviteAcceptancePage } from './pages/family/InviteAcceptancePage'
 import { OnboardingPage } from './pages/onboarding/OnboardingPage'
+import { ProviderDashboardPage } from './pages/provider/ProviderDashboardPage'
+import { ProviderPatientPage } from './pages/provider/ProviderPatientPage'
+
+// ── Provider role guard ────────────────────────────────────────────────────
+
+function RequireProvider({ children }: { children: React.ReactNode }) {
+  const { data, isLoading } = useQuery<{ onboarding_completed: boolean; role: string }>({
+    queryKey: ['onboarding-status'],
+    queryFn: async () => {
+      const { data } = await api.get('/auth/onboarding/status')
+      return data
+    },
+    staleTime: 60_000,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
+  if (!data || data.role !== 'PROVIDER') {
+    return <Navigate to="/" replace />
+  }
+
+  return <>{children}</>
+}
 
 // ── Onboarding guard ───────────────────────────────────────────────────────
 
@@ -89,6 +118,30 @@ export default function App() {
                 <Route path="/settings" element={<AccountSettingsPage />} />
                 <Route path="/family" element={<FamilyCirclePage />} />
               </Route>
+            </Route>
+
+            {/* Provider routes — PROVIDER role only, no AppShell wrapping */}
+            <Route element={<AuthGuard />}>
+              <Route
+                path="/provider"
+                element={
+                  <RequireOnboarding>
+                    <RequireProvider>
+                      <ProviderDashboardPage />
+                    </RequireProvider>
+                  </RequireOnboarding>
+                }
+              />
+              <Route
+                path="/provider/patient/:requestId"
+                element={
+                  <RequireOnboarding>
+                    <RequireProvider>
+                      <ProviderPatientPage />
+                    </RequireProvider>
+                  </RequireOnboarding>
+                }
+              />
             </Route>
           </Routes>
         </BrowserRouter>

@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNotifications, useMarkRead, useMarkAllRead } from '../../hooks/useNotifications'
+import { api } from '../../lib/api'
 import type { Notification } from '../../types'
 
 // ── Relative time helper ───────────────────────────────────────────────────
@@ -17,11 +19,73 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString()
 }
 
+// ── Provider access request row (MV-163) ──────────────────────────────────
+
+function ProviderAccessRow({ notification, onClose }: { notification: Notification; onClose: () => void }) {
+  const qc = useQueryClient()
+  const markRead = useMarkRead()
+  const [responded, setResponded] = useState<'ACCEPTED' | 'DECLINED' | null>(null)
+
+  const requestId = notification.metadata?.request_id as string | undefined
+
+  const respond = useMutation({
+    mutationFn: (action: 'accept' | 'decline') =>
+      api.post(`/provider/access-requests/${requestId}/respond`, { action }),
+    onSuccess: (_data, action) => {
+      setResponded(action === 'accept' ? 'ACCEPTED' : 'DECLINED')
+      markRead.mutate(notification.notification_id)
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+
+  return (
+    <div className="px-4 py-3 flex items-start gap-3 bg-teal-50/40 border-b border-teal-100 last:border-0">
+      <span className="mt-1.5 shrink-0 w-2 h-2 rounded-full">
+        {!notification.is_read && !responded && (
+          <span className="block w-2 h-2 rounded-full bg-teal-500" aria-label="Unread" />
+        )}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-slate-900">{notification.title}</p>
+        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{notification.body}</p>
+        <p className="text-xs text-slate-400 mt-1">{relativeTime(notification.created_at)}</p>
+
+        {responded ? (
+          <p className={`text-xs font-medium mt-2 ${responded === 'ACCEPTED' ? 'text-teal-600' : 'text-slate-400'}`}>
+            {responded === 'ACCEPTED' ? 'Access granted' : 'Access declined'}
+          </p>
+        ) : (
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => respond.mutate('accept')}
+              disabled={respond.isPending}
+              className="bg-primary text-white text-xs font-medium rounded-lg px-3 py-1.5 hover:bg-teal-700 disabled:opacity-50"
+            >
+              Accept
+            </button>
+            <button
+              onClick={() => respond.mutate('decline')}
+              disabled={respond.isPending}
+              className="border border-slate-200 text-slate-600 text-xs font-medium rounded-lg px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
+            >
+              Decline
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Single notification row ────────────────────────────────────────────────
 
 function NotificationRow({ notification, onClose }: { notification: Notification; onClose: () => void }) {
   const navigate = useNavigate()
   const markRead = useMarkRead()
+
+  if (notification.type === 'PROVIDER_ACCESS_REQUEST') {
+    return <ProviderAccessRow notification={notification} onClose={onClose} />
+  }
 
   function handleClick() {
     if (!notification.is_read) {
