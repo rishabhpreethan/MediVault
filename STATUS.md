@@ -254,14 +254,14 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-166 | Passport page — always show full passport_id UUID (copyable); auto-generate 365-day passport on first load if none exists | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
-| MV-167 | Timeline VISIT event — collapsible card with full encounter data; diagnoses/medications inside VISIT card only (not as separate cards) | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
-| MV-168 | Provider encounter form — pre-populated rows; structured medication timing (Morning/Noon/Night + food timing) | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
-| MV-169 | Delete PROVIDER_ACCESS_REQUEST notification from DB after patient responds | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
-| MV-170 | Timeline fix — encounter-linked diagnoses/medications have encounter_id FK; timeline excludes them as separate cards; VISIT metadata includes structured lists | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
-| MV-171 | DB cleanup — clear all existing notifications (clear_notifications.py script) | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
-| MV-172 | Family circle — remove linked members / leave family (DELETE /family/memberships/{id}); "Request vault access" button on linked cards | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
-| MV-173 | Vault access request notification flow — FAMILY_VAULT_ACCESS_REQUEST notification type; accept creates VaultAccessGrant; FamilyVaultAccessRow in NotificationCentre | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
+| MV-166 | Passport page — always show full passport_id UUID (copyable); auto-generate 365-day passport on first load if none exists | P1 | Done | neerajmenon4 | — | feature/MV-166-169-ux-fixes |
+| MV-167 | Timeline VISIT event — collapsible card with full encounter data; diagnoses/medications inside VISIT card only (not as separate cards) | P1 | Done | neerajmenon4 | — | feature/MV-166-169-ux-fixes |
+| MV-168 | Provider encounter form — pre-populated rows; structured medication timing (Morning/Noon/Night + food timing) | P1 | Done | neerajmenon4 | — | feature/MV-166-169-ux-fixes |
+| MV-169 | Delete PROVIDER_ACCESS_REQUEST notification from DB after patient responds | P1 | Done | neerajmenon4 | — | feature/MV-166-169-ux-fixes |
+| MV-170 | Timeline fix — encounter-linked diagnoses/medications have encounter_id FK; timeline excludes them as separate cards; VISIT metadata includes structured lists | P1 | Done | neerajmenon4 | — | feature/MV-166-169-ux-fixes |
+| MV-171 | DB cleanup — clear all existing notifications (clear_notifications.py script) | P1 | Done | neerajmenon4 | — | feature/MV-166-169-ux-fixes |
+| MV-172 | Family circle — remove linked members / leave family (DELETE /family/memberships/{id}); "Request vault access" button on linked cards | P1 | Done | neerajmenon4 | — | feature/MV-166-169-ux-fixes |
+| MV-173 | Vault access request notification flow — FAMILY_VAULT_ACCESS_REQUEST notification type; accept creates VaultAccessGrant; FamilyVaultAccessRow in NotificationCentre | P1 | Done | neerajmenon4 | — | feature/MV-166-169-ux-fixes |
 
 ### EPIC: Provider / Doctor Workflow (DECISION-009)
 
@@ -442,3 +442,4 @@
 | 2026-04-22 | Developer Agent | Completed MV-170 — Migration 0009 adds encounter_id FK to diagnoses/medications; log_encounter sets FK on created records; _fetch_diagnoses/_fetch_medications exclude encounter-linked rows; _fetch_encounters includes structured diagnoses/medications in metadata; VisitEncounterCard renders structured lists | MV-170 | feature/MV-166-169-ux-fixes |
 | 2026-04-22 | Developer Agent | Completed MV-171 — scripts/clear_notifications.py: async DELETE all notifications from DB; run via python3 scripts/clear_notifications.py | MV-171 | feature/MV-166-169-ux-fixes |
 | 2026-04-22 | Developer Agent | Completed MV-172+MV-173 — DELETE /family/memberships/{id} for leaving/removing linked members; POST /family/vault-access-requests sends FAMILY_VAULT_ACCESS_REQUEST notification; POST /family/vault-access-requests/{id}/respond creates VaultAccessGrant on accept; FamilyCirclePage: linked nodes have remove + request access buttons; NotificationCentre: FamilyVaultAccessRow for accept/decline vault access requests | MV-172, MV-173 | feature/MV-166-169-ux-fixes |
+| 2026-04-22 | neerajmenon4 | Fixed 403 Forbidden on delegated vault access — replaced require_member_access (owner-only) with require_vault_access in documents, profile, charts, timeline, entity_crud endpoints; fixed VaultBanner cross-user name via sessionStorage; fixed isAdmin UUID comparison bug; PR #62 opened and merged | MV-166–MV-173 | feature/MV-166-169-ux-fixes → main |
