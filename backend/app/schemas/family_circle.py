@@ -44,6 +44,7 @@ class FamilyMembershipResponse(BaseModel):
     family_owner_user_id: Optional[uuid.UUID] = None
     family_owner_name: Optional[str] = None
     relationship: Optional[str] = None
+    primary_member_id: Optional[uuid.UUID] = None
 
     model_config = {"from_attributes": True}
 

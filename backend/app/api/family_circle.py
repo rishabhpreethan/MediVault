@@ -32,6 +32,7 @@ from app.models.family_circle import (
     FamilyMembership,
     VaultAccessGrant,
 )
+from app.models.notification import Notification
 from app.models.family_member import FamilyMember
 from app.models.user import User
 from app.schemas.family import FamilyMemberResponse
@@ -91,6 +92,7 @@ def _membership_to_response(
     family_owner_user_id: uuid.UUID | None = None,
     family_owner_name: str | None = None,
     relationship: str | None = None,
+    primary_member_id: uuid.UUID | None = None,
 ) -> FamilyMembershipResponse:
     return FamilyMembershipResponse(
         membership_id=m.membership_id,
@@ -102,6 +104,7 @@ def _membership_to_response(
         family_owner_user_id=family_owner_user_id,
         family_owner_name=family_owner_name,
         relationship=relationship,
+        primary_member_id=primary_member_id,
     )
 
 
@@ -252,10 +255,12 @@ async def get_family_circle(
         for m in membership_rows:
             fam = families_by_id.get(m.family_id)
             owner_uid = fam.created_by_user_id if fam else None
-            owner_name = owners_by_user_id[owner_uid].full_name if owner_uid and owner_uid in owners_by_user_id else None
+            owner_obj = owners_by_user_id.get(owner_uid) if owner_uid else None
+            owner_name = owner_obj.full_name if owner_obj else None
+            owner_member_id = owner_obj.member_id if owner_obj else None
             inv = invitations_by_family_id.get(m.family_id)
             rel = inv.relationship if inv else None
-            memberships.append(_membership_to_response(m, owner_uid, owner_name, rel))
+            memberships.append(_membership_to_response(m, owner_uid, owner_name, rel, owner_member_id))
 
     # Members who have accepted an invitation into this user's family
     family_members: list[FamilyMembershipResponse] = []
@@ -275,7 +280,7 @@ async def get_family_circle(
                     FamilyMember.is_self == True,  # noqa: E712
                 )
             )
-            fm_names_by_user_id = {mm.user_id: mm.full_name for mm in fm_names_result.scalars().all()}
+            fm_members_by_user_id = {mm.user_id: mm for mm in fm_names_result.scalars().all()}
 
             fm_inv_result = await db.execute(
                 select(FamilyInvitation).where(
@@ -287,10 +292,12 @@ async def get_family_circle(
             fm_inv_by_user = {i.invited_user_id: i for i in fm_inv_result.scalars().all()}
 
             for m in fm_rows:
-                name = fm_names_by_user_id.get(m.user_id)
+                member_obj = fm_members_by_user_id.get(m.user_id)
+                name = member_obj.full_name if member_obj else None
+                member_id = member_obj.member_id if member_obj else None
                 inv = fm_inv_by_user.get(m.user_id)
                 rel = inv.relationship if inv else None
-                family_members.append(_membership_to_response(m, current_user.user_id, name, rel))
+                family_members.append(_membership_to_response(m, current_user.user_id, name, rel, member_id))
 
     # Pending invitations sent by this user
     if family:
@@ -1056,3 +1063,251 @@ async def toggle_can_invite(
         },
     )
     return _membership_to_response(membership)
+
+
+# ---------------------------------------------------------------------------
+# DELETE /family/memberships/{membership_id} — leave or remove from family
+# ---------------------------------------------------------------------------
+
+
+@router.delete(
+    "/family/memberships/{membership_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def delete_membership(
+    membership_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> None:
+    """Remove a family membership.
+
+    A user may delete their own membership (leave the family).
+    A family admin may delete any non-admin membership in their family.
+    """
+    result = await db.execute(
+        select(FamilyMembership).where(FamilyMembership.membership_id == membership_id)
+    )
+    membership = result.scalar_one_or_none()
+    if membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": "Membership not found"},
+        )
+
+    is_own = membership.user_id == current_user.user_id
+    if not is_own:
+        # Only family admin may remove others
+        family_result = await db.execute(
+            select(Family).where(Family.family_id == membership.family_id)
+        )
+        family = family_result.scalar_one_or_none()
+        if family is None or family.created_by_user_id != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"error": "FORBIDDEN", "message": "Only the family admin can remove members"},
+            )
+
+    affected_user_id = membership.user_id
+    await db.delete(membership)
+    await db.commit()
+
+    await publish_family_updated(str(current_user.user_id))
+    await publish_family_updated(str(affected_user_id))
+
+    logger.info(
+        "membership_deleted",
+        extra={"membership_id": str(membership_id), "user_id": str(current_user.user_id)},
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /family/vault-access-requests — request vault access from a family member
+# ---------------------------------------------------------------------------
+
+
+@router.post("/family/vault-access-requests", status_code=status.HTTP_201_CREATED)
+async def request_vault_access(
+    body: dict,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict:
+    """Send a vault access request notification to a family member.
+
+    body: { target_user_id: str }
+    The target user receives a FAMILY_VAULT_ACCESS_REQUEST notification.
+    They can accept (creates a VaultAccessGrant) or decline (deletes notification).
+    """
+    target_user_id_str = body.get("target_user_id")
+    if not target_user_id_str:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="target_user_id required")
+
+    try:
+        target_user_id = uuid.UUID(target_user_id_str)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid target_user_id")
+
+    if target_user_id == current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot request access to your own vault")
+
+    # Verify target user exists
+    target_result = await db.execute(select(User).where(User.user_id == target_user_id))
+    target_user = target_result.scalar_one_or_none()
+    if target_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target user not found")
+
+    # Verify they're in the same family circle
+    membership_result = await db.execute(
+        select(FamilyMembership).where(
+            or_(
+                (FamilyMembership.user_id == current_user.user_id),
+                (FamilyMembership.user_id == target_user_id),
+            )
+        )
+    )
+    memberships = membership_result.scalars().all()
+    requester_families = {m.family_id for m in memberships if m.user_id == current_user.user_id}
+    target_families = {m.family_id for m in memberships if m.user_id == target_user_id}
+
+    # Also check if either is a family admin sharing family with the other
+    family_ids = requester_families | target_families
+    if family_ids:
+        family_result = await db.execute(
+            select(Family).where(
+                Family.family_id.in_(family_ids),
+                or_(
+                    Family.created_by_user_id == current_user.user_id,
+                    Family.created_by_user_id == target_user_id,
+                ),
+            )
+        )
+        admin_families = {f.family_id for f in family_result.scalars().all()}
+        shared = (requester_families & target_families) | (requester_families & admin_families) | (target_families & admin_families)
+    else:
+        shared = set()
+
+    if not shared:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not in the same family circle as this user",
+        )
+
+    # Get requester's display name
+    requester_member_result = await db.execute(
+        select(FamilyMember).where(
+            FamilyMember.user_id == current_user.user_id,
+            FamilyMember.is_self == True,  # noqa: E712
+        )
+    )
+    requester_member = requester_member_result.scalar_one_or_none()
+    requester_name = requester_member.full_name if requester_member else current_user.email
+
+    notification = Notification(
+        notification_id=uuid.uuid4(),
+        user_id=target_user_id,
+        type="FAMILY_VAULT_ACCESS_REQUEST",
+        title="Vault access request",
+        body=f"{requester_name} wants to view your health records.",
+        extra_data={
+            "requester_user_id": str(current_user.user_id),
+            "requester_name": requester_name,
+        },
+    )
+    db.add(notification)
+    await db.commit()
+
+    logger.info(
+        "vault_access_request_sent",
+        extra={"requester": str(current_user.user_id), "target": str(target_user_id)},
+    )
+    return {"notification_id": str(notification.notification_id), "status": "sent"}
+
+
+# ---------------------------------------------------------------------------
+# POST /family/vault-access-requests/{notification_id}/respond
+# ---------------------------------------------------------------------------
+
+
+@router.post("/family/vault-access-requests/{notification_id}/respond", status_code=200)
+async def respond_vault_access_request(
+    notification_id: uuid.UUID,
+    body: dict,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict:
+    """Accept or decline a FAMILY_VAULT_ACCESS_REQUEST notification.
+
+    body: { action: "accept" | "decline" }
+    On accept: creates a VaultAccessGrant for the requester to view the current user's data.
+    On decline: deletes the notification.
+    """
+    action = body.get("action")
+    if action not in ("accept", "decline"):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="action must be 'accept' or 'decline'")
+
+    notif_result = await db.execute(
+        select(Notification).where(
+            Notification.notification_id == notification_id,
+            Notification.user_id == current_user.user_id,
+            Notification.type == "FAMILY_VAULT_ACCESS_REQUEST",
+        )
+    )
+    notification = notif_result.scalar_one_or_none()
+    if notification is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not found")
+
+    extra = notification.extra_data or {}
+    requester_user_id_str = extra.get("requester_user_id")
+    if not requester_user_id_str:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Malformed request notification")
+
+    requester_user_id = uuid.UUID(requester_user_id_str)
+
+    if action == "accept":
+        # Find the family that the current user admins or both belong to
+        family_result = await db.execute(
+            select(Family).where(Family.created_by_user_id == current_user.user_id)
+        )
+        family = family_result.scalar_one_or_none()
+        if family is None:
+            # Fall back to any shared family
+            mem_result = await db.execute(
+                select(FamilyMembership).where(FamilyMembership.user_id == current_user.user_id)
+            )
+            memberships = mem_result.scalars().all()
+            family_id = memberships[0].family_id if memberships else None
+        else:
+            family_id = family.family_id
+
+        if family_id is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No shared family found")
+
+        # Check if grant already exists
+        existing_grant = await db.execute(
+            select(VaultAccessGrant).where(
+                VaultAccessGrant.grantee_user_id == requester_user_id,
+                VaultAccessGrant.target_user_id == current_user.user_id,
+                VaultAccessGrant.family_id == family_id,
+            )
+        )
+        if existing_grant.scalar_one_or_none() is None:
+            grant = VaultAccessGrant(
+                grant_id=uuid.uuid4(),
+                family_id=family_id,
+                grantee_user_id=requester_user_id,
+                target_user_id=current_user.user_id,
+                granted_by_user_id=current_user.user_id,
+            )
+            db.add(grant)
+
+    await db.delete(notification)
+    await db.commit()
+
+    await publish_family_updated(str(requester_user_id))
+    await publish_family_updated(str(current_user.user_id))
+
+    logger.info(
+        "vault_access_request_responded",
+        extra={"action": action, "notification_id": str(notification_id), "user_id": str(current_user.user_id)},
+    )
+    return {"status": "accepted" if action == "accept" else "declined"}

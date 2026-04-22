@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNotifications, useMarkRead, useMarkAllRead } from '../../hooks/useNotifications'
@@ -23,17 +23,13 @@ function relativeTime(iso: string): string {
 
 function ProviderAccessRow({ notification, onClose }: { notification: Notification; onClose: () => void }) {
   const qc = useQueryClient()
-  const markRead = useMarkRead()
-  const [responded, setResponded] = useState<'ACCEPTED' | 'DECLINED' | null>(null)
-
   const requestId = notification.metadata?.request_id as string | undefined
 
   const respond = useMutation({
     mutationFn: (action: 'accept' | 'decline') =>
       api.post(`/provider/access-requests/${requestId}/respond`, { action }),
-    onSuccess: (_data, action) => {
-      setResponded(action === 'accept' ? 'ACCEPTED' : 'DECLINED')
-      markRead.mutate(notification.notification_id)
+    onSuccess: () => {
+      // Notification is deleted server-side on respond — refresh the list
       qc.invalidateQueries({ queryKey: ['notifications'] })
     },
   })
@@ -41,7 +37,7 @@ function ProviderAccessRow({ notification, onClose }: { notification: Notificati
   return (
     <div className="px-4 py-3 flex items-start gap-3 bg-teal-50/40 border-b border-teal-100 last:border-0">
       <span className="mt-1.5 shrink-0 w-2 h-2 rounded-full">
-        {!notification.is_read && !responded && (
+        {!notification.is_read && (
           <span className="block w-2 h-2 rounded-full bg-teal-500" aria-label="Unread" />
         )}
       </span>
@@ -50,10 +46,8 @@ function ProviderAccessRow({ notification, onClose }: { notification: Notificati
         <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{notification.body}</p>
         <p className="text-xs text-slate-400 mt-1">{relativeTime(notification.created_at)}</p>
 
-        {responded ? (
-          <p className={`text-xs font-medium mt-2 ${responded === 'ACCEPTED' ? 'text-teal-600' : 'text-slate-400'}`}>
-            {responded === 'ACCEPTED' ? 'Access granted' : 'Access declined'}
-          </p>
+        {respond.isPending ? (
+          <p className="text-xs text-slate-400 mt-2">Responding…</p>
         ) : (
           <div className="flex gap-2 mt-2">
             <button
@@ -77,6 +71,59 @@ function ProviderAccessRow({ notification, onClose }: { notification: Notificati
   )
 }
 
+// ── Family vault access request row ───────────────────────────────────────
+
+function FamilyVaultAccessRow({ notification, onClose: _onClose }: { notification: Notification; onClose: () => void }) {
+  const qc = useQueryClient()
+  const notificationId = notification.notification_id
+
+  const respond = useMutation({
+    mutationFn: (action: 'accept' | 'decline') =>
+      api.post(`/family/vault-access-requests/${notificationId}/respond`, { action }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+      qc.invalidateQueries({ queryKey: ['vault-access-grants'] })
+      qc.invalidateQueries({ queryKey: ['family-circle'] })
+    },
+  })
+
+  return (
+    <div className="px-4 py-3 flex items-start gap-3 bg-blue-50/40 border-b border-blue-100 last:border-0">
+      <span className="mt-1.5 shrink-0 w-2 h-2 rounded-full">
+        {!notification.is_read && (
+          <span className="block w-2 h-2 rounded-full bg-blue-500" aria-label="Unread" />
+        )}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-slate-900">{notification.title}</p>
+        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{notification.body}</p>
+        <p className="text-xs text-slate-400 mt-1">{relativeTime(notification.created_at)}</p>
+
+        {respond.isPending ? (
+          <p className="text-xs text-slate-400 mt-2">Responding…</p>
+        ) : (
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => respond.mutate('accept')}
+              disabled={respond.isPending}
+              className="bg-blue-600 text-white text-xs font-medium rounded-lg px-3 py-1.5 hover:bg-blue-700 disabled:opacity-50"
+            >
+              Allow access
+            </button>
+            <button
+              onClick={() => respond.mutate('decline')}
+              disabled={respond.isPending}
+              className="border border-slate-200 text-slate-600 text-xs font-medium rounded-lg px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
+            >
+              Decline
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Single notification row ────────────────────────────────────────────────
 
 function NotificationRow({ notification, onClose }: { notification: Notification; onClose: () => void }) {
@@ -85,6 +132,10 @@ function NotificationRow({ notification, onClose }: { notification: Notification
 
   if (notification.type === 'PROVIDER_ACCESS_REQUEST') {
     return <ProviderAccessRow notification={notification} onClose={onClose} />
+  }
+
+  if (notification.type === 'FAMILY_VAULT_ACCESS_REQUEST') {
+    return <FamilyVaultAccessRow notification={notification} onClose={onClose} />
   }
 
   function handleClick() {

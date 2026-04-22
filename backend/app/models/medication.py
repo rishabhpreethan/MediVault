@@ -21,6 +21,12 @@ class Medication(Base):
     document_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("documents.document_id", ondelete="SET NULL"), nullable=True
     )
+    encounter_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("medical_encounters.encounter_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     drug_name: Mapped[str] = mapped_column(String(255), nullable=False)
     drug_name_normalized: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     dosage: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import CurrentUser, DbSession, require_member_access
+from app.dependencies import CurrentUser, DbSession, require_vault_access
 from app.models.allergy import Allergy
 from app.models.diagnosis import Diagnosis
 from app.models.document import Document
@@ -48,7 +48,7 @@ async def _load_member_or_404(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Family member not found",
         )
-    require_member_access(member.user_id, current_user)
+    await require_vault_access(member_id, current_user, db)
     return member
 
 
@@ -69,9 +69,12 @@ async def _fetch_medications(
     db: AsyncSession,
     member_id: uuid.UUID,
 ) -> List[TimelineEvent]:
-    """Fetch all Medication rows and convert to TimelineEvent list."""
+    """Fetch all Medication rows and convert to TimelineEvent list. Excludes encounter-linked records."""
     result = await db.execute(
-        select(Medication).where(Medication.member_id == member_id)
+        select(Medication).where(
+            Medication.member_id == member_id,
+            Medication.encounter_id.is_(None),
+        )
     )
     rows = result.scalars().all()
     events = []
@@ -127,9 +130,12 @@ async def _fetch_diagnoses(
     db: AsyncSession,
     member_id: uuid.UUID,
 ) -> List[TimelineEvent]:
-    """Fetch Diagnosis rows and convert to TimelineEvent list."""
+    """Fetch Diagnosis rows and convert to TimelineEvent list. Excludes encounter-linked records."""
     result = await db.execute(
-        select(Diagnosis).where(Diagnosis.member_id == member_id)
+        select(Diagnosis).where(
+            Diagnosis.member_id == member_id,
+            Diagnosis.encounter_id.is_(None),
+        )
     )
     rows = result.scalars().all()
     events = []
@@ -245,18 +251,49 @@ async def _fetch_encounters(
         stmt = stmt.where(MedicalEncounter.encounter_date <= date_to)
     result = await db.execute(stmt)
     rows = result.scalars().all()
+    if not rows:
+        return []
+
+    # Batch-load linked diagnoses and medications
+    enc_ids = [row.encounter_id for row in rows]
+    diag_result = await db.execute(
+        select(Diagnosis).where(Diagnosis.encounter_id.in_(enc_ids))
+    )
+    med_result = await db.execute(
+        select(Medication).where(Medication.encounter_id.in_(enc_ids))
+    )
+    diag_by_enc: dict = {}
+    for d in diag_result.scalars().all():
+        diag_by_enc.setdefault(d.encounter_id, []).append(
+            {"condition_name": d.condition_name, "status": d.status}
+        )
+    med_by_enc: dict = {}
+    for m in med_result.scalars().all():
+        med_by_enc.setdefault(m.encounter_id, []).append(
+            {"drug_name": m.drug_name, "dosage": m.dosage, "frequency": m.frequency, "is_active": m.is_active}
+        )
+
     events = []
     for row in rows:
-        subtitle = row.diagnosis_notes[:80] if row.diagnosis_notes else None
+        subtitle = row.chief_complaint or (row.diagnosis_notes[:60] if row.diagnosis_notes else None)
         events.append(
             TimelineEvent(
                 event_id=f"encounter:{row.encounter_id}",
                 event_type="VISIT",
                 event_date=row.encounter_date,
-                title=row.chief_complaint or "Medical Encounter",
+                title="Medical Encounter",
                 subtitle=subtitle,
                 source_document_id=None,
                 confidence_score=None,
+                metadata={
+                    "encounter_id": str(row.encounter_id),
+                    "chief_complaint": row.chief_complaint,
+                    "diagnosis_notes": row.diagnosis_notes,
+                    "prescriptions_note": row.prescriptions_note,
+                    "follow_up_date": str(row.follow_up_date) if row.follow_up_date else None,
+                    "diagnoses": diag_by_enc.get(row.encounter_id, []),
+                    "medications": med_by_enc.get(row.encounter_id, []),
+                },
             )
         )
     return events

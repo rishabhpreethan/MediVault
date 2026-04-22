@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation, Link } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useActiveMemberDetails, useSetActiveMember } from '../../hooks/useFamily'
+import { useActiveMemberDetails, useActiveMemberName, useSetActiveMember } from '../../hooks/useFamily'
 import { useUnreadCount } from '../../hooks/useNotifications'
 import { SessionManager } from '../common/SessionManager'
 import { NotificationCentre } from '../common/NotificationCentre'
@@ -325,33 +325,44 @@ export function BottomNav() {
 
 function VaultBanner() {
   const { member, isSelf } = useActiveMemberDetails()
+  const storedName = useActiveMemberName()
   const setActiveMember = useSetActiveMember()
+  const navigate = useNavigate()
 
-  if (isSelf || !member) return null
+  // Show for any non-self vault; use stored name as fallback for cross-user members
+  if (isSelf) return null
+  if (!member && !storedName) return null
+  const displayName = member?.full_name ?? storedName ?? 'member'
+
+  function handleSwitchBack() {
+    setActiveMember(null)
+    navigate('/')
+  }
 
   return (
     <div className="fixed top-0 md:top-16 left-0 w-full z-40 bg-teal-600 text-white text-sm py-2 px-4 flex items-center justify-between gap-3">
       <span className="font-medium truncate">
-        Viewing <strong>{member.full_name}</strong>'s vault
+        Viewing <strong>{displayName}</strong>'s vault
       </span>
       <button
         type="button"
-        onClick={() => setActiveMember(null)}
+        onClick={handleSwitchBack}
         className="shrink-0 inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 transition-colors rounded-full px-3 py-1 text-xs font-semibold"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5" aria-hidden="true">
           <path d="M19 12H5M12 5l-7 7 7 7" />
         </svg>
-        Switch back to my vault
+        Back to my vault
       </button>
     </div>
   )
 }
 
 export function AppShell() {
-  const { isSelf } = useActiveMemberDetails()
-  // When viewing a family member, add extra top padding to clear the banner
-  const bannerOffset = !isSelf ? 'pt-16 md:pt-28' : 'pt-6 md:pt-20'
+  const { member, isSelf } = useActiveMemberDetails()
+  const storedName = useActiveMemberName()
+  const showBanner = !isSelf && (!!member || !!storedName)
+  const bannerOffset = showBanner ? 'pt-16 md:pt-28' : 'pt-6 md:pt-20'
 
   return (
     <div className="min-h-screen bg-surface font-['Manrope',sans-serif]">

@@ -229,3 +229,47 @@ export function useToggleCanInvite() {
     },
   })
 }
+
+// ── Membership removal / leave ─────────────────────────────────────────────
+
+export function useDeleteMembership() {
+  const qc = useQueryClient()
+  return useMutation<void, Error, string>({
+    mutationFn: async (membershipId) => {
+      await api.delete(`/family/memberships/${membershipId}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['family-circle'] })
+      qc.invalidateQueries({ queryKey: ['family-members'] })
+    },
+  })
+}
+
+// ── Vault access requests ──────────────────────────────────────────────────
+
+export function useRequestVaultAccess() {
+  const qc = useQueryClient()
+  return useMutation<{ notification_id: string; status: string }, Error, string>({
+    mutationFn: async (targetUserId) => {
+      const { data } = await api.post('/family/vault-access-requests', { target_user_id: targetUserId })
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+}
+
+export function useRespondVaultAccessRequest() {
+  const qc = useQueryClient()
+  return useMutation<void, Error, { notificationId: string; action: 'accept' | 'decline' }>({
+    mutationFn: async ({ notificationId, action }) => {
+      await api.post(`/family/vault-access-requests/${notificationId}/respond`, { action })
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+      qc.invalidateQueries({ queryKey: ['vault-access-grants'] })
+      qc.invalidateQueries({ queryKey: ['family-circle'] })
+    },
+  })
+}

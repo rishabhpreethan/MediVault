@@ -250,6 +250,19 @@
 | MV-164 | Backend SSE — `services/pubsub.py` (async Redis pub/sub wrapper); `GET /family/circle/events` SSE endpoint streams `family-updated` event to authenticated user; publish on invite accept, invite decline, membership create/delete, vault grant/revoke | P1 | Done | Developer Agent | — | feature/MV-164-165-sse-family-updates |
 | MV-165 | Frontend SSE hook — `useFamilyCircleEvents` hook using native `EventSource`; on `family-updated` event calls `invalidateQueries(['family-circle'])`; hook mounted inside FamilyCirclePage; remove `refetchInterval` from `useFamilyCircle` | P1 | Done | Developer Agent | MV-164 | feature/MV-164-165-sse-family-updates |
 
+### EPIC: UX Fixes (MV-166–MV-173)
+
+| Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
+|---|---|---|---|---|---|---|
+| MV-166 | Passport page — always show full passport_id UUID (copyable); auto-generate 365-day passport on first load if none exists | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
+| MV-167 | Timeline VISIT event — collapsible card with full encounter data; diagnoses/medications inside VISIT card only (not as separate cards) | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
+| MV-168 | Provider encounter form — pre-populated rows; structured medication timing (Morning/Noon/Night + food timing) | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
+| MV-169 | Delete PROVIDER_ACCESS_REQUEST notification from DB after patient responds | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
+| MV-170 | Timeline fix — encounter-linked diagnoses/medications have encounter_id FK; timeline excludes them as separate cards; VISIT metadata includes structured lists | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
+| MV-171 | DB cleanup — clear all existing notifications (clear_notifications.py script) | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
+| MV-172 | Family circle — remove linked members / leave family (DELETE /family/memberships/{id}); "Request vault access" button on linked cards | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
+| MV-173 | Vault access request notification flow — FAMILY_VAULT_ACCESS_REQUEST notification type; accept creates VaultAccessGrant; FamilyVaultAccessRow in NotificationCentre | P1 | In Review | Developer Agent | — | feature/MV-166-169-ux-fixes |
+
 ### EPIC: Provider / Doctor Workflow (DECISION-009)
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
@@ -421,3 +434,11 @@
 | 2026-04-21 | Developer Agent | Completed MV-159 — ProviderDashboardPage: passport UUID entry form, 3s poll waiting screen, declined/expired/error states; route /provider; RequireProvider guard; Provider nav link in AppShell (visible only for PROVIDER role) | MV-159 | feature/MV-155-163-provider-workflow |
 | 2026-04-21 | Developer Agent | Completed MV-163 — NotificationCentre: ProviderAccessRow renders Accept/Decline buttons inline for PROVIDER_ACCESS_REQUEST notifications; responds via POST /provider/access-requests/:id/respond; shows responded state; PROVIDER_ACCESS_REQUEST type added to types/index.ts | MV-163 | feature/MV-155-163-provider-workflow |
 | 2026-04-21 | Developer Agent | Created scripts/seed_doctor.py — promotes existing user to PROVIDER by email (--email flag) or creates dev|doctor test user (--create-dev flag); idempotent | — | — |
+| 2026-04-22 | Developer Agent | Started MV-166, MV-167, MV-168, MV-169 — UX fixes: passport UUID visibility, timeline encounter card, encounter form, notification cleanup | MV-166, MV-167, MV-168, MV-169 | — |
+| 2026-04-22 | Developer Agent | Completed MV-166 — PassportManagePage: auto-generate 365-day passport if none exists; Medical Identity card now shows full passport_id UUID with copy button; fixed bug where shortToken(share_token) was shown instead | MV-166 | feature/MV-166-169-ux-fixes |
+| 2026-04-22 | Developer Agent | Completed MV-167 — TimelineEvent schema: added optional metadata field; _fetch_encounters populates metadata with chief_complaint/diagnosis_notes/prescriptions_note/follow_up_date; TimelineTab: added VISIT EventType, VisitEncounterCard collapsible component (purple accent, expand/collapse) | MV-167 | feature/MV-166-169-ux-fixes |
+| 2026-04-22 | Developer Agent | Completed MV-168 — LogEncounterForm: starts with 1 pre-populated diagnosis and medication row; medication frequency replaced with Morning/Noon/Night toggle chips + Before/After food selector; formatted to frequency string on submit | MV-168 | feature/MV-166-169-ux-fixes |
+| 2026-04-22 | Developer Agent | Completed MV-169 — respond_to_access_request now deletes the PROVIDER_ACCESS_REQUEST notification from DB after patient responds; ProviderAccessRow removes local responded state (notification disappears from list on refresh) | MV-169 | feature/MV-166-169-ux-fixes |
+| 2026-04-22 | Developer Agent | Completed MV-170 — Migration 0009 adds encounter_id FK to diagnoses/medications; log_encounter sets FK on created records; _fetch_diagnoses/_fetch_medications exclude encounter-linked rows; _fetch_encounters includes structured diagnoses/medications in metadata; VisitEncounterCard renders structured lists | MV-170 | feature/MV-166-169-ux-fixes |
+| 2026-04-22 | Developer Agent | Completed MV-171 — scripts/clear_notifications.py: async DELETE all notifications from DB; run via python3 scripts/clear_notifications.py | MV-171 | feature/MV-166-169-ux-fixes |
+| 2026-04-22 | Developer Agent | Completed MV-172+MV-173 — DELETE /family/memberships/{id} for leaving/removing linked members; POST /family/vault-access-requests sends FAMILY_VAULT_ACCESS_REQUEST notification; POST /family/vault-access-requests/{id}/respond creates VaultAccessGrant on accept; FamilyCirclePage: linked nodes have remove + request access buttons; NotificationCentre: FamilyVaultAccessRow for accept/decline vault access requests | MV-172, MV-173 | feature/MV-166-169-ux-fixes |

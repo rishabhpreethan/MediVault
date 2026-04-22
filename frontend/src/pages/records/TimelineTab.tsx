@@ -12,6 +12,29 @@ type EventType =
   | 'ALLERGY'
   | 'VITAL'
   | 'DOCUMENT'
+  | 'VISIT'
+
+interface VisitDiagnosis {
+  condition_name: string
+  status: string
+}
+
+interface VisitMedication {
+  drug_name: string
+  dosage: string | null
+  frequency: string | null
+  is_active: boolean
+}
+
+interface VisitMetadata {
+  encounter_id: string
+  chief_complaint: string | null
+  diagnosis_notes: string | null
+  prescriptions_note: string | null
+  follow_up_date: string | null
+  diagnoses: VisitDiagnosis[]
+  medications: VisitMedication[]
+}
 
 interface TimelineEvent {
   event_id: string
@@ -21,6 +44,7 @@ interface TimelineEvent {
   subtitle: string | null
   source_document_id: string | null
   confidence_score: string | null
+  metadata?: VisitMetadata | null
 }
 
 interface TimelineResponse {
@@ -58,7 +82,7 @@ function isCurrentMonth(isoDate: string): boolean {
 
 /**
  * Returns a Tailwind border-left color class for each event type.
- * LAB_RESULT=teal, MEDICATION=blue, DIAGNOSIS=amber, ALLERGY=red, VITAL=green, DOCUMENT=slate.
+ * LAB_RESULT=teal, MEDICATION=blue, DIAGNOSIS=amber, ALLERGY=red, VITAL=green, DOCUMENT=slate, VISIT=purple.
  */
 function eventBorderColor(type: EventType): string {
   switch (type) {
@@ -72,6 +96,8 @@ function eventBorderColor(type: EventType): string {
       return 'border-red-400'
     case 'VITAL':
       return 'border-green-400'
+    case 'VISIT':
+      return 'border-purple-400'
     case 'DOCUMENT':
     default:
       return 'border-slate-300'
@@ -93,6 +119,8 @@ function eventTypeChip(type: EventType): { label: string; className: string } {
       return { label: 'Allergy', className: 'bg-red-50 text-red-600' }
     case 'VITAL':
       return { label: 'Vital', className: 'bg-green-50 text-green-700' }
+    case 'VISIT':
+      return { label: 'Doctor Visit', className: 'bg-purple-50 text-purple-700' }
     case 'DOCUMENT':
     default:
       return { label: 'Document', className: 'bg-slate-100 text-slate-600' }
@@ -111,6 +139,162 @@ function groupByMonth(events: TimelineEvent[]): Map<string, TimelineEvent[]> {
     map.get(key)!.push(ev)
   }
   return map
+}
+
+// ── Visit encounter card (collapsible) ────────────────────────────────────
+
+function VisitEncounterCard({ event, isFirst }: { event: TimelineEvent; isFirst: boolean }) {
+  const [expanded, setExpanded] = useState(false)
+  const chip = eventTypeChip('VISIT')
+  const current = isFirst && event.event_date ? isCurrentMonth(event.event_date) : false
+
+  const dateLabel = event.event_date
+    ? current
+      ? `CURRENT • ${formatEventDate(event.event_date)}`
+      : formatEventDate(event.event_date)
+    : null
+
+  const meta = event.metadata as VisitMetadata | null | undefined
+
+  return (
+    <div className="relative">
+      <div
+        className={`absolute -left-[2.75rem] top-1 w-5 h-5 rounded-full z-10 border-4 border-white ${
+          current ? 'bg-primary-container' : 'bg-purple-100 border-purple-200'
+        }`}
+        aria-hidden="true"
+      />
+
+      <div className="space-y-3">
+        {dateLabel && (
+          <span className={`text-xs font-bold tracking-widest uppercase ${current ? 'text-primary' : 'text-on-surface-variant'}`}>
+            {dateLabel}
+          </span>
+        )}
+
+        <div className="bg-surface-container-lowest rounded-xl shadow-sm shadow-teal-900/5 border-l-4 border-purple-400 overflow-hidden">
+          {/* Header — always visible */}
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="w-full text-left px-5 pt-4 pb-3 flex items-start justify-between gap-3 hover:bg-purple-50/30 transition-colors"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded ${chip.className}`}>
+                  {chip.label}
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-on-surface leading-snug">
+                {meta?.chief_complaint || 'Medical Encounter'}
+              </h3>
+              {!expanded && meta?.diagnosis_notes && (
+                <p className="text-xs text-on-surface-variant mt-0.5 line-clamp-1">
+                  {meta.diagnosis_notes}
+                </p>
+              )}
+            </div>
+            <span className="shrink-0 text-on-surface-variant/60 mt-0.5">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </span>
+          </button>
+
+          {/* Expanded body */}
+          {expanded && (
+            <div className="px-5 pb-5 space-y-4 border-t border-purple-100/60 pt-3">
+              {/* Structured diagnoses */}
+              {meta?.diagnoses && meta.diagnoses.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">
+                    Diagnoses
+                  </p>
+                  <ul className="space-y-1">
+                    {meta.diagnoses.map((d, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm text-on-surface">
+                        <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-purple-400" />
+                        <span>{d.condition_name}</span>
+                        {d.status && d.status !== 'UNKNOWN' && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-medium">
+                            {d.status}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Structured medications */}
+              {meta?.medications && meta.medications.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">
+                    Medications
+                  </p>
+                  <ul className="space-y-2">
+                    {meta.medications.map((m, i) => (
+                      <li key={i} className="text-sm">
+                        <span className="font-medium text-on-surface">{m.drug_name}</span>
+                        {m.dosage && <span className="text-on-surface-variant"> — {m.dosage}</span>}
+                        {m.frequency && (
+                          <span className="block text-xs text-on-surface-variant mt-0.5">{m.frequency}</span>
+                        )}
+                        {!m.is_active && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium ml-1">
+                            Discontinued
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Free-text clinical notes (fallback/supplement) */}
+              {meta?.diagnosis_notes && (
+                <div>
+                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">
+                    Clinical Notes
+                  </p>
+                  <p className="text-sm text-on-surface whitespace-pre-wrap">{meta.diagnosis_notes}</p>
+                </div>
+              )}
+              {meta?.prescriptions_note && (
+                <div>
+                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">
+                    Prescription Notes
+                  </p>
+                  <p className="text-sm text-on-surface whitespace-pre-wrap">{meta.prescriptions_note}</p>
+                </div>
+              )}
+              {meta?.follow_up_date && (
+                <div>
+                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">
+                    Follow-up
+                  </p>
+                  <p className="text-sm font-medium text-purple-700">
+                    {new Date(meta.follow_up_date).toLocaleDateString('en-IN', {
+                      day: 'numeric', month: 'short', year: 'numeric',
+                    })}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
@@ -143,6 +327,9 @@ function TimelineEventCard({
   event: TimelineEvent
   isFirst: boolean
 }) {
+  if (event.event_type === 'VISIT') {
+    return <VisitEncounterCard event={event} isFirst={isFirst} />
+  }
   const chip = eventTypeChip(event.event_type)
   const borderColor = eventBorderColor(event.event_type)
   const current = isFirst && event.event_date ? isCurrentMonth(event.event_date) : false

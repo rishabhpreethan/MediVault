@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 
 from app.limiter import limiter
 
-from app.dependencies import CurrentUser, DbSession, require_member_access
+from app.dependencies import CurrentUser, DbSession, require_vault_access
 from app.models.allergy import Allergy
 from app.models.diagnosis import Diagnosis
 from app.models.document import Document
@@ -56,7 +56,7 @@ async def _load_member_or_404(
             detail="Family member not found",
         )
     # Confirm the member belongs to the current user.
-    require_member_access(member.user_id, current_user)
+    await require_vault_access(member_id, current_user, db)
     return member
 
 

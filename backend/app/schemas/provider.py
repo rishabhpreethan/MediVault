@@ -58,6 +58,18 @@ class PatientSummary(BaseModel):
     weight_kg: Optional[float] = None
 
 
+class EncounterDiagnosis(BaseModel):
+    condition_name: str
+    status: str = "ACTIVE"  # ACTIVE | RESOLVED | CHRONIC | UNKNOWN
+
+
+class EncounterMedication(BaseModel):
+    drug_name: str
+    dosage: Optional[str] = None
+    frequency: Optional[str] = None
+    is_active: bool = True
+
+
 class EncounterResponse(BaseModel):
     encounter_id: UUID
     provider_user_id: UUID
@@ -69,19 +81,9 @@ class EncounterResponse(BaseModel):
     prescriptions_note: Optional[str] = None
     follow_up_date: Optional[date] = None
     created_at: datetime
+    diagnoses: list[EncounterDiagnosis] = []
+    medications: list[EncounterMedication] = []
     model_config = ConfigDict(from_attributes=True)
-
-
-class EncounterDiagnosis(BaseModel):
-    condition_name: str
-    status: str = "ACTIVE"  # ACTIVE | RESOLVED | CHRONIC | UNKNOWN
-
-
-class EncounterMedication(BaseModel):
-    drug_name: str
-    dosage: Optional[str] = None
-    frequency: Optional[str] = None
-    is_active: bool = True
 
 
 class LogEncounterRequest(BaseModel):

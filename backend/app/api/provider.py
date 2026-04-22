@@ -28,6 +28,8 @@ from app.models.provider_access_request import ProviderAccessRequest
 from app.models.user import User
 from app.schemas.provider import (
     AccessRequestStatusResponse,
+    EncounterDiagnosis,
+    EncounterMedication,
     EncounterResponse,
     LogEncounterRequest,
     PatientDataResponse,
@@ -252,6 +254,19 @@ async def respond_to_access_request(
 
     access_request.status = "ACCEPTED" if body.action == "accept" else "DECLINED"
     access_request.responded_at = datetime.now(tz=timezone.utc)
+
+    # Delete the notification so it disappears from the patient's notification centre
+    if access_request.notification_id:
+        notif_result = await db.execute(
+            select(Notification).where(
+                Notification.notification_id == access_request.notification_id
+            )
+        )
+        notif = notif_result.scalar_one_or_none()
+        if notif:
+            await db.delete(notif)
+        access_request.notification_id = None
+
     await db.commit()
 
     logger.info(
@@ -311,6 +326,26 @@ async def get_patient_data(
     )
     encounters = encounters_result.scalars().all()
 
+    # Load linked diagnoses and medications
+    enc_ids = [e.encounter_id for e in encounters]
+    diag_by_enc: dict = {}
+    med_by_enc: dict = {}
+    if enc_ids:
+        diag_rows = (await db.execute(
+            select(Diagnosis).where(Diagnosis.encounter_id.in_(enc_ids))
+        )).scalars().all()
+        med_rows = (await db.execute(
+            select(Medication).where(Medication.encounter_id.in_(enc_ids))
+        )).scalars().all()
+        for d in diag_rows:
+            diag_by_enc.setdefault(d.encounter_id, []).append(
+                EncounterDiagnosis(condition_name=d.condition_name, status=d.status)
+            )
+        for m in med_rows:
+            med_by_enc.setdefault(m.encounter_id, []).append(
+                EncounterMedication(drug_name=m.drug_name, dosage=m.dosage, frequency=m.frequency, is_active=m.is_active)
+            )
+
     return PatientDataResponse(
         request_id=request_id,
         patient=PatientSummary(
@@ -333,6 +368,8 @@ async def get_patient_data(
                 prescriptions_note=e.prescriptions_note,
                 follow_up_date=e.follow_up_date,
                 created_at=e.created_at,
+                diagnoses=diag_by_enc.get(e.encounter_id, []),
+                medications=med_by_enc.get(e.encounter_id, []),
             )
             for e in encounters
         ],
@@ -381,22 +418,29 @@ async def log_encounter(
         follow_up_date=body.follow_up_date,
     )
     db.add(encounter)
+    await db.flush()  # ensure encounter row exists before FK-constrained children are inserted
 
+    saved_diagnoses = []
     for d in body.diagnoses:
-        db.add(Diagnosis(
+        diag = Diagnosis(
             diagnosis_id=uuid.uuid4(),
             member_id=access_request.patient_member_id,
+            encounter_id=encounter.encounter_id,
             condition_name=d.condition_name,
             status=d.status,
             diagnosed_date=body.encounter_date,
             is_manual_entry=True,
             confidence_score="HIGH",
-        ))
+        )
+        db.add(diag)
+        saved_diagnoses.append(d)
 
+    saved_medications = []
     for m in body.medications:
-        db.add(Medication(
+        med = Medication(
             medication_id=uuid.uuid4(),
             member_id=access_request.patient_member_id,
+            encounter_id=encounter.encounter_id,
             drug_name=m.drug_name,
             dosage=m.dosage,
             frequency=m.frequency,
@@ -404,7 +448,9 @@ async def log_encounter(
             start_date=body.encounter_date,
             is_manual_entry=True,
             confidence_score="HIGH",
-        ))
+        )
+        db.add(med)
+        saved_medications.append(m)
 
     await db.commit()
     await db.refresh(encounter)
@@ -427,6 +473,8 @@ async def log_encounter(
         prescriptions_note=encounter.prescriptions_note,
         follow_up_date=encounter.follow_up_date,
         created_at=encounter.created_at,
+        diagnoses=saved_diagnoses,
+        medications=saved_medications,
     )
 
 
@@ -461,6 +509,26 @@ async def list_encounters(
     )
     encounters = enc_result.scalars().all()
 
+    # Load linked diagnoses and medications for all encounters
+    enc_ids = [e.encounter_id for e in encounters]
+    diag_rows = (await db.execute(
+        select(Diagnosis).where(Diagnosis.encounter_id.in_(enc_ids))
+    )).scalars().all()
+    med_rows = (await db.execute(
+        select(Medication).where(Medication.encounter_id.in_(enc_ids))
+    )).scalars().all()
+
+    diag_by_enc: dict = {}
+    for d in diag_rows:
+        diag_by_enc.setdefault(d.encounter_id, []).append(
+            EncounterDiagnosis(condition_name=d.condition_name, status=d.status)
+        )
+    med_by_enc: dict = {}
+    for m in med_rows:
+        med_by_enc.setdefault(m.encounter_id, []).append(
+            EncounterMedication(drug_name=m.drug_name, dosage=m.dosage, frequency=m.frequency, is_active=m.is_active)
+        )
+
     return [
         EncounterResponse(
             encounter_id=e.encounter_id,
@@ -473,6 +541,8 @@ async def list_encounters(
             prescriptions_note=e.prescriptions_note,
             follow_up_date=e.follow_up_date,
             created_at=e.created_at,
+            diagnoses=diag_by_enc.get(e.encounter_id, []),
+            medications=med_by_enc.get(e.encounter_id, []),
         )
         for e in encounters
     ]
