@@ -8,17 +8,24 @@ import type { FamilyMember } from '../types'
 // the tab is closed. A custom DOM event keeps all hook instances in sync.
 
 const STORAGE_KEY = 'mv_active_member_id'
+const STORAGE_KEY_NAME = 'mv_active_member_name'
 const CHANGE_EVENT = 'mv-member-change'
 
 function readStorage(): string | null {
   return sessionStorage.getItem(STORAGE_KEY)
 }
 
-function writeStorage(id: string | null) {
+function writeStorage(id: string | null, name?: string) {
   if (id === null) {
     sessionStorage.removeItem(STORAGE_KEY)
+    sessionStorage.removeItem(STORAGE_KEY_NAME)
   } else {
     sessionStorage.setItem(STORAGE_KEY, id)
+    if (name) {
+      sessionStorage.setItem(STORAGE_KEY_NAME, name)
+    } else {
+      sessionStorage.removeItem(STORAGE_KEY_NAME)
+    }
   }
   window.dispatchEvent(new Event(CHANGE_EVENT))
 }
@@ -38,7 +45,18 @@ export function useActiveMember(): string | null {
 
 /** Returns a setter to switch the active member (pass null to reset to SELF). */
 export function useSetActiveMember() {
-  return (memberId: string | null) => writeStorage(memberId)
+  return (memberId: string | null, name?: string) => writeStorage(memberId, name)
+}
+
+/** Returns the display name stored alongside the active member (for cross-user vaults). */
+export function useActiveMemberName(): string | null {
+  const [name, setName] = useState<string | null>(() => sessionStorage.getItem(STORAGE_KEY_NAME))
+  useEffect(() => {
+    const handler = () => setName(sessionStorage.getItem(STORAGE_KEY_NAME))
+    window.addEventListener(CHANGE_EVENT, handler)
+    return () => window.removeEventListener(CHANGE_EVENT, handler)
+  }, [])
+  return name
 }
 
 // ── Family members query ───────────────────────────────────────────────────

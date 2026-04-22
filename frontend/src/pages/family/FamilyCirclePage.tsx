@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react'
 import type { FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth0 } from '@auth0/auth0-react'
 import type {
   FamilyMember,
   FamilyMembership,
@@ -14,7 +16,11 @@ import {
   useResendInvitation,
   useCreateManagedMember,
   useDeleteManagedMember,
+  useDeleteMembership,
+  useRequestVaultAccess,
+  useVaultAccessGrants,
 } from '../../hooks/useFamilyCircle'
+import { useSetActiveMember } from '../../hooks/useFamily'
 import { VaultAccessPanel } from './VaultAccessPanel'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -181,6 +187,120 @@ function curve(x1: number, y1: number, x2: number, y2: number) {
   return `M ${x1} ${y1} C ${x1} ${my} ${x2} ${my} ${x2} ${y2}`
 }
 
+// ── Delete confirmation modal ──────────────────────────────────────────────
+
+interface DeleteModalState {
+  open: boolean
+  type: 'managed' | 'linked' | 'pending'
+  name: string
+  onConfirm: () => void
+}
+
+function DeleteConfirmModal({ state, onClose }: { state: DeleteModalState; onClose: () => void }) {
+  if (!state.open) return null
+
+  const title =
+    state.type === 'managed'
+      ? `Delete ${state.name}'s profile?`
+      : state.type === 'pending'
+      ? `Cancel invitation to ${state.name}?`
+      : `Remove ${state.name} from circle?`
+
+  const body =
+    state.type === 'managed'
+      ? 'This will permanently delete their profile and all health records. This cannot be undone.'
+      : state.type === 'pending'
+      ? 'The invitation will be cancelled and they will not be able to join.'
+      : 'They will be removed from your family circle. They keep their MediVault account.'
+
+  const confirmLabel =
+    state.type === 'managed'
+      ? 'Delete profile + records'
+      : state.type === 'pending'
+      ? 'Cancel invitation'
+      : 'Remove from circle'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl p-6 space-y-4">
+        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        <p className="text-sm text-slate-500">{body}</p>
+        <div className="flex gap-3 pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors min-h-[44px]"
+          >
+            Keep
+          </button>
+          <button
+            type="button"
+            onClick={() => { state.onConfirm(); onClose() }}
+            className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors min-h-[44px]"
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Member options sheet ───────────────────────────────────────────────────
+
+type MemberOptionAction = {
+  label: string
+  variant: 'normal' | 'danger'
+  onClick: () => void
+}
+
+interface MemberOptionsState {
+  open: boolean
+  name: string
+  actions: MemberOptionAction[]
+}
+
+function MemberOptionsSheet({ state, onClose }: { state: MemberOptionsState; onClose: () => void }) {
+  if (!state.open) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative w-full sm:max-w-sm sm:mx-4 bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
+        <div className="px-5 pt-4 pb-3 border-b border-slate-100">
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Options</p>
+          <p className="text-sm font-semibold text-slate-900 mt-0.5">{state.name}</p>
+        </div>
+        <div className="divide-y divide-slate-100">
+          {state.actions.map((action, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => { action.onClick(); onClose() }}
+              className={`w-full px-5 py-4 text-sm font-medium text-left transition-colors min-h-[48px] ${
+                action.variant === 'danger'
+                  ? 'text-red-600 hover:bg-red-50'
+                  : 'text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+        <div className="p-3 bg-slate-50">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-colors min-h-[44px]"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Each node descriptor used for layout
 interface NodeDesc {
   id: string
@@ -188,26 +308,38 @@ interface NodeDesc {
   name: string
   sublabel: string
   onClick?: () => void
-  onDelete?: () => void
+  onMenu?: () => void
 }
 
 // Rendered HTML card inside foreignObject
 function NodeCard({ desc, w, h }: { desc: NodeDesc; w: number; h: number }) {
-  function handleDelete(e: React.MouseEvent) {
+  function handleMenu(e: React.MouseEvent) {
     e.stopPropagation()
-    const msg = desc.type === 'pending'
-      ? `Cancel the invitation to ${desc.name}?`
-      : `Remove ${desc.name} from your family circle? This will also delete all their documents.`
-    if (window.confirm(msg)) {
-      desc.onDelete?.()
-    }
+    desc.onMenu?.()
   }
+
   const initials = desc.name
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((s) => s[0].toUpperCase())
     .join('')
+
+  const menuBtn = desc.onMenu ? (
+    <button
+      type="button"
+      onClick={handleMenu}
+      title="Options"
+      style={{ position: 'absolute', top: 4, right: 4 }}
+      className="w-7 h-7 rounded-full flex items-center justify-center text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
+    >
+      <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5" aria-hidden="true">
+        <circle cx="12" cy="5" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="12" cy="19" r="2" />
+      </svg>
+    </button>
+  ) : null
 
   if (desc.type === 'add') {
     return (
@@ -236,19 +368,7 @@ function NodeCard({ desc, w, h }: { desc: NodeDesc; w: number; h: number }) {
         style={{ width: w, height: h, boxSizing: 'border-box', position: 'relative' }}
         className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-amber-300 bg-white shadow-sm select-none px-2"
       >
-        {desc.onDelete && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            title="Cancel invitation"
-            style={{ position: 'absolute', top: 6, right: 6 }}
-            className="w-5 h-5 rounded-full bg-slate-100 hover:bg-red-100 flex items-center justify-center transition-colors"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-slate-400 hover:text-red-500">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        )}
+        {menuBtn}
         <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center">
           <span className="text-slate-400 text-base font-bold leading-none">?</span>
         </div>
@@ -286,14 +406,14 @@ function NodeCard({ desc, w, h }: { desc: NodeDesc; w: number; h: number }) {
     )
   }
 
-  // type === 'linked' — accepted linked account (solid teal accent)
+  // type === 'linked'
   if (desc.type === 'linked') {
     return (
       <div
-        onClick={desc.onClick}
         style={{ width: w, height: h, boxSizing: 'border-box', position: 'relative' }}
-        className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-teal-200 bg-white shadow-sm select-none px-2 ${desc.onClick ? 'cursor-pointer hover:border-teal-400 hover:shadow-md transition-all' : ''}`}
+        className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-teal-200 bg-white shadow-sm select-none px-2"
       >
+        {menuBtn}
         <div className="w-11 h-11 rounded-full bg-teal-50 flex items-center justify-center ring-2 ring-teal-200">
           <span className="text-teal-700 text-sm font-semibold leading-none">{initials}</span>
         </div>
@@ -303,36 +423,20 @@ function NodeCard({ desc, w, h }: { desc: NodeDesc; w: number; h: number }) {
         <div className="flex flex-col items-center gap-0.5">
           <span className="text-[10px] text-slate-500 font-medium">{desc.sublabel}</span>
           <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700 text-[9px] font-semibold">
-            Linked Account
+            Linked
           </span>
         </div>
       </div>
     )
   }
 
-  // type === 'managed' — managed profile (slate, "Managed" badge)
+  // type === 'managed'
   return (
     <div
-      onClick={desc.onClick}
       style={{ width: w, height: h, boxSizing: 'border-box', position: 'relative' }}
-      className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white shadow-sm select-none px-2 ${desc.onClick ? 'cursor-pointer hover:border-teal-300 hover:shadow-md transition-all' : ''}`}
+      className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white shadow-sm select-none px-2"
     >
-      {desc.onDelete && (
-        <button
-          type="button"
-          onClick={handleDelete}
-          title="Remove member"
-          style={{ position: 'absolute', top: 6, right: 6 }}
-          className="w-5 h-5 rounded-full bg-slate-100 hover:bg-red-100 flex items-center justify-center transition-colors"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-slate-400 hover:text-red-500">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14H6L5 6" />
-            <path d="M10 11v6M14 11v6" />
-            <path d="M9 6V4h6v2" />
-          </svg>
-        </button>
-      )}
+      {menuBtn}
       <div className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center">
         <span className="text-slate-600 text-sm font-semibold leading-none">{initials}</span>
       </div>
@@ -352,13 +456,21 @@ function NodeCard({ desc, w, h }: { desc: NodeDesc; w: number; h: number }) {
 interface FamilyTreeProps {
   circle: FamilyCircle
   selfMember: FamilyMember | undefined
+  isAdmin: boolean
+  selfUserId: string
   onInvite: () => void
   onManageAccess: (member: FamilyMember | FamilyMembership) => void
   onDeleteMember: (memberId: string) => void
+  onDeleteMembership: (membershipId: string) => void
   onCancelInvitation: (invitationId: string) => void
+  onRequestVaultAccess: (userId: string, name: string) => void
+  onViewVault: (memberId: string, name: string) => void
+  grantedUserIds: Set<string>
+  openDeleteModal: (type: 'managed' | 'linked' | 'pending', name: string, onConfirm: () => void) => void
+  openMemberOptions: (name: string, actions: MemberOptionAction[]) => void
 }
 
-function FamilyTree({ circle, selfMember, onInvite, onManageAccess, onDeleteMember, onCancelInvitation }: FamilyTreeProps) {
+function FamilyTree({ circle, selfMember, isAdmin, selfUserId, onInvite, onManageAccess, onDeleteMember, onDeleteMembership, onCancelInvitation, onRequestVaultAccess, onViewVault, grantedUserIds, openDeleteModal, openMemberOptions }: FamilyTreeProps) {
   const managed = circle.managed_profiles
   const parents  = managed.filter((m) => m.relationship?.toUpperCase() === 'PARENT')
   const spouses  = managed.filter((m) => m.relationship?.toUpperCase() === 'SPOUSE')
@@ -367,9 +479,7 @@ function FamilyTree({ circle, selfMember, onInvite, onManageAccess, onDeleteMemb
     (m) => !['SELF', 'PARENT', 'SPOUSE', 'CHILD'].includes(m.relationship?.toUpperCase() ?? ''),
   )
   const pending = circle.pending_invitations_sent
-  // circle.memberships = families I joined (owner shown above me)
   const joinedFamilies = circle.memberships
-  // circle.family_members = people who accepted invites into my family (placed by relationship)
   const acceptedMembers = circle.family_members ?? []
   const acceptedParents   = acceptedMembers.filter((m) => m.relationship?.toUpperCase() === 'PARENT')
   const acceptedSpouses   = acceptedMembers.filter((m) => m.relationship?.toUpperCase() === 'SPOUSE')
@@ -378,77 +488,93 @@ function FamilyTree({ circle, selfMember, onInvite, onManageAccess, onDeleteMemb
     (m) => !['PARENT', 'SPOUSE', 'CHILD'].includes(m.relationship?.toUpperCase() ?? ''),
   )
 
+  function managedNode(m: FamilyMember, sublabel: string): NodeDesc {
+    const actions: MemberOptionAction[] = [
+      { label: 'View vault', variant: 'normal', onClick: () => onViewVault(m.member_id, m.full_name) },
+    ]
+    if (isAdmin) {
+      actions.push({
+        label: 'Delete member and account',
+        variant: 'danger',
+        onClick: () => openDeleteModal('managed', m.full_name, () => onDeleteMember(m.member_id)),
+      })
+    }
+    return {
+      id: m.member_id, type: 'managed' as const, name: m.full_name, sublabel,
+      onMenu: () => openMemberOptions(m.full_name, actions),
+    }
+  }
+
+  function linkedNode(ms: FamilyMembership, sublabel: string, canDelete: boolean): NodeDesc {
+    const hasGrant = grantedUserIds.has(ms.user_id)
+    const displayName = ms.family_owner_name ?? 'Member'
+    const actions: MemberOptionAction[] = []
+    if (hasGrant && ms.primary_member_id) {
+      actions.push({ label: 'View vault', variant: 'normal', onClick: () => onViewVault(ms.primary_member_id!, displayName) })
+    } else if (!hasGrant) {
+      actions.push({ label: 'Request vault access', variant: 'normal', onClick: () => onRequestVaultAccess(ms.user_id, displayName) })
+    }
+    if (canDelete) {
+      actions.push({
+        label: 'Delete member from family',
+        variant: 'danger',
+        onClick: () => openDeleteModal('linked', displayName, () => onDeleteMembership(ms.membership_id)),
+      })
+    }
+    return {
+      id: ms.membership_id, type: 'linked' as const,
+      name: displayName,
+      sublabel,
+      onMenu: actions.length > 0 ? () => openMemberOptions(displayName, actions) : undefined,
+    }
+  }
+
   // Build level arrays of NodeDesc
   const parentRow: NodeDesc[] = [
-    ...parents.map((p) => ({
-      id: p.member_id, type: 'managed' as const, name: p.full_name, sublabel: 'Parent',
-      onClick: () => onManageAccess(p),
-      onDelete: () => onDeleteMember(p.member_id),
-    })),
-    ...acceptedParents.map((ms) => ({
-      id: ms.membership_id, type: 'linked' as const,
-      name: ms.family_owner_name ?? 'Member',
-      sublabel: RELATIONSHIP_LABELS['PARENT'],
-      onClick: () => onManageAccess(ms),
-    })),
-    // Family circles the current user has joined — owner is always shown above
-    ...joinedFamilies.map((ms) => ({
-      id: ms.membership_id, type: 'linked' as const,
-      name: ms.family_owner_name ?? 'Family Owner',
-      sublabel: RELATIONSHIP_LABELS[ms.relationship ?? ''] ?? (ms.relationship ?? 'Member'),
-      onClick: () => onManageAccess(ms),
-    })),
+    ...parents.map((p) => managedNode(p, 'Parent')),
+    ...acceptedParents.map((ms) => linkedNode(ms, RELATIONSHIP_LABELS['PARENT'], isAdmin)),
+    ...joinedFamilies.map((ms) => linkedNode(
+      ms,
+      RELATIONSHIP_LABELS[ms.relationship ?? ''] ?? (ms.relationship ?? 'Member'),
+      ms.user_id === selfUserId,
+    )),
   ]
 
   const middleRow: NodeDesc[] = [
-    ...spouses.map((s) => ({
-      id: s.member_id, type: 'managed' as const, name: s.full_name, sublabel: 'Spouse',
-      onClick: () => onManageAccess(s),
-      onDelete: () => onDeleteMember(s.member_id),
-    })),
-    ...acceptedSpouses.map((ms) => ({
-      id: ms.membership_id, type: 'linked' as const,
-      name: ms.family_owner_name ?? 'Member',
-      sublabel: RELATIONSHIP_LABELS['SPOUSE'],
-      onClick: () => onManageAccess(ms),
-    })),
+    ...spouses.map((s) => managedNode(s, 'Spouse')),
+    ...acceptedSpouses.map((ms) => linkedNode(ms, RELATIONSHIP_LABELS['SPOUSE'], isAdmin)),
     { id: '__self', type: 'self' as const, name: selfMember?.full_name ?? 'Me', sublabel: 'You' },
     { id: '__add', type: 'add' as const, name: '', sublabel: '', onClick: onInvite },
   ]
 
   const childRow: NodeDesc[] = [
-    ...children.map((c) => ({
-      id: c.member_id, type: 'managed' as const, name: c.full_name, sublabel: 'Child',
-      onClick: () => onManageAccess(c),
-      onDelete: () => onDeleteMember(c.member_id),
-    })),
-    ...acceptedChildren.map((ms) => ({
-      id: ms.membership_id, type: 'linked' as const,
-      name: ms.family_owner_name ?? 'Member',
-      sublabel: RELATIONSHIP_LABELS['CHILD'],
-      onClick: () => onManageAccess(ms),
-    })),
+    ...children.map((c) => managedNode(c, 'Child')),
+    ...acceptedChildren.map((ms) => linkedNode(ms, RELATIONSHIP_LABELS['CHILD'], isAdmin)),
   ]
 
   const bottomRow: NodeDesc[] = [
-    ...others.map((o) => ({
-      id: o.member_id, type: 'managed' as const,
-      name: o.full_name, sublabel: RELATIONSHIP_LABELS[o.relationship] ?? 'Other',
-      onClick: () => onManageAccess(o),
-      onDelete: () => onDeleteMember(o.member_id),
-    })),
-    ...acceptedOthers.map((ms) => ({
-      id: ms.membership_id, type: 'linked' as const,
-      name: ms.family_owner_name ?? 'Member',
-      sublabel: RELATIONSHIP_LABELS[ms.relationship ?? ''] ?? (ms.relationship ?? 'Member'),
-      onClick: () => onManageAccess(ms),
-    })),
-    ...pending.map((inv) => ({
-      id: inv.invitation_id, type: 'pending' as const,
-      name: inv.invited_email.split('@')[0],
-      sublabel: `${RELATIONSHIP_LABELS[inv.relationship] ?? inv.relationship} · Pending`,
-      onDelete: () => onCancelInvitation(inv.invitation_id),
-    })),
+    ...others.map((o) => managedNode(o, RELATIONSHIP_LABELS[o.relationship] ?? 'Other')),
+    ...acceptedOthers.map((ms) => linkedNode(
+      ms,
+      RELATIONSHIP_LABELS[ms.relationship ?? ''] ?? (ms.relationship ?? 'Member'),
+      isAdmin,
+    )),
+    ...pending.map((inv) => {
+      const invName = inv.invited_email.split('@')[0]
+      const invActions: MemberOptionAction[] = isAdmin ? [
+        {
+          label: 'Cancel invitation',
+          variant: 'danger',
+          onClick: () => openDeleteModal('pending', invName, () => onCancelInvitation(inv.invitation_id)),
+        },
+      ] : []
+      return {
+        id: inv.invitation_id, type: 'pending' as const,
+        name: invName,
+        sublabel: `${RELATIONSHIP_LABELS[inv.relationship] ?? inv.relationship} · Pending`,
+        onMenu: invActions.length > 0 ? () => openMemberOptions(invName, invActions) : undefined,
+      }
+    }),
   ]
 
   const levels: NodeDesc[][] = [
@@ -808,10 +934,53 @@ function PageSkeleton() {
 export function FamilyCirclePage() {
   const [inviteOpen, setInviteOpen] = useState(false)
   const [accessTarget, setAccessTarget] = useState<FamilyMember | FamilyMembership | null>(null)
+  const [deleteModal, setDeleteModal] = useState<DeleteModalState>({
+    open: false, type: 'managed', name: '', onConfirm: () => {},
+  })
+  const [memberOptions, setMemberOptions] = useState<MemberOptionsState>({
+    open: false, name: '', actions: [],
+  })
+  const { user } = useAuth0()
+  const navigate = useNavigate()
+  const setActiveMember = useSetActiveMember()
   const { data: circle, isLoading, isError } = useFamilyCircle()
+  const { data: grants } = useVaultAccessGrants()
   useFamilyCircleEvents()
   const deleteMember = useDeleteManagedMember()
+  const deleteMembership = useDeleteMembership()
   const cancelInvitation = useCancelInvitation()
+  const requestVaultAccess = useRequestVaultAccess()
+
+  // Compare DB UUIDs — created_by_user_id is an internal UUID, not Auth0 sub
+  const isAdmin = !!(
+    circle?.family?.created_by_user_id &&
+    circle?.self_member?.user_id &&
+    circle.family.created_by_user_id === circle.self_member.user_id
+  )
+  const selfUserId = user?.sub ?? ''
+
+  const grantedUserIds = useMemo(
+    () => new Set((grants ?? []).map((g) => g.target_user_id)),
+    [grants],
+  )
+
+  function handleViewVault(memberId: string, name: string) {
+    setActiveMember(memberId, name)
+    navigate('/')
+  }
+
+  function openDeleteModal(type: 'managed' | 'linked' | 'pending', name: string, onConfirm: () => void) {
+    setDeleteModal({ open: true, type, name, onConfirm })
+  }
+
+  function openMemberOptions(name: string, actions: MemberOptionAction[]) {
+    setMemberOptions({ open: true, name, actions })
+  }
+
+  function handleRequestVaultAccess(userId: string, name: string) {
+    if (!window.confirm(`Send a vault access request to ${name}?`)) return
+    requestVaultAccess.mutate(userId)
+  }
 
   if (isLoading) return <PageSkeleton />
 
@@ -889,10 +1058,18 @@ export function FamilyCirclePage() {
               <FamilyTree
                 circle={circle}
                 selfMember={selfMember}
+                isAdmin={isAdmin}
+                selfUserId={selfUserId}
                 onInvite={() => setInviteOpen(true)}
                 onManageAccess={(m) => setAccessTarget(m)}
                 onDeleteMember={(id) => deleteMember.mutate(id)}
+                onDeleteMembership={(id) => deleteMembership.mutate(id)}
                 onCancelInvitation={(id) => cancelInvitation.mutate(id)}
+                onRequestVaultAccess={handleRequestVaultAccess}
+                onViewVault={handleViewVault}
+                grantedUserIds={grantedUserIds}
+                openDeleteModal={openDeleteModal}
+                openMemberOptions={openMemberOptions}
               />
             )
           )}
@@ -922,6 +1099,18 @@ export function FamilyCirclePage() {
           </div>
         )}
       </div>
+
+      {/* Member options sheet */}
+      <MemberOptionsSheet
+        state={memberOptions}
+        onClose={() => setMemberOptions((s) => ({ ...s, open: false }))}
+      />
+
+      {/* Delete confirmation modal */}
+      <DeleteConfirmModal
+        state={deleteModal}
+        onClose={() => setDeleteModal((s) => ({ ...s, open: false }))}
+      />
 
       {/* Invite modal */}
       {inviteOpen && <InviteModal onClose={() => setInviteOpen(false)} />}

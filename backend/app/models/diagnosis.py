@@ -21,6 +21,12 @@ class Diagnosis(Base):
     document_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("documents.document_id", ondelete="SET NULL"), nullable=True
     )
+    encounter_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("medical_encounters.encounter_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     condition_name: Mapped[str] = mapped_column(String(255), nullable=False)
     condition_normalized: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     icd10_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)

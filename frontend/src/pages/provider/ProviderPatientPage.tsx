@@ -58,10 +58,33 @@ function formatDate(dateStr: string): string {
 // ── Log Encounter Form ─────────────────────────────────────────────────────
 
 interface DiagnosisEntry { condition_name: string; status: string }
-interface MedicationEntry { drug_name: string; dosage: string; frequency: string; is_active: boolean }
+interface MedicationEntry {
+  drug_name: string
+  dosage: string
+  morning: boolean
+  noon: boolean
+  night: boolean
+  food_timing: 'before' | 'after' | ''
+  is_active: boolean
+}
 
 const emptyDx = (): DiagnosisEntry => ({ condition_name: '', status: 'ACTIVE' })
-const emptyMed = (): MedicationEntry => ({ drug_name: '', dosage: '', frequency: '', is_active: true })
+const emptyMed = (): MedicationEntry => ({
+  drug_name: '', dosage: '',
+  morning: false, noon: false, night: false,
+  food_timing: '', is_active: true,
+})
+
+function formatMedFrequency(m: MedicationEntry): string | undefined {
+  const times: string[] = []
+  if (m.morning) times.push('Morning')
+  if (m.noon) times.push('Noon')
+  if (m.night) times.push('Night')
+  if (times.length === 0) return undefined
+  let freq = times.join('-')
+  if (m.food_timing) freq += ` ${m.food_timing === 'before' ? 'Before food' : 'After food'}`
+  return freq
+}
 
 interface LogFormProps {
   requestId: string
@@ -77,22 +100,26 @@ function LogEncounterForm({ requestId, onSuccess }: LogFormProps) {
     prescriptions_note: '',
     follow_up_date: '',
   })
-  const [diagnoses, setDiagnoses] = useState<DiagnosisEntry[]>([])
-  const [medications, setMedications] = useState<MedicationEntry[]>([])
+  const [diagnoses, setDiagnoses] = useState<DiagnosisEntry[]>([emptyDx()])
+  const [medications, setMedications] = useState<MedicationEntry[]>([emptyMed()])
+
+  function resetForm() {
+    setForm({
+      encounter_date: new Date().toISOString().split('T')[0],
+      chief_complaint: '',
+      diagnosis_notes: '',
+      prescriptions_note: '',
+      follow_up_date: '',
+    })
+    setDiagnoses([emptyDx()])
+    setMedications([emptyMed()])
+  }
 
   const mutation = useMutation({
     mutationFn: (body: object) => api.post('/provider/encounters', body),
     onSuccess: () => {
       setOpen(false)
-      setForm({
-        encounter_date: new Date().toISOString().split('T')[0],
-        chief_complaint: '',
-        diagnosis_notes: '',
-        prescriptions_note: '',
-        follow_up_date: '',
-      })
-      setDiagnoses([])
-      setMedications([])
+      resetForm()
       onSuccess()
     },
   })
@@ -104,11 +131,14 @@ function LogEncounterForm({ requestId, onSuccess }: LogFormProps) {
       request_id: requestId,
       follow_up_date: form.follow_up_date || undefined,
       diagnoses: diagnoses.filter((d) => d.condition_name.trim()),
-      medications: medications.filter((m) => m.drug_name.trim()).map((m) => ({
-        ...m,
-        dosage: m.dosage || undefined,
-        frequency: m.frequency || undefined,
-      })),
+      medications: medications
+        .filter((m) => m.drug_name.trim())
+        .map((m) => ({
+          drug_name: m.drug_name,
+          dosage: m.dosage || undefined,
+          frequency: formatMedFrequency(m),
+          is_active: m.is_active,
+        })),
     })
   }
 
@@ -135,8 +165,8 @@ function LogEncounterForm({ requestId, onSuccess }: LogFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-teal-100 p-6 space-y-5">
-      <h3 className="font-semibold text-slate-800">New Encounter</h3>
+    <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-teal-100 p-6 space-y-6">
+      <h3 className="font-semibold text-slate-800 text-base">New Encounter</h3>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
@@ -171,80 +201,164 @@ function LogEncounterForm({ requestId, onSuccess }: LogFormProps) {
         />
       </div>
 
-      {/* Diagnoses */}
+      {/* ── Diagnoses ────────────────────────────────────────────── */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-medium text-slate-600">Diagnoses</label>
-          <button type="button" onClick={() => setDiagnoses((p) => [...p, emptyDx()])}
-            className="text-xs text-primary hover:underline">+ Add</button>
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Diagnoses</label>
+          <button
+            type="button"
+            onClick={() => setDiagnoses((p) => [...p, emptyDx()])}
+            className="text-xs text-primary font-medium hover:underline"
+          >
+            + Add another
+          </button>
         </div>
-        {diagnoses.map((d, i) => (
-          <div key={i} className="flex gap-2 mb-2">
-            <input
-              value={d.condition_name}
-              onChange={(e) => updateDx(i, { condition_name: e.target.value })}
-              placeholder="Condition name"
-              className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-            <select
-              value={d.status}
-              onChange={(e) => updateDx(i, { status: e.target.value })}
-              className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option value="ACTIVE">Active</option>
-              <option value="CHRONIC">Chronic</option>
-              <option value="RESOLVED">Resolved</option>
-            </select>
-            <button type="button" onClick={() => setDiagnoses((p) => p.filter((_, j) => j !== i))}
-              className="text-slate-400 hover:text-red-400 text-lg leading-none">×</button>
-          </div>
-        ))}
+        <div className="space-y-2">
+          {diagnoses.map((d, i) => (
+            <div key={i} className="flex gap-2 items-center">
+              <input
+                value={d.condition_name}
+                onChange={(e) => updateDx(i, { condition_name: e.target.value })}
+                placeholder="Condition name"
+                className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <select
+                value={d.status}
+                onChange={(e) => updateDx(i, { status: e.target.value })}
+                className="border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="CHRONIC">Chronic</option>
+                <option value="RESOLVED">Resolved</option>
+              </select>
+              {diagnoses.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setDiagnoses((p) => p.filter((_, j) => j !== i))}
+                  className="text-slate-300 hover:text-red-400 text-xl leading-none w-7 h-7 flex items-center justify-center"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
         <textarea
           value={form.diagnosis_notes}
           onChange={(e) => setForm({ ...form, diagnosis_notes: e.target.value })}
           rows={2}
           placeholder="Additional clinical notes (optional)"
-          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none mt-1"
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none mt-2"
         />
       </div>
 
-      {/* Medications */}
+      {/* ── Medications ──────────────────────────────────────────── */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-medium text-slate-600">Medications Prescribed</label>
-          <button type="button" onClick={() => setMedications((p) => [...p, emptyMed()])}
-            className="text-xs text-primary hover:underline">+ Add</button>
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Medications Prescribed</label>
+          <button
+            type="button"
+            onClick={() => setMedications((p) => [...p, emptyMed()])}
+            className="text-xs text-primary font-medium hover:underline"
+          >
+            + Add another
+          </button>
         </div>
-        {medications.map((m, i) => (
-          <div key={i} className="flex gap-2 mb-2 flex-wrap">
-            <input
-              value={m.drug_name}
-              onChange={(e) => updateMed(i, { drug_name: e.target.value })}
-              placeholder="Drug name"
-              className="flex-1 min-w-[120px] border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-            <input
-              value={m.dosage}
-              onChange={(e) => updateMed(i, { dosage: e.target.value })}
-              placeholder="Dosage"
-              className="w-24 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-            <input
-              value={m.frequency}
-              onChange={(e) => updateMed(i, { frequency: e.target.value })}
-              placeholder="Frequency"
-              className="w-28 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-            <button type="button" onClick={() => setMedications((p) => p.filter((_, j) => j !== i))}
-              className="text-slate-400 hover:text-red-400 text-lg leading-none">×</button>
-          </div>
-        ))}
+        <div className="space-y-4">
+          {medications.map((m, i) => (
+            <div key={i} className="bg-slate-50 rounded-xl p-4 space-y-3 relative">
+              {medications.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setMedications((p) => p.filter((_, j) => j !== i))}
+                  className="absolute top-3 right-3 text-slate-300 hover:text-red-400 text-xl leading-none"
+                >
+                  ×
+                </button>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Drug Name</label>
+                  <input
+                    value={m.drug_name}
+                    onChange={(e) => updateMed(i, { drug_name: e.target.value })}
+                    placeholder="e.g. Metformin"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Dosage</label>
+                  <input
+                    value={m.dosage}
+                    onChange={(e) => updateMed(i, { dosage: e.target.value })}
+                    placeholder="e.g. 500mg"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+
+              {/* Timing: Morning / Noon / Night */}
+              <div>
+                <p className="text-xs text-slate-500 mb-1.5">Timing</p>
+                <div className="flex gap-2 flex-wrap">
+                  {(['morning', 'noon', 'night'] as const).map((slot) => (
+                    <label
+                      key={slot}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer select-none transition-colors ${
+                        m[slot]
+                          ? 'bg-primary text-white border-primary'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={m[slot]}
+                        onChange={(e) => updateMed(i, { [slot]: e.target.checked } as Partial<MedicationEntry>)}
+                        className="sr-only"
+                      />
+                      {slot.charAt(0).toUpperCase() + slot.slice(1)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Food timing */}
+              <div>
+                <p className="text-xs text-slate-500 mb-1.5">With Food</p>
+                <div className="flex gap-2">
+                  {([
+                    { val: 'before' as const, label: 'Before food' },
+                    { val: 'after' as const, label: 'After food' },
+                  ]).map(({ val, label }) => (
+                    <label
+                      key={val}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer select-none transition-colors ${
+                        m.food_timing === val
+                          ? 'bg-teal-50 text-primary border-primary'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-primary/50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`food-timing-${i}`}
+                        checked={m.food_timing === val}
+                        onChange={() => updateMed(i, { food_timing: m.food_timing === val ? '' : val })}
+                        className="sr-only"
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
         <textarea
           value={form.prescriptions_note}
           onChange={(e) => setForm({ ...form, prescriptions_note: e.target.value })}
           rows={2}
           placeholder="Additional prescription notes (optional)"
-          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none mt-1"
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none mt-3"
         />
       </div>
 
@@ -255,7 +369,7 @@ function LogEncounterForm({ requestId, onSuccess }: LogFormProps) {
       <div className="flex gap-3 justify-end">
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={() => { setOpen(false); resetForm() }}
           className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700"
         >
           Cancel

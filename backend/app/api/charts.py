@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from app.dependencies import CurrentUser, DbSession, require_member_access
+from app.dependencies import CurrentUser, DbSession, require_vault_access
 from app.models.family_member import FamilyMember
 from app.models.lab_result import LabResult
 from app.models.medication import Medication
@@ -46,7 +46,7 @@ async def _load_member_or_404(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Family member not found",
         )
-    require_member_access(member.user_id, current_user)
+    await require_vault_access(member_id, current_user, db)
     return member
 
 

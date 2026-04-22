@@ -149,6 +149,7 @@ export interface FamilyMembership {
   family_owner_user_id: string | null
   family_owner_name: string | null
   relationship: string | null
+  primary_member_id: string | null
 }
 
 export interface VaultAccessGrant {
@@ -190,6 +191,7 @@ export type NotificationType =
   | 'PROCESSING_COMPLETE'
   | 'EXTRACTION_FAILED'
   | 'PROVIDER_ACCESS_REQUEST'
+  | 'FAMILY_VAULT_ACCESS_REQUEST'
 
 export interface Notification {
   notification_id: string

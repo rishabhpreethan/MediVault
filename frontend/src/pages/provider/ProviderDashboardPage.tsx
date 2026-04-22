@@ -11,7 +11,7 @@
  *   expired    — error state with retry
  */
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../lib/api'
 
 type RequestState = 'idle' | 'waiting' | 'accepted' | 'declined' | 'expired' | 'error'
@@ -177,7 +177,21 @@ export function ProviderDashboardPage() {
 
   // ── Idle — passport entry form ─────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface px-4">
+    <div className="min-h-screen bg-surface">
+      {/* Minimal top nav for provider pages */}
+      <header className="fixed top-0 w-full z-50 h-14 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md border-b border-teal-500/10 shadow-sm">
+        <span className="text-primary font-bold text-base tracking-tight select-none">MediVault</span>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-teal-600 transition-colors"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+            <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-9 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H5v-1c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1zm3-1h-1v-1c0-1.3-.8-2.4-2-3.2.4-.1.7-.1 1-.1 1.7 0 3 1.3 3 3v1.3h-1z" />
+          </svg>
+          My Health Vault
+        </Link>
+      </header>
+      <div className="flex items-center justify-center px-4 pt-14 min-h-screen">
       <div className="bg-white rounded-2xl shadow-lg p-10 max-w-md w-full">
         <div className="mb-8 text-center">
           <div className="w-14 h-14 rounded-2xl bg-teal-50 flex items-center justify-center mx-auto mb-4">
@@ -219,6 +233,7 @@ export function ProviderDashboardPage() {
           </button>
         </form>
       </div>
+    </div>
     </div>
   )
 }
