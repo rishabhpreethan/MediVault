@@ -96,3 +96,18 @@ class ProfileSummaryResponse(BaseModel):
     total_lab_results: int
     total_diagnoses: int
     low_confidence_count: int
+
+
+class EncounterResponse(BaseModel):
+    encounter_id: str
+    encounter_date: date
+    provider_name: str
+    chief_complaint: Optional[str] = None
+    diagnosis_notes: Optional[str] = None
+    prescriptions_note: Optional[str] = None
+    follow_up_date: Optional[date] = None
+
+
+class EncounterListResponse(BaseModel):
+    items: list[EncounterResponse]
+    total: int
