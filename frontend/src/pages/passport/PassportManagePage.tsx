@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { QRCodeSVG } from 'qrcode.react'
 import { api } from '../../lib/api'
 import { useActiveMemberDetails } from '../../hooks/useFamily'
+import type { HealthProfile } from '../../types'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,79 @@ function formatDate(iso: string | null): string {
   })
 }
 
+// ── Health Snapshot ────────────────────────────────────────────────────────
+
+function HealthSnapshot({ profile, bloodGroup }: { profile: HealthProfile; bloodGroup: string | null }) {
+  const activeMeds = profile.medications.filter((m) => m.is_active)
+  const allergies = profile.allergies
+
+  const hasContent = bloodGroup || allergies.length > 0 || activeMeds.length > 0
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-surface-container-low overflow-hidden">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-surface-container-low">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-sm font-extrabold text-on-surface uppercase tracking-wide">Health Snapshot</p>
+          <p className="text-xs text-on-surface-variant">What a doctor sees when they request access</p>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-5">
+        {!hasContent && (
+          <p className="text-sm text-on-surface-variant text-center py-4">
+            Complete onboarding and upload a document to populate your health snapshot.
+          </p>
+        )}
+
+        {/* Blood group */}
+        {bloodGroup && (
+          <div>
+            <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1.5">Blood Type</p>
+            <span className="inline-block px-3 py-1 rounded-full bg-primary text-white text-sm font-bold">
+              {bloodGroup}
+            </span>
+          </div>
+        )}
+
+        {/* Allergies */}
+        {allergies.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1.5">Allergies</p>
+            <div className="flex flex-wrap gap-2">
+              {allergies.map((a) => (
+                <span key={a.allergy_id} className="inline-block px-2.5 py-1 rounded-full bg-error-container text-error text-xs font-semibold">
+                  {a.allergen_name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Active medications */}
+        {activeMeds.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1.5">Active Medications</p>
+            <ul className="space-y-1.5">
+              {activeMeds.map((m) => (
+                <li key={m.medication_id} className="text-sm text-on-surface">
+                  <span className="font-semibold">{m.drug_name_normalized ?? m.drug_name}</span>
+                  {m.dosage && <span className="text-on-surface-variant"> · {m.dosage}</span>}
+                  {m.frequency && <span className="text-on-surface-variant"> · {m.frequency}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── PassportManagePage ─────────────────────────────────────────────────────
 
 export function PassportManagePage() {
@@ -63,6 +137,15 @@ export function PassportManagePage() {
     queryKey: ['passports', memberId],
     queryFn: async () => {
       const { data } = await api.get('/passport/', { params: { member_id: memberId } })
+      return data
+    },
+    enabled: !!memberId,
+  })
+
+  const { data: profile } = useQuery<HealthProfile>({
+    queryKey: ['profile', memberId],
+    queryFn: async () => {
+      const { data } = await api.get(`/profile/${memberId}`)
       return data
     },
     enabled: !!memberId,
@@ -276,6 +359,14 @@ export function PassportManagePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Health Snapshot ──────────────────────────────────────────── */}
+      {profile && (
+        <HealthSnapshot
+          profile={profile}
+          bloodGroup={member?.blood_group ?? null}
+        />
       )}
     </div>
   )
