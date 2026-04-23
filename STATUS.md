@@ -272,6 +272,16 @@
 | MV-176 | Records → timeline only — remove archive tab + Import Record button; page title "Health Timeline"; archive/document detail pages still reachable via direct URL | P1 | Done (Pending Merge) | Developer Agent | — | feature/MV-174-177-ux-restructure |
 | MV-177 | Passport → Health Snapshot section — add "Health Snapshot — What a Doctor Sees" card below QR/passport-ID: blood group, active allergies, active medications; data from existing profile API | P2 | Done (Pending Merge) | Developer Agent | — | feature/MV-174-177-ux-restructure |
 
+### EPIC: UX Consolidation — Page Merge, Passport Simplification, Encounter History
+
+| Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
+|---|---|---|---|---|---|---|
+| MV-178 | Page consolidation — eliminate Summary tab (/insights); merge its content (active meds, diagnoses, latest labs) into DashboardPage (/health); update AppShell to 4-tab nav (Passport / Records / Health / Family); add "Trends — Coming Soon" placeholder section at bottom of Health page; redirect /insights → /health | P1 | Done (Pending Merge) | neerajmenon4 | — | feature/MV-174-177-ux-restructure |
+| MV-179 | Passport page simplification — remove expires_in_days selector (hardcode 365 on auto-generate), remove section visibility toggles (show_medications / show_labs / show_diagnoses / show_allergies), remove HealthSnapshot component; keep UUID display + copy button + QR code + Revoke only; permanent-by-default passport model | P1 | Done (Pending Merge) | neerajmenon4 | — | feature/MV-174-177-ux-restructure |
+| MV-180 | Records page — restore document list as "Documents" tab alongside "Timeline" tab; fetch GET /documents/{member_id}, show cards with type + date + status badge + link to /records/:id; documents navigable from nav again | P1 | Done (Pending Merge) | neerajmenon4 | — | feature/MV-174-177-ux-restructure |
+| MV-181 | Manual data entry empty states — add "Add manually" CTA buttons per section on Health/DashboardPage when sections are empty; wire to existing entity CRUD endpoints (MV-053); medications, diagnoses, allergies, vitals | P2 | Not Started | — | MV-178 | — |
+| MV-182 | Coming Soon copy improvements — update upload Coming Soon modal with a one-sentence description of what document upload will do when live; add descriptive copy to Trends Coming Soon section on Health page | P2 | Done (Pending Merge) | neerajmenon4 | — | feature/MV-174-177-ux-restructure |
+
 ### EPIC: Provider / Doctor Workflow (DECISION-009)
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
@@ -283,7 +293,7 @@
 | MV-159 | Provider dashboard UI — /provider route; passport UUID entry field (or QR scan button placeholder); pending/waiting screen with real-time poll of access request status; declined/expired error states with retry; route added to App.tsx with require_provider_role frontend guard | P1 | Done | Developer Agent | MV-156 | feature/MV-155-163-provider-workflow |
 | MV-160 | Treatment pathway / pathology graph component — chronological vertical narrative: diagnoses + encounters + medications rendered as labelled nodes on a timeline spine; "Clinical Curator" aesthetic per stitch_health_passport/treatment_pathway/DESIGN.md (Manrope headlines, teal primary, no-border surface nesting, ambient shadows); used on provider patient view and optionally on patient's own passport page | P2 | Not Started | — | MV-157 | — |
 | MV-161 | Patient passport onboarding data panel — update PassportManagePage and public passport view to show health baseline card: computed age (from DOB), height/weight (if provided), blood group, allergy list; data sourced from onboarding fields; blocked until MV-153 complete | P2 | Not Started | — | MV-153 | — |
-| MV-162 | Patient encounter history feed — patient-facing view of all provider encounters logged for them; accessible from Health Profile or Notifications; shows encounter date, provider name, diagnosis notes, prescriptions note, follow-up date | P2 | Not Started | — | MV-157 | — |
+| MV-162 | Patient encounter history feed — patient-facing view of all provider encounters logged for them; accessible from Health page; shows encounter date, provider name, diagnosis notes, prescriptions note, follow-up date; backend: add GET /profile/{member_id}/encounters patient-facing endpoint | P1 | Done (Pending Merge) | neerajmenon4 | MV-157 | feature/MV-174-177-ux-restructure |
 | MV-163 | Provider access request notification actions — extend notification centre to render Accept/Decline action buttons inline on PROVIDER_ACCESS_REQUEST notifications; POST /provider/access-request/:id/respond on tap; notification updates to show responded state | P0 | Done | Developer Agent | MV-156, MV-138 | feature/MV-155-163-provider-workflow |
 
 ---
@@ -458,3 +468,8 @@
 | 2026-04-23 | Developer Agent | Completed MV-176 — RecordsPage replaced with timeline-only view: page title "Health Timeline", renders TimelineTab only; all archive/document-library code removed; DocumentDetailPage still accessible via /records/:id | MV-176 | feature/MV-174-177-ux-restructure |
 | 2026-04-23 | Developer Agent | Completed MV-177 — PassportManagePage: added HealthSnapshot component with blood group, active allergies, active medications; data from profile API (GET /profile/{member_id}); renders below QR/passport-ID card | MV-177 | feature/MV-174-177-ux-restructure |
 | 2026-04-23 | Developer Agent | PR #63 opened — MV-174–MV-177 UX restructure awaiting merge | MV-174, MV-175, MV-176, MV-177 | feature/MV-174-177-ux-restructure |
+| 2026-04-23 | neerajmenon4 | Product decisions: eliminate Summary tab (merge into Health); simplify Passport to sharing-only (no expiry/visibility toggles); restore document list in Records; surface manual entry CTAs; reprioritised MV-162 encounter history to P1; added MV-178–MV-182 | MV-178–MV-182, MV-162 | — |
+| 2026-04-23 | Developer Agent | Started MV-178 + MV-179 — page consolidation (4-tab nav, merge Summary into Health) and Passport simplification | MV-178, MV-179 | feature/MV-178-179-page-consolidation |
+| 2026-04-23 | Developer Agent | Started MV-180 + MV-182 — Records document tab restored + Coming Soon copy improvements | MV-180, MV-182 | feature/MV-180-182-records-docs |
+| 2026-04-23 | Developer Agent | Started MV-162 — patient encounter history feed (backend endpoint + Health page section) | MV-162 | feature/MV-162-encounter-history |
+| 2026-04-23 | neerajmenon4 | Completed MV-178–MV-182 + MV-162 directly (worktree agents had tools blocked): 4-tab nav, /insights→/health redirect, Trends Coming Soon on Health page, Passport stripped to UUID+QR+Revoke, Records Documents tab restored, descriptive Coming Soon copy, GET /profile/{member_id}/encounters endpoint + EncounterHistory component | MV-178, MV-179, MV-180, MV-182, MV-162 | feature/MV-174-177-ux-restructure |

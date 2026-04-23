@@ -464,6 +464,94 @@ function KnownConditions({ diagnoses }: { diagnoses: Diagnosis[] }) {
   )
 }
 
+// ── Section: Encounter History ────────────────────────────────────────────
+
+interface EncounterItem {
+  encounter_id: string
+  encounter_date: string
+  provider_name: string
+  chief_complaint: string | null
+  diagnosis_notes: string | null
+  prescriptions_note: string | null
+  follow_up_date: string | null
+}
+
+interface EncounterListResponse {
+  items: EncounterItem[]
+  total: number
+}
+
+function formatEncounterDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+function EncounterHistory({ memberId }: { memberId: string }) {
+  const { data, isLoading } = useQuery<EncounterListResponse>({
+    queryKey: ['encounters', memberId],
+    queryFn: async () => {
+      const { data } = await api.get(`/profile/${memberId}/encounters`)
+      return data
+    },
+    enabled: !!memberId,
+  })
+
+  const encounters = data?.items ?? []
+
+  return (
+    <div className="bg-surface-container-lowest rounded-xl p-5 shadow-sm shadow-teal-900/5">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-6 h-6 flex items-center justify-center text-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+          </svg>
+        </div>
+        <h2 className="text-base font-extrabold text-on-surface tracking-tight">Provider Encounters</h2>
+      </div>
+
+      {isLoading && (
+        <div className="space-y-3">
+          {[0, 1].map((i) => (
+            <div key={i} className="h-16 rounded-lg bg-surface-container animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {!isLoading && encounters.length === 0 && (
+        <p className="text-sm text-on-surface-variant text-center py-6">
+          No provider encounters recorded yet. When a doctor views your profile and logs a visit, it will appear here.
+        </p>
+      )}
+
+      {!isLoading && encounters.length > 0 && (
+        <ul className="space-y-4">
+          {encounters.map((enc) => (
+            <li key={enc.encounter_id} className="border-l-2 border-primary/30 pl-4 space-y-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-sm font-bold text-on-surface">{enc.provider_name}</p>
+                <p className="text-xs text-on-surface-variant shrink-0">{formatEncounterDate(enc.encounter_date)}</p>
+              </div>
+              {enc.chief_complaint && (
+                <p className="text-xs text-on-surface-variant">{enc.chief_complaint}</p>
+              )}
+              {enc.diagnosis_notes && (
+                <p className="text-sm text-on-surface">{enc.diagnosis_notes}</p>
+              )}
+              {enc.prescriptions_note && (
+                <p className="text-xs text-on-surface-variant italic">{enc.prescriptions_note}</p>
+              )}
+              {enc.follow_up_date && (
+                <p className="text-xs text-primary font-medium">
+                  Follow up: {formatEncounterDate(enc.follow_up_date)}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 // ── Main Dashboard Page ───────────────────────────────────────────────────
 
 export function DashboardPage() {
@@ -526,6 +614,27 @@ export function DashboardPage() {
         <div className="md:col-span-2 space-y-4">
           <ActivePlan medications={profile.medications} memberId={memberId!} />
           <KnownConditions diagnoses={profile.diagnoses} />
+        </div>
+      </div>
+
+      {/* ── Provider Encounters ─────────────────────────────────────────── */}
+      <EncounterHistory memberId={memberId!} />
+
+      {/* ── Trends: Coming Soon ──────────────────────────────────────────── */}
+      <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm shadow-teal-900/5 flex items-start gap-4">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+        </div>
+        <div>
+          <p className="text-sm font-extrabold text-on-surface tracking-tight">Lab Trends & Medication Timeline</p>
+          <p className="text-sm text-on-surface-variant mt-1">
+            Track how your HbA1c, cholesterol, kidney function, and other values change over time. Medication timelines will show active and past prescriptions in a visual Gantt view. Available once document upload is enabled.
+          </p>
+          <span className="inline-block mt-3 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-wide">
+            Coming Soon
+          </span>
         </div>
       </div>
     </div>

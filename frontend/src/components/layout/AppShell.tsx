@@ -164,7 +164,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/', label: 'Passport', Icon: IconPassport, end: true },
   { to: '/records', label: 'Records', Icon: IconRecords },
-  { to: '/insights', label: 'Summary', Icon: IconInsights },
   { to: '/health', label: 'Health', Icon: IconDashboard },
   { to: '/family', label: 'Family', Icon: IconFamily },
 ]
@@ -305,7 +304,7 @@ export function BottomNav() {
  * AppShell — responsive chrome wrapping all authenticated routes.
  *
  * Desktop (md+): fixed top nav bar, full-width content below.
- * Mobile: fixed bottom 5-tab nav bar, content above.
+ * Mobile: fixed bottom 4-tab nav bar, content above.
  *
  *   Desktop:
  *   ┌─────────────────────────────────────────┐

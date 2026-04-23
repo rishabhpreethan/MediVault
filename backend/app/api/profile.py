@@ -14,9 +14,13 @@ from app.models.family_member import FamilyMember
 from app.models.lab_result import LabResult
 from app.models.medication import Medication
 from app.models.vital import Vital
+from app.models.medical_encounter import MedicalEncounter
+from app.models.user import User
 from app.schemas.profile import (
     AllergySchema,
     DiagnosisSchema,
+    EncounterListResponse,
+    EncounterResponse,
     FamilyMemberSchema,
     HealthProfileResponse,
     LabResultSchema,
@@ -190,6 +194,65 @@ async def get_profile(
             for v in recent_vitals
         ],
     )
+
+
+@router.get("/{member_id}/encounters", response_model=EncounterListResponse)
+async def get_patient_encounters(
+    member_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> EncounterListResponse:
+    """Return all provider-logged encounters for a patient member (ownership/grant verified)."""
+    await _load_member_or_404(db, member_id, current_user)
+
+    rows = (await db.execute(
+        select(MedicalEncounter)
+        .where(MedicalEncounter.patient_member_id == member_id)
+        .order_by(MedicalEncounter.encounter_date.desc())
+    )).scalars().all()
+
+    # Resolve provider display names via their self FamilyMember
+    provider_ids = {e.provider_user_id for e in rows}
+    provider_name_map: dict[uuid.UUID, str] = {}
+    if provider_ids:
+        self_members = (await db.execute(
+            select(FamilyMember)
+            .where(
+                FamilyMember.user_id.in_(provider_ids),
+                FamilyMember.is_self.is_(True),
+            )
+        )).scalars().all()
+        for fm in self_members:
+            if fm.user_id:
+                provider_name_map[fm.user_id] = fm.full_name or "Provider"
+
+        # Fall back to email prefix for providers without a self member
+        missing = provider_ids - set(provider_name_map.keys())
+        if missing:
+            users = (await db.execute(
+                select(User).where(User.user_id.in_(missing))
+            )).scalars().all()
+            for u in users:
+                provider_name_map[u.user_id] = (u.email or "").split("@")[0] or "Provider"
+
+    logger.info(
+        "Patient encounters retrieved",
+        extra={"member_id": str(member_id), "user_id": str(current_user.user_id)},
+    )
+
+    items = [
+        EncounterResponse(
+            encounter_id=str(e.encounter_id),
+            encounter_date=e.encounter_date,
+            provider_name=provider_name_map.get(e.provider_user_id, "Provider"),
+            chief_complaint=e.chief_complaint,
+            diagnosis_notes=e.diagnosis_notes,
+            prescriptions_note=e.prescriptions_note,
+            follow_up_date=e.follow_up_date,
+        )
+        for e in rows
+    ]
+    return EncounterListResponse(items=items, total=len(items))
 
 
 @router.get("/summary", response_model=ProfileSummaryResponse)

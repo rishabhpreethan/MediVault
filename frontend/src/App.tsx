@@ -13,7 +13,6 @@ import { AppShell } from './components/layout/AppShell'
 import { DashboardPage } from './pages/dashboard/DashboardPage'
 import { RecordsPage } from './pages/records/RecordsPage'
 import { DocumentDetailPage } from './pages/records/DocumentDetailPage'
-import { InsightsPage } from './pages/insights/InsightsPage'
 import { PassportManagePage } from './pages/passport/PassportManagePage'
 import { AddFamilyMemberPage } from './pages/passport/AddFamilyMemberPage'
 import { PublicPassportPage } from './pages/passport/PublicPassportPage'
@@ -113,7 +112,7 @@ export default function App() {
                 <Route path="/health" element={<DashboardPage />} />
                 <Route path="/records" element={<RecordsPage />} />
                 <Route path="/records/:documentId" element={<DocumentDetailPage />} />
-                <Route path="/insights" element={<InsightsPage />} />
+                <Route path="/insights" element={<Navigate to="/health" replace />} />
                 <Route path="/passport/add-member" element={<AddFamilyMemberPage />} />
                 <Route path="/settings" element={<AccountSettingsPage />} />
                 <Route path="/family" element={<FamilyCirclePage />} />
