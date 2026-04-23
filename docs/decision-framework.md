@@ -210,3 +210,26 @@ High risk. Requires coordinated effort, likely involves data migration, breaking
   - Notification dispatch: reuse existing `NotificationDispatchService`; add `PROVIDER_ACCESS_REQUEST` and `PROVIDER_ACCESS_ACCEPTED/DECLINED` notification types.
   - Treatment pathway graph component: based on stitch design at `stitch_health_passport/treatment_pathway/DESIGN.md`. Renders a chronological narrative of diagnoses + encounters + medications with the "Clinical Curator" aesthetic.
 - **Approved by:** neerajmenon4
+
+### [DECISION-011] — Insights page → Health Summary
+- **Date:** 2026-04-23
+- **Decided by:** neerajmenon4
+- **Door type:** 1.5-Way Door (full page component replacement; frontend-only; no DB or API changes needed)
+- **What changed:** InsightsPage (`/insights`) replaces trend charts (lab trend, medication Gantt, vitals) with a Health Summary view: active medications list, recent diagnoses list, latest lab result per test with H/L flag. Nav label "Insights" renamed to "Summary".
+- **Why:** Trend charts require months of data across multiple documents to be useful. Most users — especially early on — have 1–2 documents at most. Showing empty charts is a dead end. The profile API already powers a useful, data-rich summary the moment a single document is processed.
+- **Alternatives considered:** Keep charts alongside a summary — rejected (adds clutter; users who lack data still land on empty chart UI). Add data-sufficiency check to show charts when enough data exists — rejected for now (premature; redesign this once >50% of users have sufficient data).
+- **Migration plan:** InsightsPage.tsx rewritten in-place. No backend changes. Chart components (InsightsPage was self-contained) can be re-added to a `/insights/trends` route later if needed.
+- **Approved by:** neerajmenon4
+
+### [DECISION-012] — Page clarity restructuring: Records → timeline-only; Passport → health snapshot; Health → read-only
+- **Date:** 2026-04-23
+- **Decided by:** neerajmenon4
+- **Door type:** 1.5-Way Door (multi-file frontend changes; reversible in ~1 week; no backend or DB changes)
+- **What changed:**
+  1. **Records** (`/records`): Remove archive tab and Import Record button. Page becomes timeline-only. Title changes to "Health Timeline". Document detail pages remain reachable via direct URL `/records/:documentId`.
+  2. **Health Profile** (`/health`, DashboardPage): Remove non-functional "Share Vault" and "New Entry" header buttons. Page becomes a read-only health data view; entries come from document uploads (upload pipeline) and provider encounters (provider workflow).
+  3. **Passport** (`/`): Add "Health Snapshot" section below the QR/passport-ID card. Shows blood group, active allergies, active medications — pulled from the existing profile API. Titled "Health Snapshot — What a Doctor Sees".
+- **Why:** The previous layout had overlapping purposes: Records mixed a document archive with a timeline; the Health page had action buttons for features not yet wired up (New Entry) and a share shortcut that duplicates the Passport page. The Passport page is the primary identity surface and benefits from showing the health summary that providers will see when granted access.
+- **Alternatives considered:** Keep archive tab behind a toggle — rejected (adds decision burden; document detail is still reachable via deep link); wire up New Entry to entity-crud API — deferred to a future sprint (manual entry UX needs its own flow design).
+- **Migration plan:** Three frontend files edited (RecordsPage.tsx, DashboardPage.tsx, PassportManagePage.tsx). No backend changes.
+- **Approved by:** neerajmenon4

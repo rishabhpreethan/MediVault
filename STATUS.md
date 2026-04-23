@@ -263,6 +263,15 @@
 | MV-172 | Family circle — remove linked members / leave family (DELETE /family/memberships/{id}); "Request vault access" button on linked cards | P1 | Done | neerajmenon4 | — | feature/MV-166-169-ux-fixes |
 | MV-173 | Vault access request notification flow — FAMILY_VAULT_ACCESS_REQUEST notification type; accept creates VaultAccessGrant; FamilyVaultAccessRow in NotificationCentre | P1 | Done | neerajmenon4 | — | feature/MV-166-169-ux-fixes |
 
+### EPIC: UX Restructure — Insights → Health Summary; Records → Timeline-only (DECISION-011, DECISION-012)
+
+| Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
+|---|---|---|---|---|---|---|
+| MV-174 | DashboardPage — remove non-functional "Share Vault" and "New Entry" header buttons; Health Profile becomes read-only (entries come from uploads + provider encounters) | P1 | Done (Pending Merge) | Developer Agent | — | feature/MV-174-177-ux-restructure |
+| MV-175 | Insights → Health Summary — replace InsightsPage trend charts with Health Summary: active medications, recent diagnoses, latest lab result per test with H/L flag; rename nav label "Insights" → "Summary" | P1 | Done (Pending Merge) | Developer Agent | — | feature/MV-174-177-ux-restructure |
+| MV-176 | Records → timeline only — remove archive tab + Import Record button; page title "Health Timeline"; archive/document detail pages still reachable via direct URL | P1 | Done (Pending Merge) | Developer Agent | — | feature/MV-174-177-ux-restructure |
+| MV-177 | Passport → Health Snapshot section — add "Health Snapshot — What a Doctor Sees" card below QR/passport-ID: blood group, active allergies, active medications; data from existing profile API | P2 | Done (Pending Merge) | Developer Agent | — | feature/MV-174-177-ux-restructure |
+
 ### EPIC: Provider / Doctor Workflow (DECISION-009)
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
@@ -443,3 +452,9 @@
 | 2026-04-22 | Developer Agent | Completed MV-171 — scripts/clear_notifications.py: async DELETE all notifications from DB; run via python3 scripts/clear_notifications.py | MV-171 | feature/MV-166-169-ux-fixes |
 | 2026-04-22 | Developer Agent | Completed MV-172+MV-173 — DELETE /family/memberships/{id} for leaving/removing linked members; POST /family/vault-access-requests sends FAMILY_VAULT_ACCESS_REQUEST notification; POST /family/vault-access-requests/{id}/respond creates VaultAccessGrant on accept; FamilyCirclePage: linked nodes have remove + request access buttons; NotificationCentre: FamilyVaultAccessRow for accept/decline vault access requests | MV-172, MV-173 | feature/MV-166-169-ux-fixes |
 | 2026-04-22 | neerajmenon4 | Fixed 403 Forbidden on delegated vault access — replaced require_member_access (owner-only) with require_vault_access in documents, profile, charts, timeline, entity_crud endpoints; fixed VaultBanner cross-user name via sessionStorage; fixed isAdmin UUID comparison bug; PR #62 opened and merged | MV-166–MV-173 | feature/MV-166-169-ux-fixes → main |
+| 2026-04-23 | neerajmenon4 | Product decisions recorded: DECISION-011 (Insights → Health Summary) and DECISION-012 (Records timeline-only, Passport health snapshot, DashboardPage cleanup); tasks MV-174–MV-177 added to board | MV-174, MV-175, MV-176, MV-177 | — |
+| 2026-04-23 | Developer Agent | Completed MV-174 — DashboardPage: removed non-functional "Share Vault" and "New Entry" buttons + unused IconShare/IconPlus components; Health Profile is now a read-only view | MV-174 | feature/MV-174-177-ux-restructure |
+| 2026-04-23 | Developer Agent | Completed MV-175 — InsightsPage replaced with HealthSummaryPage: Active Medications, Diagnoses, Latest Lab Results per test with H/L flag; uses existing profile API; nav label "Insights" → "Summary" in AppShell | MV-175 | feature/MV-174-177-ux-restructure |
+| 2026-04-23 | Developer Agent | Completed MV-176 — RecordsPage replaced with timeline-only view: page title "Health Timeline", renders TimelineTab only; all archive/document-library code removed; DocumentDetailPage still accessible via /records/:id | MV-176 | feature/MV-174-177-ux-restructure |
+| 2026-04-23 | Developer Agent | Completed MV-177 — PassportManagePage: added HealthSnapshot component with blood group, active allergies, active medications; data from profile API (GET /profile/{member_id}); renders below QR/passport-ID card | MV-177 | feature/MV-174-177-ux-restructure |
+| 2026-04-23 | Developer Agent | PR #63 opened — MV-174–MV-177 UX restructure awaiting merge | MV-174, MV-175, MV-176, MV-177 | feature/MV-174-177-ux-restructure |

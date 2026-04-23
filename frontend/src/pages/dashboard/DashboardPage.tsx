@@ -7,29 +7,6 @@ import type { HealthProfile, LabResult, Medication, Vital, LabFlag, Diagnosis } 
 
 // ── Inline SVG icons ───────────────────────────────────────────────────────
 
-function IconShare() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-      className="w-4 h-4" aria-hidden="true">
-      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-      <polyline points="16 6 12 2 8 6" />
-      <line x1="12" y1="2" x2="12" y2="15" />
-    </svg>
-  )
-}
-
-function IconPlus() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-      className="w-4 h-4" aria-hidden="true">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  )
-}
-
 function IconEdit() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
@@ -526,31 +503,13 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* ── Header Row ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold text-on-surface tracking-tight">
-            Health Profile
-          </h1>
-          {memberName && (
-            <p className="text-sm text-on-surface-variant mt-0.5">{memberName}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <button
-            type="button"
-            className="flex items-center gap-2 text-sm font-semibold text-primary border border-primary/30 rounded-full px-4 py-2.5 hover:bg-primary/5 transition-colors min-h-[44px]"
-          >
-            <IconShare />
-            Share Vault
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-2 text-sm font-semibold text-white bg-primary rounded-full px-4 py-2.5 hover:bg-primary/90 transition-colors shadow-sm shadow-teal-900/10 min-h-[44px]"
-          >
-            <IconPlus />
-            New Entry
-          </button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-extrabold text-on-surface tracking-tight">
+          Health Profile
+        </h1>
+        {memberName && (
+          <p className="text-sm text-on-surface-variant mt-0.5">{memberName}</p>
+        )}
       </div>
 
       {/* ── Vitals Strip ────────────────────────────────────────────────── */}

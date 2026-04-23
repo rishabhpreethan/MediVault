@@ -164,7 +164,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/', label: 'Passport', Icon: IconPassport, end: true },
   { to: '/records', label: 'Records', Icon: IconRecords },
-  { to: '/insights', label: 'Insights', Icon: IconInsights },
+  { to: '/insights', label: 'Summary', Icon: IconInsights },
   { to: '/health', label: 'Health', Icon: IconDashboard },
   { to: '/family', label: 'Family', Icon: IconFamily },
 ]
