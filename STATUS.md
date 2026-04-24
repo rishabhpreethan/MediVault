@@ -190,32 +190,32 @@
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-125 | Alembic migration: families, family_invitations, family_memberships, vault_access_grants, notifications tables | P0 | Done (Pending Merge) | Developer Agent | — | feature/MV-125-140-family-circle-redesign |
-| MV-126 | Family Circle API — GET /family/circle (returns memberships + managed profiles + pending invites) | P1 | Done (Pending Merge) | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
-| MV-127 | Family Invitations API — POST /family/invitations, GET /family/invitations, DELETE invitation, POST resend | P1 | Done (Pending Merge) | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
-| MV-128 | Invite acceptance flow — GET /invite/:token, POST accept, POST decline (handles new + existing users) | P1 | Done (Pending Merge) | Developer Agent | MV-127 | feature/MV-125-140-family-circle-redesign |
-| MV-129 | Vault Access Grants API — GET /family/access, POST grant, DELETE revoke, PATCH can-invite | P1 | Done (Pending Merge) | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
-| MV-130 | Cross-vault access middleware — check vault_access_grants before serving profile/documents/charts for non-owner | P0 | Done (Pending Merge) | Developer Agent | MV-129 | feature/MV-125-140-family-circle-redesign |
-| MV-131 | Notifications API — GET /notifications, GET unread-count, PATCH read, POST read-all, DELETE | P2 | Done (Pending Merge) | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
-| MV-132 | Notification dispatch service — emit in-app notifications for family invite events + processing events | P2 | Done (Pending Merge) | Developer Agent | MV-131, MV-127 | feature/MV-125-140-family-circle-redesign |
+| MV-125 | Alembic migration: families, family_invitations, family_memberships, vault_access_grants, notifications tables | P0 | Done | Developer Agent | — | feature/MV-125-140-family-circle-redesign |
+| MV-126 | Family Circle API — GET /family/circle (returns memberships + managed profiles + pending invites) | P1 | Done | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
+| MV-127 | Family Invitations API — POST /family/invitations, GET /family/invitations, DELETE invitation, POST resend | P1 | Done | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
+| MV-128 | Invite acceptance flow — GET /invite/:token, POST accept, POST decline (handles new + existing users) | P1 | Done | Developer Agent | MV-127 | feature/MV-125-140-family-circle-redesign |
+| MV-129 | Vault Access Grants API — GET /family/access, POST grant, DELETE revoke, PATCH can-invite | P1 | Done | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
+| MV-130 | Cross-vault access middleware — check vault_access_grants before serving profile/documents/charts for non-owner | P0 | Done | Developer Agent | MV-129 | feature/MV-125-140-family-circle-redesign |
+| MV-131 | Notifications API — GET /notifications, GET unread-count, PATCH read, POST read-all, DELETE | P2 | Done | Developer Agent | MV-125 | feature/MV-125-140-family-circle-redesign |
+| MV-132 | Notification dispatch service — emit in-app notifications for family invite events + processing events | P2 | Done | Developer Agent | MV-131, MV-127 | feature/MV-125-140-family-circle-redesign |
 
 #### Sub-Epic: Frontend — Family Circle UI
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-133 | Update app shell nav: add Family tab (5-tab bottom nav), move Settings to avatar menu | P1 | Done (Pending Merge) | Developer Agent | — | feature/MV-125-140-family-circle-redesign |
-| MV-134 | Family Circle page — visual family tree (parents / spouse / children layout), node cards, pending badges, Add button | P1 | Done (Pending Merge) | Developer Agent | MV-126, MV-133 | feature/MV-125-140-family-circle-redesign |
-| MV-135 | Invite flow UI — email input, relationship selector, confirmation; handles existing user + new user paths | P1 | Done (Pending Merge) | Developer Agent | MV-127, MV-134 | feature/MV-125-140-family-circle-redesign |
-| MV-136 | Invitation acceptance page — /invite/:token route, accept/decline UI, post-accept redirect | P1 | Done (Pending Merge) | Developer Agent | MV-128 | feature/MV-125-140-family-circle-redesign |
-| MV-137 | Vault access permissions UI — per-member access toggle panel (grant/revoke READ access, toggle can-invite) | P2 | Done (Pending Merge) | Developer Agent | MV-129, MV-134 | feature/MV-125-140-family-circle-redesign |
-| MV-138 | In-app notification bell + notification centre (unread badge, list, mark read, action deep-links) | P2 | Done (Pending Merge) | Developer Agent | MV-131, MV-133 | feature/MV-125-140-family-circle-redesign |
+| MV-133 | Update app shell nav: add Family tab (5-tab bottom nav), move Settings to avatar menu | P1 | Done | Developer Agent | — | feature/MV-125-140-family-circle-redesign |
+| MV-134 | Family Circle page — visual family tree (parents / spouse / children layout), node cards, pending badges, Add button | P1 | Done | Developer Agent | MV-126, MV-133 | feature/MV-125-140-family-circle-redesign |
+| MV-135 | Invite flow UI — email input, relationship selector, confirmation; handles existing user + new user paths | P1 | Done | Developer Agent | MV-127, MV-134 | feature/MV-125-140-family-circle-redesign |
+| MV-136 | Invitation acceptance page — /invite/:token route, accept/decline UI, post-accept redirect | P1 | Done | Developer Agent | MV-128 | feature/MV-125-140-family-circle-redesign |
+| MV-137 | Vault access permissions UI — per-member access toggle panel (grant/revoke READ access, toggle can-invite) | P2 | Done | Developer Agent | MV-129, MV-134 | feature/MV-125-140-family-circle-redesign |
+| MV-138 | In-app notification bell + notification centre (unread badge, list, mark read, action deep-links) | P2 | Done | Developer Agent | MV-131, MV-133 | feature/MV-125-140-family-circle-redesign |
 
 #### Sub-Epic: Backend Tests
 
 | Task ID | Task Name | Priority | Status | Assigned To | Blocked By | Branch |
 |---|---|---|---|---|---|---|
-| MV-139 | Unit + integration tests for invite flow, acceptance, family membership, access grants | P1 | Done (Pending Merge) | Developer Agent | MV-128, MV-129 | feature/MV-125-140-family-circle-redesign |
-| MV-140 | Cross-vault isolation tests (grantee can read, non-grantee gets 403, revoke works) | P0 | Done (Pending Merge) | Developer Agent | MV-130 | feature/MV-125-140-family-circle-redesign |
+| MV-139 | Unit + integration tests for invite flow, acceptance, family membership, access grants | P1 | Done | Developer Agent | MV-128, MV-129 | feature/MV-125-140-family-circle-redesign |
+| MV-140 | Cross-vault isolation tests (grantee can read, non-grantee gets 403, revoke works) | P0 | Done | Developer Agent | MV-130 | feature/MV-125-140-family-circle-redesign |
 
 ### EPIC: Passport & Family Enhancements (Phase 2)
 

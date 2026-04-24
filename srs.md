@@ -191,7 +191,7 @@ MediVault does not interface with cloud OCR APIs, hospital software, payment sys
 |---|---|
 | Apache Tika or PDFBox (Java) / pdfminer (Python) | Server-side PDF text extraction — no external API |
 | PDF.js | Client-side PDF preview rendering in browser |
-| spaCy + Med7 | NLP/NER for medical entity extraction from raw text (self-hosted; PHI stays on-infrastructure) |
+| scispaCy (en_ner_bc5cdr_md) | NLP/NER for medical entity extraction from raw text (self-hosted; PHI stays on-infrastructure) |
 | pdfminer.six | Primary PDF text extraction library (Python-native; superior layout/tabular extraction for Indian medical PDFs) |
 | Auth0 | Authentication provider — OAuth 2.0, OIDC, JWT; supports email/password, Google OAuth, phone OTP |
 | MinIO | Local S3-compatible object storage for encrypted PDF files |
@@ -728,7 +728,7 @@ MediVault follows a layered microservices architecture with the following primar
 - **API Gateway** — single entry point, JWT validation, rate limiting
 - **Application Layer** — Python + FastAPI backend
 - **Core Services** — Auth Service (Auth0), Document Service, Extraction Orchestrator, Profile Service, Sharing Service
-- **Processing Pipeline** — async queue-based PDF extraction (pdfminer.six) + NLP processing (spaCy + Med7); entirely on-infrastructure, no external APIs in V1
+- **Processing Pipeline** — async queue-based PDF extraction (pdfminer.six) + NLP processing (scispaCy (en_ner_bc5cdr_md)); entirely on-infrastructure, no external APIs in V1
 - **Data Layer** — PostgreSQL (structured data), MinIO (local S3-compatible object storage for raw documents), Redis (cache/queue/sessions)
 
 ### 5.2 Component Descriptions
@@ -740,7 +740,7 @@ MediVault follows a layered microservices architecture with the following primar
 | **Auth Service** | Delegates to Auth0. Manages user registration, login, OTP (SMS), Google OAuth. Auth0 issues signed JWTs validated at the API Gateway. |
 | **Document Service** | Accepts PDF uploads, validates format and embedded text presence, stores encrypted files in object storage, triggers pipeline. |
 | **Extraction Orchestrator** | Manages async extraction jobs via Celery + Redis. Invokes pdfminer.six (primary) with Tika/pypdf as fallback. Runs entirely on-infrastructure. Handles retry logic, stores raw text. |
-| **NLP Parser** | Processes raw text using spaCy + Med7 for NER. Extracts medical entities. Assigns confidence scores. Medical entity rules added iteratively. Stores structured data to DB. |
+| **NLP Parser** | Processes raw text using scispaCy (en_ner_bc5cdr_md) for NER. Extracts medical entities. Assigns confidence scores. Medical entity rules added iteratively. Stores structured data to DB. |
 | **Profile Service** | Aggregates all extracted entities across documents into unified patient profile. Handles deduplication. |
 | **Sharing Service** | Generates and manages shareable passport UUIDs, expiry, access logs, and revocation. |
 | **Notification Service** | Sends email/SMS notifications for processing completion, upload confirmations. |
@@ -882,21 +882,26 @@ The V1 pipeline remains unchanged. OCR is an additive layer, not a replacement.
 
 ### 7.2 Key Screens
 
-| Screen | Description |
-|---|---|
-| **Onboarding / Auth** | Sign up, login, OTP verification. Minimal fields. Google OAuth prominent. |
-| **Document Library** | Grid/list of all uploaded PDFs with status badges. Upload button always visible. |
-| **Upload Flow** | File picker (PDF only). Document type selection. Date confirmation. Embedded text check feedback. Progress indicator. |
-| **Health Passport** *(default landing)* | Family health overview. Member cards showing blood group, active conditions, allergies. QR code generation. Share/Revoke controls. Default route `/` post-authentication. |
-| **Health Profile** | Deep health data view at `/health`. Summary card at top. Sectioned cards for medications, conditions, allergies, labs. |
-| **Timeline View** | Chronological vertical timeline. Filterable by type and date. Expandable events. |
-| **Charts / Trends** | Parameter selector at top. Trend chart with reference band. Medication Gantt below. |
-| **Document Detail** | PDF viewer alongside extracted data panel. Edit/correct extracted fields inline. |
+| Screen | Route | Description |
+|---|---|---|
+| **Health Passport** (default landing) | `/` | Passport overview: passport UUID, QR code, shareable link, access count. Auto-generates default passport on first visit. |
+| **Health Profile** | `/health` | Read-only health dashboard: vitals strip, biochemical metrics, active medications, known conditions, encounter history. |
+| **Records** | `/records` | Health Timeline (DECISION-012): chronological event feed (medications, labs, diagnoses, vitals, visits). No archive tab. |
+| **Document Detail** | `/records/:documentId` | PDF viewer alongside extracted data panel. Edit/correct extracted fields inline. |
+| **Family Circle** | `/family` | Visual family tree, managed profiles, linked accounts, invite flow, vault access management. |
+| **Onboarding** | `/onboarding` | Mandatory post-login flow: personal info, blood group, role selection, provider licence (if applicable), allergies. |
+| **Provider Dashboard** | `/provider` | Provider-only: patient lookup by passport UUID, access request polling. |
+| **Provider Patient View** | `/provider/patient/:requestId` | Provider-only: patient clinical summary, encounter history, log encounter form. |
+| **Invite Acceptance** | `/invite/:token` | Public page for accepting/declining family invitations. Auth gate for actions. |
+| **Public Passport** | `/passport/:uuid` | Public read-only health passport view (no auth required). |
+| **Account Settings** | `/settings` | Account management: data export, account deletion. Accessible from TopNav gear icon. |
+| **Login** | `/login` | Auth0 login/signup page. |
 
 ### 7.3 Mobile-Specific Requirements
 
-- Bottom navigation bar for primary sections (Passport, Records, Insights, Health, Family)
-- Settings accessible from avatar/profile menu (top nav on desktop; top-right icon on mobile) — not a bottom nav tab
+- Bottom navigation bar: 4 primary tabs (Passport, Records, Health, Family). Provider users see a 5th "Provider" tab conditionally.
+- Settings accessible from TopNav gear icon (desktop) or avatar menu — not a bottom nav tab.
+- /insights redirects to /health (per DECISION-011 — trend charts deferred, replaced by health summary on /health)
 - Swipe gestures for timeline navigation
 - PDF file picker from device storage
 - Offline state handled gracefully with clear messaging
@@ -1019,13 +1024,13 @@ The V1 architecture is specifically designed to accommodate this as an additive 
 | # | Open Issue | Owner | Status |
 |---|---|---|---|
 | 1 | PDF extraction library selection: Apache Tika vs PDFBox vs pdfminer.six — performance, accuracy on Indian medical PDFs, and infrastructure footprint comparison needed | Engineering | **Resolved: pdfminer.six selected** (Python-native, best tabular layout extraction; Tika/pypdf as fallback) |
-| 2 | NLP parser: build vs buy — custom spaCy/Med7 model vs Amazon Comprehend Medical. **Note:** Comprehend Medical transmits PHI externally — must evaluate against CON-006 before selecting | Engineering | **Resolved: spaCy + Med7 selected** (self-hosted; PHI stays on-infrastructure; medical entity rules added iteratively) |
+| 2 | NLP parser: build vs buy — custom scispaCy model vs Amazon Comprehend Medical. **Note:** Comprehend Medical transmits PHI externally — must evaluate against CON-006 before selecting | Engineering | **Resolved: scispaCy (en_ner_bc5cdr_md) selected** (self-hosted; PHI stays on-infrastructure; medical entity rules added iteratively) |
 | 3 | Auth provider selection: Firebase Auth vs Auth0 — pricing at scale and India data residency requirements | Engineering | **Resolved: Auth0 selected** |
 | 4 | Data residency: all PHI must reside in India-region cloud zones — confirm availability (AWS ap-south-1, GCP asia-south1) | Legal / Eng | Open |
 | 5 | DPDPA 2023 Data Fiduciary registration requirements — legal review required before launch | Legal | Open |
 | 6 | Scanned PDF detection heuristic: define minimum embedded character count threshold before classifying as image-based and rejecting | Engineering | Open |
 | 7 | Family account model: single login managing multiple profiles (e.g., parent managing children's records) — defer to V2 or include in V1? | Product | **Resolved: included in V1** — account owner + family members list; each member has an isolated health profile/documents/timeline window |
-| 8 | If Amazon Comprehend Medical is selected for NLP, a Data Processing Agreement (DPA) is required and CON-006 must be updated to reflect approved external PHI transmission | Legal / Eng | **Resolved: N/A** — spaCy + Med7 selected; Comprehend Medical not used; CON-006 satisfied |
+| 8 | If Amazon Comprehend Medical is selected for NLP, a Data Processing Agreement (DPA) is required and CON-006 must be updated to reflect approved external PHI transmission | Legal / Eng | **Resolved: N/A** — scispaCy (en_ner_bc5cdr_md) selected; Comprehend Medical not used; CON-006 satisfied |
 
 ---
 
@@ -1035,7 +1040,7 @@ The V1 architecture is specifically designed to accommodate this as an additive 
 |---|---|---|---|
 | 1.0 | March 2026 | Initial draft — full V1 scope definition with cloud OCR pipeline | Product Team |
 | 1.1 | March 2026 | Revised extraction pipeline: replaced cloud OCR with server-side PDF text extraction (Tika / PDFBox / pdfminer); scoped V1 to digital-origin PDFs only; image uploads and OCR deferred to V2; updated all related requirements, constraints, architecture, dependencies, open issues, and test cases accordingly | Product Team |
-| 1.2 | March 2026 | Resolved all open stack decisions: backend — Python + FastAPI; PDF extraction — pdfminer.six (primary); NLP — spaCy + Med7 (self-hosted); auth — Auth0; object storage — MinIO (local, S3-compatible); family accounts — included in V1 scope; all resolved open issues updated in §11 | Product Team |
+| 1.2 | March 2026 | Resolved all open stack decisions: backend — Python + FastAPI; PDF extraction — pdfminer.six (primary); NLP — scispaCy (en_ner_bc5cdr_md) (self-hosted); auth — Auth0; object storage — MinIO (local, S3-compatible); family accounts — included in V1 scope; all resolved open issues updated in §11 | Product Team |
 
 ---
 

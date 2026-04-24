@@ -103,7 +103,8 @@ EOF
 | **ORM** | SQLAlchemy 2.x (async), Alembic | All queries via ORM, no raw SQL |
 | **Task Queue** | Celery 5 + Redis | All document processing is async |
 | **PDF Extraction** | pdfminer.six (primary), pypdf (fallback) | See architecture.md §NLP Pipeline |
-| **NLP** | spaCy 3 + Med7 | See architecture.md §NLP Pipeline Detail |
+| **NLP** | spaCy 3 + scispaCy (en_ner_bc5cdr_md) | See architecture.md §NLP Pipeline Detail |
+| **Provider workflow** | Passport-based patient lookup | Providers look up patients via Health Passport ID |
 | **Storage** | MinIO via aioboto3 (S3-compatible) | Path: `{user_id}/{member_id}/{doc_id}.pdf` |
 | **Auth** | Auth0 RS256 JWT validation | See architecture.md §Authentication Flow |
 | **Frontend** | React 18, TypeScript, Vite, Tailwind CSS | |
@@ -134,7 +135,7 @@ EOF
 
 - All components must be TypeScript — no `any` types for API response data
 - Mobile-first CSS: start at 375px, use Tailwind responsive prefixes (`md:`, `lg:`) for larger viewports
-- Bottom navigation bar for mobile (Profile, Timeline, Charts, Documents)
+- Bottom navigation bar for mobile: 4 primary tabs (Passport, Records, Health, Family). Provider users see a conditional 5th Provider tab. Settings accessible from TopNav gear icon.
 - Minimum touch target: 44×44px for all interactive elements
 - Use React Query for all API calls — no raw `useEffect` + `fetch`
 - Show loading states and error states for every async operation
@@ -171,7 +172,7 @@ When in doubt about a decision's classification: treat it as one level higher (m
 
 ## Working with NLP Extractors
 
-When building or modifying any extraction logic (PDF parsing, spaCy/Med7 entities, deduplication):
+When building or modifying any extraction logic (PDF parsing, spaCy/scispaCy entities, deduplication):
 
 **Test fixtures are your ground truth**
 - Fixtures live in `backend/tests/fixtures/`
@@ -180,7 +181,7 @@ When building or modifying any extraction logic (PDF parsing, spaCy/Med7 entitie
 - Targets: ≥ 95% raw text fidelity (TEST-003), ≥ 90% NLP field extraction on structured PDFs (TEST-004)
 
 **Known extraction gotchas**
-- Med7 entity tagger is ~85% accurate — always attach a `confidence_score` to every extracted entity
+- scispaCy (en_ner_bc5cdr_md) entity tagger is ~85% accurate — always attach a `confidence_score` to every extracted entity
 - Medication dosage parsing is error-prone: capture unit + frequency separately (e.g. "2 tablets BID" → unit: tablet, frequency: BID)
 - Lab reference ranges are lab-specific — parse them from the document, never hardcode
 - Diagnosis dates are often implicit ("chronic hypertension" has no date) — set confidence LOW, do not guess
