@@ -13,6 +13,7 @@ All actors, their goals, and their complete journeys through the system.
 | **Managed Profile** | Dependent without their own account (child, elderly parent) — managed entirely by the account owner | Via owner |
 | **Linked Account** | Another MediVault user who has accepted a family invitation — has their own account and vault | Yes (own account) |
 | **Clinician** | Doctor/nurse who views a shared Health Passport via link/QR | No |
+| **Provider (Doctor)** | Licensed medical practitioner who has completed onboarding as PROVIDER role; can look up patients via passport UUID and log encounters | Yes (own account, PROVIDER role) |
 | **System** | Background processing (extraction pipeline, notifications) | N/A |
 
 ---
@@ -585,3 +586,123 @@ REVOKE ACCESS:
 
 **Read-only rule:** Vault access grants are READ access only in V1. Write access is out of scope.
 **Error path:** If access grant has been revoked since last session → user sees "You no longer have access to [Name]'s vault." and is redirected to their own vault.
+
+---
+
+## UF-020 — User Onboarding (Post-Registration)
+
+**Actor:** Account Owner (newly registered)
+**Goal:** Complete mandatory onboarding to set up health baseline and choose role
+
+```
+PATIENT PATH:
+1. After first login (onboarding_completed=false), user is redirected to /onboarding
+2. Step 1: Confirm/enter full name, date of birth
+3. Step 2: Select blood group (pill buttons: A+, A-, B+, B-, O+, O-, AB+, AB-, Unknown)
+4. Step 3: Choose role — "I'm a Patient" or "I'm a Healthcare Provider"
+5. Step 4 (if Patient): Enter height (cm) and weight (kg) — optional but encouraged
+6. Step 5: Add known allergies (free-text tags, comma-separated)
+7. Submit → POST /auth/onboarding → onboarding_completed=true, role=PATIENT
+8. Redirect to home page (/)
+
+PROVIDER PATH:
+1–3. Same as Patient path
+4. Step 4 (if Provider): Enter medical licence number + registration council (e.g., NMC, state medical council)
+5. Step 5: Allergies (same as patient — providers also have a health profile)
+6. Submit → POST /auth/onboarding → onboarding_completed=true, role=PROVIDER
+7. System queues licence verification task (verify_licence_task)
+8. Provider sees "Provider" tab in nav; can access /provider dashboard
+9. Until licence is verified, provider can still use patient features but lookup may be gated
+```
+
+**Error paths:**
+- If onboarding_completed=false, all protected routes redirect to /onboarding
+- If mandatory fields missing → inline validation errors
+
+---
+
+## UF-021 — Provider Looks Up Patient via Passport UUID
+
+**Actor:** Provider (Doctor)
+**Goal:** Access a patient's health records using their shared passport UUID
+
+```
+1. Provider navigates to Provider tab (/provider)
+2. Enters the patient's passport UUID (shown on patient's Health Passport page or shared via QR code)
+3. Clicks "Request Access"
+4. System:
+   a. Validates the passport UUID exists and is active
+   b. Identifies the patient (family member + owning user)
+   c. Creates a provider_access_request (status=PENDING, expires_at=now+15min)
+   d. Sends in-app notification to the patient (type=PROVIDER_ACCESS_REQUEST)
+5. Provider sees "Waiting for patient approval..." with a polling indicator
+6. System polls GET /provider/access-requests/{id}/status every 3 seconds
+7. If patient ACCEPTS → provider is redirected to /provider/patient/{requestId}
+8. If patient DECLINES → provider sees "Access declined by patient"
+9. If 15 minutes elapse → request expires, provider sees "Request expired"
+```
+
+**Error paths:**
+- Invalid passport UUID → "No active passport found with this ID"
+- Passport expired/revoked → "This passport is no longer active"
+- Provider not verified → may be gated (depends on verification_status)
+
+---
+
+## UF-022 — Patient Responds to Provider Access Request
+
+**Actor:** Account Owner (Patient)
+**Goal:** Accept or decline a doctor's request to view health records
+
+```
+1. Patient receives in-app notification: "Dr. [Provider Name] is requesting access to your health records"
+2. Notification appears in:
+   a. Bell icon badge (unread count increments)
+   b. Notification centre dropdown
+3. Notification has inline "Accept" and "Decline" buttons
+4. Patient taps "Accept":
+   a. POST /provider/access-requests/{id}/respond with action=ACCEPT
+   b. Request status → ACCEPTED
+   c. Provider is notified (their polling picks up the status change)
+   d. Provider can now view patient's clinical data for this session
+5. Patient taps "Decline":
+   a. POST /provider/access-requests/{id}/respond with action=DECLINE
+   b. Request status → DECLINED
+   c. Provider sees "Access declined" on their polling screen
+```
+
+**Key rules:**
+- Access is time-limited: the provider_access_request has a 15-minute TTL from creation
+- Patient can only respond while status=PENDING (not after expiry)
+- All access requests are logged in notification history for auditability
+
+---
+
+## UF-023 — Provider Logs a Medical Encounter
+
+**Actor:** Provider (Doctor)
+**Goal:** Record clinical notes, diagnoses, and prescriptions after examining a patient
+
+```
+1. Provider has an ACCEPTED access request and is viewing /provider/patient/{requestId}
+2. Left panel shows patient identity (name, DOB, blood group, height, weight)
+3. Centre panel shows encounter history (previous encounters logged by this or other providers)
+4. Right panel: "Log Encounter" form with fields:
+   - Encounter date (defaults to today)
+   - Chief complaint (free text)
+   - Diagnoses (dynamic list: condition name per row)
+   - Medications (dynamic list: drug name, dosage, frequency per row)
+   - Follow-up date (optional date picker)
+5. Provider fills out the form and clicks "Save Encounter"
+6. System:
+   a. POST /provider/encounters
+   b. Creates medical_encounter record
+   c. Creates Diagnosis records linked to the encounter (encounter_id FK)
+   d. Creates Medication records linked to the encounter (encounter_id FK)
+7. Encounter appears in the patient's timeline and health profile
+8. Provider can log multiple encounters per access request session
+```
+
+**Error paths:**
+- Access request expired → "Your access session has expired. Request new access."
+- Missing required fields → inline validation

@@ -69,11 +69,17 @@ Critical user journeys to cover (map to user-flows.md):
 - **UF-008** Generate passport, view public URL, revoke it
 - **UF-009** Add a family member, switch to their profile, upload a document for them
 - **UF-011** Account deletion flow
+- **UF-020** Onboarding flow (profile setup, avatar, initial document upload)
+- **UF-021** Provider registration and credential verification
+- **UF-022** Provider patient lookup via passport ID
+- **UF-023** Provider encounter recording and notes
+
+Playwright page objects to use/verify: OnboardingPage, ProviderDashboardPage, ProviderPatientPage, FamilyCirclePage, InviteAcceptancePage
 
 ### 4. Mobile Responsiveness Tests
 - Open the app in Chrome DevTools at 375px width (iPhone SE)
 - Open at 414px width (iPhone 14)
-- Verify bottom navigation bar is visible and functional (Profile, Timeline, Charts, Documents, Family)
+- Verify bottom navigation bar is visible and functional: 4 primary tabs (Passport, Records, Health, Family), conditional 5th Provider tab for provider users, Settings via TopNav gear icon
 - Verify the **Family tab** renders correctly and is reachable at both viewports (added MV-125–MV-140)
 - Verify all text is readable, no overflow
 - Verify touch targets are ≥ 44×44px

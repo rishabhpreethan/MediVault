@@ -55,8 +55,12 @@ Apply these in order of severity — a FAIL in §1 (Security) is a hard blocker;
 
 ### Logic correctness
 - Does the implementation match the intended user flow in `docs/user-flows.md`?
+  - Core flows: UF-001 through UF-019
+  - Onboarding: UF-020
+  - Provider workflows: UF-021 through UF-023
 - Does the service layer align with the event model in `docs/event-model.md`?
 - Are edge cases handled? (empty state, failed processing, expired passport, etc.)
+- Navigation structure: 4 primary tabs (Passport, Records, Health, Family) + conditional Provider tab. Routes: `/` (Passport), `/records` (Timeline), `/health` (Health Profile), `/family` (Family Circle), `/provider` (Provider Dashboard)
 
 ### Authorization bypass risks
 - Can a user access another user's data by guessing or manipulating an ID?

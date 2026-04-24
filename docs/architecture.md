@@ -27,7 +27,7 @@ Reference document for the Developer Agent. Contains HLD, LLD, API catalog, DB s
 │                    ┌─────────────▼──────────────────┐       │
 │                    │     Processing Pipeline          │       │
 │                    │  Redis Queue → Celery Worker     │       │
-│                    │  pdfminer.six → spaCy+Med7 NLP  │       │
+│                    │  pdfminer.six → spaCy+scispaCy  │       │
 │                    └─────────────────────────────────┘       │
 │                                                              │
 │  ┌──────────────┐  ┌────────────┐  ┌──────────────────┐    │
@@ -47,7 +47,7 @@ External:
 |---|---|---|
 | **React PWA** | React 18, Vite, TypeScript, Tailwind CSS | All patient-facing UI. Communicates via REST to API Gateway. Installable as PWA. |
 | **API Gateway / Backend** | Python 3.12, FastAPI, Pydantic v2, Uvicorn | Single backend entry point. JWT validation, routing, rate limiting, business logic. |
-| **Celery Worker** | Python, Celery 5, Redis broker | Async document processing: pdfminer.six extraction + spaCy+Med7 NLP. |
+| **Celery Worker** | Python, Celery 5, Redis broker | Async document processing: pdfminer.six extraction + spaCy+scispaCy NLP. |
 | **PostgreSQL 16** | PostgreSQL | Primary relational store. All structured data, entities, metadata. |
 | **MinIO** | MinIO (S3-compatible) | Encrypted storage for uploaded PDF files. Per-user bucket prefixes. |
 | **Redis 7** | Redis | Celery task queue, session cache, rate limit counters. |
@@ -88,7 +88,14 @@ medivault/
 │   │   │   ├── timeline.py          # Timeline endpoints
 │   │   │   ├── charts.py            # Chart data endpoints
 │   │   │   ├── passport.py          # Passport endpoints
-│   │   │   └── family.py            # Family member endpoints
+│   │   │   ├── family.py            # Family member endpoints
+│   │   │   ├── onboarding.py        # Onboarding endpoints
+│   │   │   ├── provider.py          # Provider workflow endpoints
+│   │   │   ├── family_circle.py     # Family Circle endpoints
+│   │   │   ├── notifications.py     # Notification endpoints
+│   │   │   ├── entity_crud.py       # Generic entity CRUD endpoints
+│   │   │   ├── corrections.py       # Entity correction endpoints
+│   │   │   └── export.py            # Data export endpoints
 │   │   ├── models/
 │   │   │   ├── user.py
 │   │   │   ├── family_member.py
@@ -100,7 +107,14 @@ medivault/
 │   │   │   ├── vital.py
 │   │   │   ├── doctor.py
 │   │   │   ├── procedure.py
-│   │   │   └── passport.py
+│   │   │   ├── passport.py
+│   │   │   ├── family_circle.py     # Family, FamilyInvitation, FamilyMembership, VaultAccessGrant
+│   │   │   ├── notification.py
+│   │   │   ├── provider_profile.py
+│   │   │   ├── provider_access_request.py
+│   │   │   ├── medical_encounter.py
+│   │   │   ├── auth_audit.py
+│   │   │   └── correction_audit.py
 │   │   ├── schemas/                 # Pydantic request/response schemas
 │   │   ├── services/
 │   │   │   ├── document_service.py
@@ -109,24 +123,29 @@ medivault/
 │   │   │   ├── profile_service.py
 │   │   │   ├── passport_service.py
 │   │   │   ├── notification_service.py
-│   │   │   └── storage_service.py   # MinIO interface
+│   │   │   ├── storage_service.py   # MinIO interface
+│   │   │   ├── audit_service.py
+│   │   │   ├── deduplication_service.py
+│   │   │   └── pubsub.py
 │   │   ├── workers/
 │   │   │   ├── celery_app.py
 │   │   │   ├── extraction_tasks.py
-│   │   │   └── nlp_tasks.py
+│   │   │   ├── nlp_tasks.py
+│   │   │   ├── export_tasks.py
+│   │   │   ├── health_tasks.py
+│   │   │   └── onboarding_tasks.py
 │   │   ├── extractors/
 │   │   │   ├── base.py
 │   │   │   ├── pdfminer_extractor.py
 │   │   │   └── pypdf_extractor.py   # Fallback
 │   │   └── nlp/
-│   │       ├── pipeline.py          # spaCy + Med7 pipeline setup
-│   │       ├── extractors/
-│   │       │   ├── medication.py
-│   │       │   ├── lab_result.py
-│   │       │   ├── diagnosis.py
-│   │       │   ├── allergy.py
-│   │       │   ├── vitals.py
-│   │       │   └── doctor.py
+│   │       ├── pipeline.py          # spaCy + scispaCy (en_ner_bc5cdr_md) pipeline setup
+│   │       ├── medication_extractor.py
+│   │       ├── lab_extractor.py
+│   │       ├── diagnosis_extractor.py
+│   │       ├── allergy_extractor.py
+│   │       ├── vitals_extractor.py
+│   │       ├── doctor_extractor.py
 │   │       ├── confidence.py        # Confidence scoring
 │   │       └── deduplication.py     # Cross-document entity dedup
 │   ├── alembic/                     # DB migrations
@@ -143,11 +162,13 @@ medivault/
 │   │   ├── pages/
 │   │   │   ├── auth/               # Login, signup, OTP
 │   │   │   ├── passport/           # Passport overview — default route / + public view
-│   │   │   ├── records/            # Document library + detail (route: /records)
-│   │   │   ├── insights/           # Trends + charts (route: /insights)
+│   │   │   ├── records/            # Timeline-only view (route: /records, per DECISION-012)
 │   │   │   ├── dashboard/          # Health profile deep-view (route: /health)
-│   │   │   └── settings/           # Account settings (route: /settings)
-│   │   │   {Note: / → PassportPage, /health → DashboardPage (Health Profile)}
+│   │   │   ├── settings/           # Account settings (route: /settings)
+│   │   │   ├── family/             # FamilyCirclePage, InviteAcceptancePage, VaultAccessPanel
+│   │   │   ├── onboarding/         # OnboardingPage
+│   │   │   └── provider/           # ProviderDashboardPage, ProviderPatientPage
+│   │   │   {Note: / → PassportPage, /health → DashboardPage, /insights redirects to /health}
 │   │   ├── components/
 │   │   │   ├── layout/             # AppShell, NavBar, BottomNav
 │   │   │   ├── profile/            # Profile cards, sections
@@ -155,8 +176,10 @@ medivault/
 │   │   │   ├── charts/             # Chart components (Recharts)
 │   │   │   ├── documents/          # Document cards, upload flow
 │   │   │   ├── passport/           # Passport view, QR code
-│   │   │   └── common/             # Buttons, badges, modals, toasts
+│   │   │   └── common/             # Buttons, badges, modals, toasts, NotificationCentre.tsx
 │   │   ├── hooks/                  # React Query hooks, custom hooks
+│   │   │   ├── useFamilyCircle.ts
+│   │   │   └── useNotifications.ts
 │   │   ├── lib/
 │   │   │   ├── api.ts              # Axios instance + API calls
 │   │   │   ├── auth.ts             # Auth0 React SDK setup
@@ -189,6 +212,8 @@ CREATE TABLE users (
     email           VARCHAR(255) UNIQUE,
     phone_number    VARCHAR(20),
     email_verified  BOOLEAN DEFAULT FALSE,
+    role                VARCHAR(20) DEFAULT 'PATIENT',   -- PATIENT|PROVIDER
+    onboarding_completed BOOLEAN DEFAULT FALSE,
     is_active       BOOLEAN DEFAULT TRUE,
     created_at      TIMESTAMPTZ DEFAULT NOW(),
     last_login_at   TIMESTAMPTZ
@@ -206,6 +231,8 @@ CREATE TABLE family_members (
     date_of_birth   DATE,                            -- encrypted
     blood_group     VARCHAR(10),                     -- A+|A-|B+|B-|O+|O-|AB+|AB-|Unknown
     is_self         BOOLEAN DEFAULT FALSE,
+    height_cm       FLOAT,
+    weight_kg       FLOAT,
     created_at      TIMESTAMPTZ DEFAULT NOW(),
     updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
@@ -242,6 +269,7 @@ CREATE TABLE medications (
     medication_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     member_id           UUID NOT NULL REFERENCES family_members(member_id) ON DELETE CASCADE,
     document_id         UUID REFERENCES documents(document_id) ON DELETE SET NULL,
+    encounter_id        UUID REFERENCES medical_encounters(encounter_id),
     drug_name           VARCHAR(255) NOT NULL,
     drug_name_normalized VARCHAR(255),          -- after synonym normalization
     dosage              VARCHAR(100),
@@ -289,6 +317,7 @@ CREATE TABLE diagnoses (
     diagnosis_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     member_id           UUID NOT NULL REFERENCES family_members(member_id) ON DELETE CASCADE,
     document_id         UUID REFERENCES documents(document_id) ON DELETE SET NULL,
+    encounter_id        UUID REFERENCES medical_encounters(encounter_id),
     condition_name      VARCHAR(255) NOT NULL,
     condition_normalized VARCHAR(255),
     icd10_code          VARCHAR(20),
@@ -491,6 +520,55 @@ CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_notifications_is_read ON notifications(user_id, is_read);
 ```
 
+#### `provider_profiles`
+```sql
+CREATE TABLE provider_profiles (
+    profile_id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID NOT NULL UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+    licence_number      VARCHAR(100),
+    registration_council VARCHAR(200),
+    licence_verified    BOOLEAN DEFAULT FALSE,
+    verification_status VARCHAR(20) DEFAULT 'PENDING',  -- PENDING|VERIFIED|REJECTED
+    verified_at         TIMESTAMPTZ,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### `provider_access_requests`
+```sql
+CREATE TABLE provider_access_requests (
+    request_id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    provider_user_id    UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    patient_member_id   UUID NOT NULL REFERENCES family_members(member_id) ON DELETE CASCADE,
+    passport_id_used    UUID REFERENCES shared_passports(passport_id),
+    notification_id     UUID REFERENCES notifications(notification_id),
+    status              VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- PENDING|ACCEPTED|DECLINED|EXPIRED
+    requested_at        TIMESTAMPTZ DEFAULT NOW(),
+    responded_at        TIMESTAMPTZ,
+    expires_at          TIMESTAMPTZ NOT NULL      -- 15 minutes from creation
+);
+CREATE INDEX idx_provider_access_requests_provider ON provider_access_requests(provider_user_id);
+CREATE INDEX idx_provider_access_requests_patient ON provider_access_requests(patient_member_id);
+```
+
+#### `medical_encounters`
+```sql
+CREATE TABLE medical_encounters (
+    encounter_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    provider_user_id    UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    patient_member_id   UUID NOT NULL REFERENCES family_members(member_id) ON DELETE CASCADE,
+    access_request_id   UUID REFERENCES provider_access_requests(request_id),
+    encounter_date      DATE NOT NULL,
+    chief_complaint     TEXT,
+    diagnosis_notes     TEXT,
+    prescriptions_note  TEXT,
+    follow_up_date      DATE,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_encounters_provider ON medical_encounters(provider_user_id);
+CREATE INDEX idx_encounters_patient ON medical_encounters(patient_member_id);
+```
+
 ---
 
 ### API Endpoint Catalog
@@ -539,6 +617,7 @@ All endpoints require `Authorization: Bearer <Auth0 JWT>` unless marked `[PUBLIC
 | POST | `/profile/{member_id}/allergies` | Manually add an allergy |
 | PUT | `/profile/{member_id}/allergies/{allergy_id}` | Edit an allergy |
 | DELETE | `/profile/{member_id}/allergies/{allergy_id}` | Delete an allergy |
+| GET | `/profile/{member_id}/encounters` | List medical encounters for a patient member |
 
 #### Timeline
 | Method | Path | Description |
@@ -567,6 +646,22 @@ All endpoints require `Authorization: Bearer <Auth0 JWT>` unless marked `[PUBLIC
 |---|---|---|
 | DELETE | `/account` | Initiate account deletion |
 | POST | `/account/export` | Request data export |
+
+#### Onboarding
+| Method | Path | Description |
+|---|---|---|
+| GET | `/auth/onboarding/status` | Return onboarding_completed flag and role |
+| POST | `/auth/onboarding` | Complete onboarding (DOB, blood group, height, weight, allergies, role; creates ProviderProfile if PROVIDER) |
+
+#### Provider Workflow
+| Method | Path | Description |
+|---|---|---|
+| POST | `/provider/patient-lookup` | Validate passport UUID, create PENDING access request, notify patient |
+| GET | `/provider/access-requests/{request_id}/status` | Poll access request status (PENDING/ACCEPTED/DECLINED/EXPIRED) |
+| POST | `/provider/access-requests/{request_id}/respond` | Patient accepts or declines provider access request |
+| GET | `/provider/patient/{request_id}` | Get full patient clinical data (only if ACCEPTED) |
+| POST | `/provider/encounters` | Log a medical encounter (diagnosis, prescriptions, follow-up) |
+| GET | `/provider/patient/{request_id}/encounters` | List encounters for an access request |
 
 #### Family Circle
 | Method | Path | Description |
@@ -657,7 +752,7 @@ Response 403: { error: "REVOKED", message: "This health passport is no longer ac
      - If attempts < 3: re-queue with exponential backoff (30s, 90s, 270s)
      - If attempts = 3: status=FAILED, send failure notification
 4. Celery task: process_nlp.apply_async(args=[document_id])
-5. NLP worker: run spaCy+Med7 pipeline → store entities → update profile
+5. NLP worker: run spaCy+scispaCy pipeline → store entities → update profile
 6. status=COMPLETE, send completion notification
 ```
 
@@ -667,10 +762,10 @@ Response 403: { error: "REVOKED", message: "This health passport is no longer ac
 
 ```python
 # Pipeline stages (applied in order):
-1. doc = nlp(raw_text)              # spaCy tokenization + Med7 NER
-2. medication_extractor(doc)         # Med7 entities: DRUG, STRENGTH, FORM, FREQUENCY, ROUTE, DURATION, DOSAGE
+1. doc = nlp(raw_text)              # spaCy tokenization + scispaCy (en_ner_bc5cdr_md) NER
+2. medication_extractor(doc)         # scispaCy CHEMICAL→DRUG label remap + rule-based STRENGTH, FORM, FREQUENCY, ROUTE, DURATION, DOSAGE
 3. lab_result_extractor(doc)         # Rule-based: "Test: Value Unit (Range)"
-4. diagnosis_extractor(doc)          # Med7 + custom rules for condition names
+4. diagnosis_extractor(doc)          # scispaCy DISEASE→DIAGNOSIS label remap + custom rules for condition names
 5. allergy_extractor(doc)            # Pattern: "allergic to X", "allergy: X"
 6. vitals_extractor(doc)             # Pattern: "BP: 120/80", "Weight: 70kg"
 7. doctor_extractor(doc)             # Pattern: "Dr. [Name]", facility name NER
@@ -678,7 +773,8 @@ Response 403: { error: "REVOKED", message: "This health passport is no longer ac
 9. deduplicator(entities, member_id) # Check existing diagnoses/medications for duplicates
 ```
 
-**Med7 entity types:** `DRUG`, `STRENGTH`, `FORM`, `FREQUENCY`, `ROUTE`, `DURATION`, `DOSAGE`
+**scispaCy (en_ner_bc5cdr_md) entity types (remapped):** `CHEMICAL`→`DRUG`, `DISEASE`→`DIAGNOSIS`
+**Rule-based entity types:** `STRENGTH`, `FORM`, `FREQUENCY`, `ROUTE`, `DURATION`, `DOSAGE`
 
 **Confidence scoring rules:**
 - `HIGH`: entity found in a structured table (lab report table rows, prescription table)
@@ -698,6 +794,8 @@ Response 403: { error: "REVOKED", message: "This health passport is no longer ac
 6. Calls /auth/provision if first login (creates user row in users table)
 7. Injects user_id into request context for downstream handlers
 8. Token refresh: Auth0 React SDK handles silently in background
+9. Role-based routing: after provision, if onboarding_completed=false, frontend redirects to /onboarding
+10. After onboarding, PROVIDER role users see an additional "Provider" tab in the navigation
 ```
 
 ---
