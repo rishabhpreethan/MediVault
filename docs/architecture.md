@@ -200,6 +200,164 @@ medivault/
 
 ---
 
+### Entity-Relationship Diagram
+
+```
+┌─────────────────────┐
+│       users          │
+│─────────────────────│
+│ user_id (PK)         │
+│ auth0_sub            │
+│ email                │
+│ role                 │
+│ onboarding_completed │
+├──────────┬──────────┘
+│          │
+│          │ 1:N
+│          ▼
+│  ┌──────────────────┐        ┌──────────────────────┐
+│  │  family_members   │        │      documents       │
+│  │──────────────────│        │──────────────────────│
+│  │ member_id (PK)    │◄──────┤ member_id (FK)       │
+│  │ user_id (FK)      │  1:N  │ document_id (PK)     │
+│  │ full_name         │        │ user_id (FK)         │
+│  │ relationship      │        │ document_type        │
+│  │ date_of_birth     │        │ processing_status    │
+│  │ blood_group       │        │ storage_path         │
+│  │ height_cm         │        │ extracted_raw_text   │
+│  │ weight_kg         │        └───────┬──────────────┘
+│  │ is_self           │                │
+│  └──────┬───────────┘                │ 1:N (all extracted entities)
+│         │                             │
+│         │ 1:N                         ▼
+│         │          ┌──────────────────────────────────────────────────────┐
+│         │          │              Extracted Entities                      │
+│         │          │  (each links back to member_id + document_id)       │
+│         │          ├─────────────┬────────────┬────────────┬─────────────┤
+│         │          │ medications │ lab_results│ diagnoses  │ allergies   │
+│         │          │ medication_ │ result_id  │ diagnosis_ │ allergy_id  │
+│         │          │ id (PK)    │ (PK)       │ id (PK)    │ (PK)        │
+│         │          │ drug_name  │ test_name  │ condition_ │ allergen_   │
+│         │          │ dosage     │ value      │ name       │ name        │
+│         │          │ frequency  │ unit       │ icd10_code │ severity    │
+│         │          │ is_active  │ flag       │ status     │ reaction_   │
+│         │          │ encounter_ │ reference_ │ encounter_ │ type        │
+│         │          │ id (FK)    │ low/high   │ id (FK)    │             │
+│         │          ├─────────────┼────────────┼────────────┼─────────────┤
+│         │          │   vitals   │  doctors   │ procedures │             │
+│         │          │ vital_id   │ doctor_id  │ procedure_ │             │
+│         │          │ (PK)       │ (PK)       │ id (PK)    │             │
+│         │          │ vital_type │ doctor_name│ procedure_ │             │
+│         │          │ value      │ specializ. │ name       │             │
+│         │          │ unit       │ facility   │ outcome    │             │
+│         │          └────────────┴────────────┴────────────┴─────────────┘
+│         │
+│         │ 1:N
+│         ▼
+│  ┌───────────────────┐
+│  │ shared_passports   │       ┌───────────────────────┐
+│  │───────────────────│       │  passport_access_log   │
+│  │ passport_id (PK)  │──────►│  log_id (PK)          │
+│  │ member_id (FK)    │  1:N  │  passport_id (FK)     │
+│  │ user_id (FK)      │       │  accessed_at          │
+│  │ is_active         │       │  ip_hash              │
+│  │ expires_at        │       └───────────────────────┘
+│  │ visible_sections  │
+│  └───────────────────┘
+│
+│  ════════════════════════════════════════════════════════
+│  FAMILY CIRCLE (DECISION-007)
+│  ════════════════════════════════════════════════════════
+│
+│          │ 1:1
+│          ▼
+│  ┌───────────────────┐
+│  │     families       │
+│  │───────────────────│
+│  │ family_id (PK)    │
+│  │ created_by_user_id│◄─── (UNIQUE — one family per user)
+│  │ name              │
+│  └──────┬────────────┘
+│         │
+│         │ 1:N                          1:N
+│         ├──────────────────┬──────────────────────────┐
+│         ▼                  ▼                          ▼
+│  ┌──────────────────┐ ┌────────────────────┐ ┌────────────────────────┐
+│  │family_invitations │ │family_memberships  │ │ vault_access_grants    │
+│  │──────────────────│ │────────────────────│ │────────────────────────│
+│  │ invitation_id(PK)│ │ membership_id (PK) │ │ grant_id (PK)          │
+│  │ family_id (FK)   │ │ family_id (FK)     │ │ family_id (FK)         │
+│  │ invited_by (FK)  │ │ user_id (FK)       │ │ grantee_user_id (FK)   │
+│  │ invited_email    │ │ role (ADMIN/MEMBER)│ │ target_user_id (FK)    │
+│  │ status           │ │ can_invite         │ │ access_type (READ)     │
+│  │ token (UNIQUE)   │ │ UNIQUE(family,user)│ │ granted_by_user_id(FK) │
+│  │ expires_at       │ └────────────────────┘ │ UNIQUE(fam,grantee,tgt)│
+│  └──────────────────┘                        └────────────────────────┘
+│
+│  ════════════════════════════════════════════════════════
+│  PROVIDER WORKFLOW (DECISION-009)
+│  ════════════════════════════════════════════════════════
+│
+│          │ 1:1
+│          ▼
+│  ┌───────────────────────┐
+│  │   provider_profiles    │
+│  │───────────────────────│
+│  │ profile_id (PK)       │
+│  │ user_id (FK, UNIQUE)  │
+│  │ licence_number        │
+│  │ registration_council  │
+│  │ verification_status   │
+│  └───────────────────────┘
+│
+│          │ 1:N
+│          ▼
+│  ┌────────────────────────────┐        ┌─────────────────────────┐
+│  │  provider_access_requests  │        │   medical_encounters    │
+│  │────────────────────────────│        │─────────────────────────│
+│  │ request_id (PK)           │──1:N──►│ encounter_id (PK)       │
+│  │ provider_user_id (FK)     │        │ provider_user_id (FK)   │
+│  │ patient_member_id (FK)    │        │ patient_member_id (FK)  │
+│  │ passport_id_used (FK)     │        │ access_request_id (FK)  │
+│  │ status (PENDING/ACCEPTED/ │        │ encounter_date          │
+│  │   DECLINED/EXPIRED)       │        │ chief_complaint         │
+│  │ expires_at (15 min TTL)   │        │ diagnosis_notes         │
+│  └────────────────────────────┘        │ prescriptions_note      │
+│                                        │ follow_up_date          │
+│                                        └─────────────────────────┘
+│
+│  ════════════════════════════════════════════════════════
+│  SUPPORTING TABLES
+│  ════════════════════════════════════════════════════════
+│
+│          │ 1:N
+│          ▼
+│  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────────┐
+│  │  notifications    │  │  auth_audit_log  │  │  correction_audit  │
+│  │──────────────────│  │──────────────────│  │────────────────────│
+│  │ notification_id  │  │ log_id (PK)      │  │ audit_id (PK)      │
+│  │ user_id (FK)     │  │ user_id          │  │ entity_type        │
+│  │ type             │  │ event_type       │  │ entity_id          │
+│  │ title / body     │  │ ip_address       │  │ field_name         │
+│  │ is_read          │  │ user_agent       │  │ old_value/new_value│
+│  │ action_url       │  │ created_at       │  │ corrected_by (FK)  │
+│  │ metadata (JSONB) │  └──────────────────┘  └────────────────────┘
+│  └──────────────────┘
+```
+
+**Relationship summary:**
+- `users` 1:N `family_members` — every user has ≥1 member (self)
+- `family_members` 1:N `documents`, `medications`, `lab_results`, `diagnoses`, `allergies`, `vitals`, `doctors`, `procedures`, `shared_passports`
+- `documents` 1:N all extracted entities (via `document_id` FK)
+- `medical_encounters` 1:N `medications`, `diagnoses` (via `encounter_id` FK)
+- `users` 1:1 `families` (via `created_by_user_id` UNIQUE)
+- `families` 1:N `family_invitations`, `family_memberships`, `vault_access_grants`
+- `users` 1:1 `provider_profiles` (via `user_id` UNIQUE)
+- `provider_access_requests` 1:N `medical_encounters` (via `access_request_id`)
+- `users` 1:N `notifications`, `auth_audit_log`
+
+---
+
 ### Database Schema (PostgreSQL)
 
 All tables use UUID primary keys. PHI fields are stored encrypted at the application layer (AES-256) where noted.
